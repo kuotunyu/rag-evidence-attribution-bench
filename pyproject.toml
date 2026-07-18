@@ -94,6 +94,11 @@ mypy_path = "src"
 exclude = ["legacy/"]
 
 [[tool.mypy.overrides]]
+# Gradio's Blocks API is heavily dynamic; the explorer is UI-only and covered by tests.
+module = ["rag_evidence.explorer"]
+ignore_errors = true
+
+[[tool.mypy.overrides]]
 module = [
     "gradio.*",
     "rank_bm25.*",

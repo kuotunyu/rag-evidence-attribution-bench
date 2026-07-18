@@ -3,7 +3,6 @@ never touch the Hugging Face Hub — all tests use synthetic fixtures and fake b
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import pytest
@@ -56,7 +55,7 @@ attribution:
 
 
 @pytest.fixture()
-def tiny_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):  # noqa: ANN201
+def tiny_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """A complete tiny repo layout under tmp_path (cwd is switched there):
     committed-style manifest + prepared JSONL built from the synthetic fixture,
     and a config using the FakeLM backend. Returns the loaded AppConfig.
@@ -75,8 +74,12 @@ def tiny_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):  # noqa: ANN201
         raws,
         seed=7,
         sizes={"smoke": 3, "dev": 1, "eval": 1},
-        dataset_info={"hf_path": "synthetic", "hf_config": "tiny", "hf_split": "test",
-                      "hf_revision": None},
+        dataset_info={
+            "hf_path": "synthetic",
+            "hf_config": "tiny",
+            "hf_split": "test",
+            "hf_revision": None,
+        },
         created_utc="2026-01-01T00:00:00Z",
     )
     (tmp_path / "data" / "manifests").mkdir(parents=True)
@@ -87,10 +90,12 @@ def tiny_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):  # noqa: ANN201
     prepared_dir.mkdir(parents=True)
     for split_name, info in manifest["splits"].items():
         out = prepared_dir / f"{split_name}.jsonl"
+        samples = tmp_path / "results" / "raw" / split_name / "samples" / "records.jsonl"
         for qid in info["question_ids"]:
             record = build_example(raws_by_qid[qid]).to_json()
             record["raw_fingerprint"] = manifest["example_hashes"][qid]
             append_record(out, record)
+            append_record(samples, record)
 
     config_path = tmp_path / "tiny.yaml"
     config_path.write_text(TINY_CONFIG_YAML.format(extra=""), encoding="utf-8")

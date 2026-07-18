@@ -31,12 +31,8 @@ def rrf_fuse(
                 f"source {i} ranks a different passage set than the example "
                 f"({sorted(src)} vs {sorted(ids)})"
             )
-    scores = {
-        pid: sum(1.0 / (rrf_k + src[pid]) for src in rankings) for pid in original_order
-    }
-    ordered = sorted(
-        enumerate(original_order), key=lambda t: (-scores[t[1]], t[0])
-    )
+    scores = {pid: sum(1.0 / (rrf_k + src[pid]) for src in rankings) for pid in original_order}
+    ordered = sorted(enumerate(original_order), key=lambda t: (-scores[t[1]], t[0]))
     return [
         RankedPassage(passage_id=pid, score=scores[pid], rank=i + 1)
         for i, (_pos, pid) in enumerate(ordered)

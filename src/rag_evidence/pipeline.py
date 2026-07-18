@@ -36,10 +36,10 @@ def run_attribute(
     run_attribution_stage(cfg, method=method, mode=mode, resume=resume, limit=limit)
 
 
-def run_evaluate(cfg: AppConfig) -> None:
+def run_evaluate(cfg: AppConfig, *, allow_partial: bool = False) -> None:
     from rag_evidence.evaluation.evaluate import evaluate_all
 
-    evaluate_all(cfg)
+    evaluate_all(cfg, allow_partial=allow_partial)
 
 
 def run_report(cfg: AppConfig) -> None:

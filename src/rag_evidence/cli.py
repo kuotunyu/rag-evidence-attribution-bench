@@ -5,7 +5,7 @@ Fixed surface (do not change without updating README + tests):
     python -m rag_evidence.cli data prepare        --config configs/smoke.yaml
     python -m rag_evidence.cli retrieve            --method bm25|dense|hybrid_rrf --config …
     python -m rag_evidence.cli generate            --config …
-    python -m rag_evidence.cli attribute           --method citations|embedding|leave_one_out|… --config …
+    python -m rag_evidence.cli attribute  --method citations|embedding|leave_one_out|…
     python -m rag_evidence.cli evaluate            --config …
     python -m rag_evidence.cli report              --config …
     python -m rag_evidence.cli serve               --config …
@@ -19,7 +19,7 @@ modules — `--help` and `serve` in precomputed mode never import them.
 from __future__ import annotations
 
 from collections.abc import Callable
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -49,7 +49,7 @@ LimitOpt = Annotated[
 ]
 
 
-class RetrievalMethod(str, Enum):
+class RetrievalMethod(StrEnum):
     bm25 = "bm25"
     dense = "dense"
     hybrid_rrf = "hybrid_rrf"
@@ -142,11 +142,20 @@ def attribute(
 
 
 @app.command()
-def evaluate(config: ConfigOpt) -> None:
+def evaluate(
+    config: ConfigOpt,
+    allow_partial: Annotated[
+        bool,
+        typer.Option(
+            "--allow-partial",
+            help="Include unfinished runs; their summary entries are marked partial.",
+        ),
+    ] = False,
+) -> None:
     """Aggregate raw records into derived metrics (pure CPU, no model access)."""
     from rag_evidence.pipeline import run_evaluate
 
-    _run(run_evaluate, config)
+    _run(run_evaluate, config, allow_partial=allow_partial)
 
 
 @app.command()

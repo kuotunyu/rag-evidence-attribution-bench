@@ -114,7 +114,7 @@ def build_manifest(
 
 
 def load_manifest(path: Path) -> dict[str, Any]:
-    manifest = read_json(path)
+    manifest: dict[str, Any] = read_json(path)
     if manifest.get("schema_version") != MANIFEST_SCHEMA_VERSION:
         raise DataError(
             f"manifest {path} has schema_version {manifest.get('schema_version')}, "

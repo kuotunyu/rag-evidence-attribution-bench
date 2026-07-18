@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
+from typing import Literal
 
 from rag_evidence.config import AppConfig, resolve_device, resolve_dtype
 from rag_evidence.data import ids
@@ -76,7 +77,7 @@ def run_generation_stage(cfg: AppConfig, *, resume: bool, limit: int | None) -> 
         examples = examples[:limit]
 
     name = generation_run_name(cfg)
-    execution_kind = "mock" if cfg.generation.backend == "fake" else "real"
+    execution_kind: Literal["real", "mock"] = "mock" if cfg.generation.backend == "fake" else "real"
     run_dir = stage_dir(cfg.results_raw_dir, cfg.split, "generate", name)
     meta = start_or_resume_run(
         run_dir,
@@ -174,7 +175,7 @@ def run_generation_stage(cfg: AppConfig, *, resume: bool, limit: int | None) -> 
                     import torch
 
                     torch.cuda.empty_cache()
-                except Exception:  # noqa: S110 — cache clearing is best-effort
+                except Exception:
                     pass
                 if consecutive_oom >= _MAX_CONSECUTIVE_OOM:
                     append_record(records_path, record)

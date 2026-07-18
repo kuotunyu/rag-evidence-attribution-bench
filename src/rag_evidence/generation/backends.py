@@ -21,7 +21,7 @@ from rag_evidence.errors import GpuRequiredError, RagEvidenceError
 
 logger = logging.getLogger(__name__)
 
-# HotpotQA 10-passage prompts are ~1.2–1.8k tokens; anything near this cap is anomalous
+# HotpotQA 10-passage prompts are ~1.2-1.8k tokens; anything near this cap is anomalous
 # and gets logged loudly (we deliberately do not silently truncate).
 PROMPT_TOKEN_WARN_THRESHOLD = 6000
 
@@ -53,7 +53,9 @@ class TargetScore:
 class GeneratorBackend(Protocol):
     model_id: str
 
-    def generate(self, messages: list[dict[str, str]], *, max_new_tokens: int) -> GenerationOutput: ...
+    def generate(
+        self, messages: list[dict[str, str]], *, max_new_tokens: int
+    ) -> GenerationOutput: ...
 
     def target_logprob(self, messages: list[dict[str, str]], target: str) -> TargetScore: ...
 
@@ -120,7 +122,7 @@ class QwenBackend:
             if quant == "4bit":
                 from transformers import BitsAndBytesConfig
 
-                kwargs["quantization_config"] = BitsAndBytesConfig(
+                kwargs["quantization_config"] = BitsAndBytesConfig(  # type: ignore[no-untyped-call]
                     load_in_4bit=True,
                     bnb_4bit_quant_type="nf4",
                     bnb_4bit_use_double_quant=True,
@@ -129,7 +131,7 @@ class QwenBackend:
                 kwargs["device_map"] = {"": 0}
                 return AutoModelForCausalLM.from_pretrained(self.model_id, **kwargs)
             model = AutoModelForCausalLM.from_pretrained(self.model_id, **kwargs)
-            return model.to(self.device)
+            return model.to(self.device)  # type: ignore[arg-type]  # transformers stub quirk
 
         try:
             return tokenizer, load(quantization), quantization
@@ -170,7 +172,7 @@ class QwenBackend:
         n_prompt = int(inputs["input_ids"].shape[-1])
         if n_prompt > PROMPT_TOKEN_WARN_THRESHOLD:
             logger.warning("anomalously long prompt: %d tokens", n_prompt)
-        gen_config = GenerationConfig(
+        gen_config = GenerationConfig(  # type: ignore[no-untyped-call]
             do_sample=False,
             num_beams=1,
             max_new_tokens=max_new_tokens,
@@ -190,9 +192,9 @@ class QwenBackend:
         """Teacher-forced sum of token logprobs of `target` after the chat prompt."""
         torch = self._torch
         prompt_ids = self._render(messages, add_generation_prompt=True)["input_ids"]
-        target_ids = self._tokenizer(
-            target, return_tensors="pt", add_special_tokens=False
-        )["input_ids"].to(prompt_ids.device)
+        target_ids = self._tokenizer(target, return_tensors="pt", add_special_tokens=False)[
+            "input_ids"
+        ].to(prompt_ids.device)
         if target_ids.shape[-1] == 0:
             raise RagEvidenceError("empty target for teacher-forced scoring")
         input_ids = torch.cat([prompt_ids, target_ids], dim=-1)
@@ -290,9 +292,7 @@ class FakeLM:
     def target_logprob(self, messages: list[dict[str, str]], target: str) -> TargetScore:
         _question, passages = self._parse(messages)
         base = -10.0 - 5.0 * _stable_unit(f"t:{target}")
-        score = base + sum(
-            self.passage_weight(title, text, target) for _a, title, text in passages
-        )
+        score = base + sum(self.passage_weight(title, text, target) for _a, title, text in passages)
         n_tokens = max(1, len(target.split()))
         return TargetScore(sum_logprob=score, num_target_tokens=n_tokens)
 

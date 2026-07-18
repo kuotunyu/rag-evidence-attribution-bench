@@ -23,10 +23,82 @@ from rag_evidence.telemetry import derive_seed
 
 # small built-in stopword list — no NLTK download dependency
 _STOPWORDS = frozenset(
-    "a an the and or but if then else of in on at to from by with for as is are was were "
-    "be been being it its this that these those he she they them his her their we you your "
-    "i my me our us who whom which what where when why how not no nor do does did done "
-    "have has had having will would can could should may might must".split()
+    [
+        "a",
+        "an",
+        "the",
+        "and",
+        "or",
+        "but",
+        "if",
+        "then",
+        "else",
+        "of",
+        "in",
+        "on",
+        "at",
+        "to",
+        "from",
+        "by",
+        "with",
+        "for",
+        "as",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "it",
+        "its",
+        "this",
+        "that",
+        "these",
+        "those",
+        "he",
+        "she",
+        "they",
+        "them",
+        "his",
+        "her",
+        "their",
+        "we",
+        "you",
+        "your",
+        "i",
+        "my",
+        "me",
+        "our",
+        "us",
+        "who",
+        "whom",
+        "which",
+        "what",
+        "where",
+        "when",
+        "why",
+        "how",
+        "not",
+        "no",
+        "nor",
+        "do",
+        "does",
+        "did",
+        "done",
+        "have",
+        "has",
+        "had",
+        "having",
+        "will",
+        "would",
+        "can",
+        "could",
+        "should",
+        "may",
+        "might",
+        "must",
+    ]
 )
 
 
@@ -98,9 +170,7 @@ class LexicalOverlapControl(_Control):
         model: ModelResources | None,
         method_config: Mapping[str, Any],
     ) -> AttributionResult:
-        query_tokens = {
-            t for t in tokenize(f"{question} {target_answer}") if t not in _STOPWORDS
-        }
+        query_tokens = {t for t in tokenize(f"{question} {target_answer}") if t not in _STOPWORDS}
         raw: dict[str, float] = {}
         for p in passages:
             p_tokens = {t for t in tokenize(f"{p.title} {p.text}") if t not in _STOPWORDS}

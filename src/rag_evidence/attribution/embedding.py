@@ -1,7 +1,7 @@
 """Embedding-relevance attribution: cosine(query, passage) with Qwen3-Embedding.
 
 Query text is `"{question} {answer}"`: answer-only degenerates on HotpotQA's many
-yes/no and 1–3 token answers (embedding "yes" carries no evidence signal). The
+yes/no and 1-3 token answers (embedding "yes" carries no evidence signal). The
 question-only ablation is visible in the same tables via the retrieval-rank control,
 so the answer's marginal contribution stays measurable.
 """

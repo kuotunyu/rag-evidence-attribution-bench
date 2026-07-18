@@ -224,6 +224,12 @@ def prepare_data(cfg: AppConfig) -> None:
         out_path = prepared_dir / f"{split_name}.jsonl"
         if out_path.exists():
             out_path.unlink()  # prepared files are derived; regenerating is always safe
+        # samples.jsonl mirrors the prepared data into results/raw so the precomputed
+        # explorer (Docker image, no dataset download) can display questions/passages.
+        # It embeds HotpotQA text → distributed under CC BY-SA 4.0, see DATA_CARD.md.
+        samples_path = Path(cfg.paths.results_raw) / split_name / "samples" / "records.jsonl"
+        if samples_path.exists():
+            samples_path.unlink()
         n = 0
         for qid in split_info["question_ids"]:
             example = build_example(raw_by_qid[qid])
@@ -231,8 +237,9 @@ def prepare_data(cfg: AppConfig) -> None:
             record = example.to_json()
             record["raw_fingerprint"] = manifest["example_hashes"][qid]
             append_record(out_path, record)
+            append_record(samples_path, record)
             n += 1
-        logger.info("prepared %s: %d examples -> %s", split_name, n, out_path)
+        logger.info("prepared %s: %d examples -> %s (+ samples.jsonl)", split_name, n, out_path)
     if total_dropped:
         logger.warning(
             "%d supporting-fact entries dropped across all splits (recorded per-example)",

@@ -1,0 +1,19 @@
+# OPTIONAL GPU live-mode image — STUB, not built by CI, not required by the benchmark.
+#
+# The benchmark's GPU stages run on Google Colab (see notebooks/). This file exists so
+# a future `docker compose --profile gpu up` has a documented starting point. Live serve
+# mode (serve.mode: live) is not implemented in v0.1 — building this image today would
+# produce a container whose `serve` refuses to start in live mode, by design.
+#
+# Sketch (untested — deliberately not claiming this works until it is actually run):
+#
+#   FROM nvidia/cuda:12.6.0-runtime-ubuntu22.04
+#   COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+#   WORKDIR /app
+#   COPY pyproject.toml uv.lock README.md ./
+#   RUN uv sync --frozen --no-dev --extra app --extra gpu   # pulls CUDA torch from PyPI
+#   COPY src ./src && uv sync --frozen --no-dev --extra app --extra gpu
+#   ... same runtime layout as Dockerfile, plus NVIDIA runtime flags via compose.
+
+FROM scratch
+LABEL description="placeholder — see comments; use `docker compose up` (CPU explorer) instead"

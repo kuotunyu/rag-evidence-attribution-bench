@@ -9,6 +9,7 @@ from rag_evidence.config import AppConfig
 from rag_evidence.data.hotpot import load_prepared_verified
 from rag_evidence.data.schema import Example
 from rag_evidence.errors import UpstreamMissingError
+from rag_evidence.retrieval.base import Retriever
 from rag_evidence.storage.artifacts import (
     RECORDS_FILE,
     append_record,
@@ -36,7 +37,7 @@ def _load_stored_rankings(cfg: AppConfig, method: str) -> dict[str, dict[str, in
     return out
 
 
-def _build_retriever(cfg: AppConfig, method: str):  # noqa: ANN202 — heavy imports stay lazy
+def _build_retriever(cfg: AppConfig, method: str) -> Retriever:
     if method == "bm25":
         from rag_evidence.retrieval.bm25 import BM25Retriever
 
@@ -62,9 +63,7 @@ def _build_retriever(cfg: AppConfig, method: str):  # noqa: ANN202 — heavy imp
     raise ValueError(f"unknown retrieval method {method!r}")
 
 
-def run_retrieval_stage(
-    cfg: AppConfig, *, method: str, resume: bool, limit: int | None
-) -> None:
+def run_retrieval_stage(cfg: AppConfig, *, method: str, resume: bool, limit: int | None) -> None:
     examples: list[Example] = load_prepared_verified(cfg)
     if limit is not None:
         examples = examples[:limit]
@@ -111,9 +110,7 @@ def run_retrieval_stage(
                                 f"{source_name} run has no record for {example.question_id}"
                             )
                         per_source.append(ranks[example.question_id])
-                    ranking = rrf_fuse(
-                        per_source, rrf_k=cfg.retrieval.rrf_k, original_order=order
-                    )
+                    ranking = rrf_fuse(per_source, rrf_k=cfg.retrieval.rrf_k, original_order=order)
                 else:
                     assert retriever is not None
                     ranking = retriever.rank(example)

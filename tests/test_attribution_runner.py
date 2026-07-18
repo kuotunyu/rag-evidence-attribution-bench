@@ -32,10 +32,10 @@ class _StubEmbedder:
         n = np.linalg.norm(v)
         return v / n if n else v
 
-    def embed_queries(self, texts, batch_size: int = 1):  # noqa: ANN001, ANN202
+    def embed_queries(self, texts, batch_size: int = 1):
         return np.stack([self._vec(t) for t in texts])
 
-    def embed_passages(self, texts, batch_size: int = 1):  # noqa: ANN001, ANN202
+    def embed_passages(self, texts, batch_size: int = 1):
         return np.stack([self._vec(t) for t in texts])
 
 
@@ -43,26 +43,17 @@ class _StubEmbedder:
 def attributed_env(tiny_env: AppConfig, monkeypatch: pytest.MonkeyPatch) -> AppConfig:
     from rag_evidence import embeddings as emb_mod
 
-    monkeypatch.setattr(
-        emb_mod.Embedder, "load", classmethod(lambda cls, *a, **k: _StubEmbedder())
-    )
+    monkeypatch.setattr(emb_mod.Embedder, "load", classmethod(lambda cls, *a, **k: _StubEmbedder()))
     cfg = tiny_env
     run_retrieval_stage(cfg, method="bm25", resume=False, limit=None)
     run_generation_stage(cfg, resume=False, limit=None)
-    for method in METHODS_ALL_MODES + ["citations"]:
+    for method in [*METHODS_ALL_MODES, "citations"]:
         run_attribution_stage(cfg, method=method, mode=None, resume=False, limit=None)
     return cfg
 
 
 def _records(cfg: AppConfig, mode: str, method: str) -> list[dict]:
-    path = (
-        Path(cfg.paths.results_raw)
-        / cfg.split
-        / "attribute"
-        / mode
-        / method
-        / "records.jsonl"
-    )
+    path = Path(cfg.paths.results_raw) / cfg.split / "attribute" / mode / method / "records.jsonl"
     return list(read_records(path)) if path.exists() else []
 
 

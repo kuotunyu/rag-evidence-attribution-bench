@@ -35,12 +35,12 @@
   },
   "package_version": "0.1.0",
   "started_utc": "2026-07-18T17:32:25Z",
-  "finished_utc": null,
-  "status": "running",
+  "finished_utc": "2026-07-18T17:57:02Z",
+  "status": "completed",
   "expected_count": 20,
   "limit": null,
-  "n_attempted": 0,
-  "n_success": 0,
+  "n_attempted": 20,
+  "n_success": 20,
   "n_failed": 0,
   "n_skipped": 0,
   "env": {
@@ -62,7 +62,7 @@
   },
   "model": {},
   "run_peak_vram_mb": null,
-  "total_wall_s": null,
+  "total_wall_s": 1378.526,
   "resume_events": [],
   "notes": ""
 }

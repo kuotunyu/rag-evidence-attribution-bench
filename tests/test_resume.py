@@ -75,7 +75,7 @@ def test_interrupt_then_resume_equals_uninterrupted(tiny_env: AppConfig, tmp_pat
     assert _stable(resumed) == _stable(reference)
 
 
-def test_scripted_answers_control_em(tiny_env: AppConfig, monkeypatch) -> None:  # noqa: ANN001
+def test_scripted_answers_control_em(tiny_env: AppConfig, monkeypatch) -> None:
     """Script FakeLM per question: correct, wrong, abstain — em/abstain flags must follow."""
     from rag_evidence.data.hotpot import load_prepared_verified
     from rag_evidence.generation import backends as backends_mod
@@ -90,9 +90,7 @@ def test_scripted_answers_control_em(tiny_env: AppConfig, monkeypatch) -> None: 
         q1: "utterly wrong [P1]",  # wrong
         q2: "INSUFFICIENT EVIDENCE",  # abstains
     }
-    monkeypatch.setattr(
-        backends_mod, "build_backend", lambda *a, **k: FakeLM(script=script)
-    )
+    monkeypatch.setattr(backends_mod, "build_backend", lambda *a, **k: FakeLM(script=script))
     # run.py imported build_backend by name — patch it there too
     from rag_evidence.generation import run as run_mod
 
@@ -108,7 +106,7 @@ def test_scripted_answers_control_em(tiny_env: AppConfig, monkeypatch) -> None: 
     assert r2["abstained"] is True and r2["em"] == 0 and r2["answer_text"] == ""
 
 
-def test_synthetic_failure_recorded_not_fatal(tiny_env: AppConfig, monkeypatch) -> None:  # noqa: ANN001
+def test_synthetic_failure_recorded_not_fatal(tiny_env: AppConfig, monkeypatch) -> None:
     from rag_evidence.data.hotpot import load_prepared_verified
     from rag_evidence.generation import run as run_mod
     from rag_evidence.generation.backends import FakeLM
@@ -116,9 +114,7 @@ def test_synthetic_failure_recorded_not_fatal(tiny_env: AppConfig, monkeypatch) 
     cfg = tiny_env
     examples = load_prepared_verified(cfg)
     fail_q = examples[1].question
-    monkeypatch.setattr(
-        run_mod, "build_backend", lambda *a, **k: FakeLM(fail_marker=fail_q[:20])
-    )
+    monkeypatch.setattr(run_mod, "build_backend", lambda *a, **k: FakeLM(fail_marker=fail_q[:20]))
     run_generation_stage(cfg, resume=False, limit=None)
     records = _records(cfg)
     failed = [r for r in records if r["error"] is not None]

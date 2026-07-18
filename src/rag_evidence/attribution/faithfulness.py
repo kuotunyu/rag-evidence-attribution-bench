@@ -1,8 +1,8 @@
 """Sufficiency / comprehensiveness (ERASER conventions, teacher-forced logprobs).
 
 Let m(ctx) = MEAN per-token logprob of the (citation-stripped) target under ctx.
-    sufficiency        = m(full) − m(top-k only)        — LOWER is better
-    comprehensiveness  = m(full) − m(full − top-k)      — HIGHER is better
+    sufficiency        = m(full) - m(top-k only)        -> LOWER is better
+    comprehensiveness  = m(full) - m(full minus top-k)  -> HIGHER is better
 
 Computed inside the `attribute` stage (the generator is already resident) and stored
 as raw numbers per sample, so `evaluate` stays pure CPU arithmetic. Mean per-token
@@ -18,9 +18,7 @@ from rag_evidence.attribution.scoring import LogprobScorer
 from rag_evidence.data.schema import Passage
 
 
-def top_k_ids(
-    raw_scores: Mapping[str, float], original_order: Sequence[str], k: int
-) -> list[str]:
+def top_k_ids(raw_scores: Mapping[str, float], original_order: Sequence[str], k: int) -> list[str]:
     """Top-k passage ids by raw score; ties break by original context position."""
     pos = {pid: i for i, pid in enumerate(original_order)}
     ordered = sorted(raw_scores, key=lambda pid: (-raw_scores[pid], pos[pid]))

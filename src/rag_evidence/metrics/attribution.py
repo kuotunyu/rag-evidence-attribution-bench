@@ -12,9 +12,7 @@ from collections.abc import Mapping, Sequence
 from rag_evidence.metrics.retrieval import ndcg_at_k  # same binary-gain definition
 
 
-def rank_passages(
-    raw_scores: Mapping[str, float], original_order: Sequence[str]
-) -> list[str]:
+def rank_passages(raw_scores: Mapping[str, float], original_order: Sequence[str]) -> list[str]:
     pos = {pid: i for i, pid in enumerate(original_order)}
     return sorted(raw_scores, key=lambda pid: (-raw_scores[pid], pos[pid]))
 

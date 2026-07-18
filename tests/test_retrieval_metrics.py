@@ -51,7 +51,7 @@ def test_to_ranked_deterministic_tiebreak() -> None:
     assert [r.rank for r in ranked] == [1, 2, 3]
 
 
-def _example(fixtures_dir: Path, i: int):  # noqa: ANN202
+def _example(fixtures_dir: Path, i: int):
     rows = json.loads((fixtures_dir / "tiny_hotpot.json").read_text(encoding="utf-8"))["rows"]
     return build_example(normalize_hf_example(rows[i]))
 
@@ -83,14 +83,14 @@ class _StubEmbedder:
     def _vec(self, text: str) -> np.ndarray:
         v = np.zeros(64, dtype=np.float32)
         for tok in text.lower().split():
-            v[hash(tok) % 64] += 1.0  # noqa: RUF032 — test-only, in-process determinism is enough
+            v[hash(tok) % 64] += 1.0
         n = np.linalg.norm(v)
         return v / n if n else v
 
-    def embed_queries(self, texts, batch_size: int = 1):  # noqa: ANN001, ANN202
+    def embed_queries(self, texts, batch_size: int = 1):
         return np.stack([self._vec(t) for t in texts])
 
-    def embed_passages(self, texts, batch_size: int = 1):  # noqa: ANN001, ANN202
+    def embed_passages(self, texts, batch_size: int = 1):
         return np.stack([self._vec(t) for t in texts])
 
 

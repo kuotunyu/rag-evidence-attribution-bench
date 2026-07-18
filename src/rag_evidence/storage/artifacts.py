@@ -70,7 +70,9 @@ def read_records(path: Path) -> Iterator[dict[str, Any]]:
         yield obj
 
 
-def completed_keys(path: Path, key_fields: Sequence[str] = ("question_id",)) -> set[tuple[Any, ...]]:
+def completed_keys(
+    path: Path, key_fields: Sequence[str] = ("question_id",)
+) -> set[tuple[Any, ...]]:
     """Dedup keys of all completed records; empty set if the file does not exist."""
     if not path.exists():
         return set()

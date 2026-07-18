@@ -30,9 +30,7 @@ _SYSTEM_V1 = (
 )
 
 _USER_TEMPLATE_V1 = (
-    "Passages:\n{passages_block}\n\n"
-    "Question: {question}\n\n"
-    "Short answer with citations:"
+    "Passages:\n{passages_block}\n\nQuestion: {question}\n\nShort answer with citations:"
 )
 
 PROMPT_VERSIONS: dict[str, dict[str, str]] = {
@@ -73,9 +71,7 @@ def build_messages(
         if alias is None:
             raise ValueError(f"passage {p.passage_id} missing from alias_map")
         lines.append(f"[{alias}] {p.title}: {p.text}")
-    user = parts["user_template"].format(
-        passages_block="\n".join(lines), question=question.strip()
-    )
+    user = parts["user_template"].format(passages_block="\n".join(lines), question=question.strip())
     return [
         {"role": "system", "content": parts["system"]},
         {"role": "user", "content": user},

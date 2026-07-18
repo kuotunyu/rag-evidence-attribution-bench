@@ -1,6 +1,6 @@
 """Leave-one-passage-out: the primary CAUSAL baseline.
 
-raw_score(passage) = logprob(target | full context) − logprob(target | context − passage)
+raw_score(passage) = logprob(target | full context) - logprob(target | context minus passage)
 under teacher forcing. Higher = removing the passage hurts more = more causally
 important; negative values (helpful-to-remove distractors) are legitimate and kept.
 

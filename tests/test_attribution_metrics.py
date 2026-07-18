@@ -6,8 +6,8 @@ import pytest
 from sklearn.metrics import average_precision_score
 
 from rag_evidence.metrics.attribution import (
-    average_precision,
     attribution_ndcg,
+    average_precision,
     prf_at_k,
     rank_passages,
 )

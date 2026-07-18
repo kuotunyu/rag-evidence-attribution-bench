@@ -33,8 +33,5 @@ class DenseRetriever:
         query_vec = self.embedder.embed_queries([example.question], batch_size=1)[0]
         scores = passage_vecs @ query_vec
         return to_ranked(
-            [
-                (p.passage_id, float(s))
-                for p, s in zip(example.passages, scores, strict=True)
-            ]
+            [(p.passage_id, float(s)) for p, s in zip(example.passages, scores, strict=True)]
         )

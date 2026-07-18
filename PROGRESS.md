@@ -10,11 +10,11 @@
 | M0 | Repo scaffold (pyproject/uv, CLI skeleton, configs, docs) | ✅ done | `uv sync --extra ml --extra app` + `uv run python -m rag_evidence.cli --help` |
 | M1 | storage / config / telemetry + tests | ✅ done (31 tests green) | `uv run pytest tests/test_config.py tests/test_artifacts.py tests/test_runmeta.py` |
 | M2 | data layer + REAL HotpotQA prepare + split manifest | 🔄 code done, real run in progress | `uv run python -m rag_evidence.cli data prepare --config configs/smoke.yaml` |
-| M3 | retrieval (bm25 / dense / hybrid) + REAL CPU runs | 🔄 bm25 real runs done (all splits); dense smoke running | `uv run python -m rag_evidence.cli retrieve --method bm25 --config configs/smoke.yaml` |
+| M3 | retrieval (bm25 / dense / hybrid) + REAL CPU runs | ✅ done — real: bm25 all splits, dense+hybrid smoke (20/20 each, 0 failures) | `uv run python -m rag_evidence.cli status --config configs/smoke.yaml` |
 | M4 | generation module (QwenBackend + FakeLM, checkpoint/--resume) | ✅ done (mocked tests; real gen = Colab) | `uv run pytest tests/test_resume.py tests/test_citation_parser.py` |
 | M5 | attribution (3 methods + 5 controls + faithfulness) | ✅ done (FakeLM-verified; real numbers = Colab) | `uv run pytest tests/test_attribution_runner.py tests/test_sufficiency.py` |
-| M6 | evaluate + report (mode A/B, summary.json, README injection) | ⬜ pending | `uv run python -m rag_evidence.cli evaluate --config configs/smoke.yaml` |
-| M7 | FastAPI + Gradio explorer + serve | ⬜ pending | `uv run pytest tests/test_api.py` |
+| M6 | evaluate + report (mode A/B, summary.json, README injection) | ✅ done — real retrieval numbers in README; PENDING blocks machine-generated; partial-run guard + mock gating tested | `uv run python -m rag_evidence.cli evaluate --config configs/smoke.yaml` |
+| M7 | FastAPI + Gradio explorer + serve | ✅ done (TestClient 10/10; store torch-free) | `uv run pytest tests/test_api.py tests/test_store.py` |
 | M8 | Docker (CPU, no torch) + CI | ⬜ pending | `docker compose up` → GET /health |
 | M9 | Colab notebooks + export / import-results / status | ⬜ pending | `uv run pytest` (full CPU gate) |
 | M10 | ContextCite adapter attempt (4h stop-loss) | ⬜ pending | — |
@@ -63,3 +63,11 @@
   Linux/Colab unaffected. Recorded in FAILURES.md. Lock: transformers 5.14.1 kept.
 - M0+M1 verified: `uv sync` clean, CLI help/version OK, **pytest 31 passed** (artifacts/config/
   runmeta/ids/supporting-facts/splits). Committed. M2 real `data prepare` started (~613MB download).
+- M2 real run done: 7405 validation examples, manifest committed (seed 20260718, 320 fingerprints,
+  eval locked), idempotent rerun verified. M3 real runs: bm25 20/60/240 all 0-fail; dense smoke
+  20/20 on CPU (median ~54s/q — honest CPU number); hybrid_rrf smoke 20/20.
+- M4+M5+M6+M7 done, **pytest 82 passed, ruff clean, mypy clean (51 files)**. Real retrieval tables
+  live in README via `report`; generation/attribution show machine-generated PENDING.
+- Integrity hardening from a live near-miss: evaluate initially aggregated the still-running dense
+  run → added partial-run guard (`--allow-partial` + `partial` flags + ⚠ labels in tables).
+- samples.jsonl now emitted per split (explorer works without dataset download; CC BY-SA noted).

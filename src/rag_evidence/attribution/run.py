@@ -13,7 +13,7 @@ import logging
 import time
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import rag_evidence.attribution  # noqa: F401 — registers built-in methods
 from rag_evidence.attribution.base import (
@@ -153,13 +153,13 @@ def _sample_context(
 
 def _build_resources(
     cfg: AppConfig, method_obj: AttributionMethod, *, need_faithfulness: bool
-) -> tuple[ModelResources, LogprobScorer | None, dict[str, Any] | None, str]:
+) -> tuple[ModelResources, LogprobScorer | None, dict[str, Any] | None, Literal["real", "mock"]]:
     """Load only what the method + faithfulness need. Returns
     (resources, scorer, faithfulness_unavailable_error, execution_kind)."""
     resources = ModelResources()
     scorer: LogprobScorer | None = None
     faith_error: dict[str, Any] | None = None
-    execution_kind = "real"
+    execution_kind: Literal["real", "mock"] = "real"
 
     needs_generator = method_obj.requires_generator or need_faithfulness
     if needs_generator:
@@ -189,9 +189,7 @@ def _build_resources(
                 raise  # the method itself cannot run — abort the whole run
             # only faithfulness wanted the generator: degrade openly, never silently
             faith_error = {"type": "GpuRequiredError", "message": str(exc)[:300]}
-            logger.warning(
-                "faithfulness passes skipped for this run (no GPU here): %s", exc
-            )
+            logger.warning("faithfulness passes skipped for this run (no GPU here): %s", exc)
 
     if method_obj.requires_embedder:
         from rag_evidence.embeddings import Embedder, EmbeddingCache, model_tag
@@ -220,9 +218,7 @@ def run_attribution_stage(
     for m in modes:
         if m == "gold" and not method_obj.supports_teacher_forced:
             if mode is not None:  # explicitly requested → that's a config error
-                raise ConfigError(
-                    f"method {method!r} does not support teacher-forced (gold) mode"
-                )
+                raise ConfigError(f"method {method!r} does not support teacher-forced (gold) mode")
             logger.info("method %s does not support mode 'gold' — skipping that mode", method)
             continue
         if m == "generated" and not method_obj.supports_generated:
@@ -233,7 +229,7 @@ def run_attribution_stage(
         _run_one_mode(cfg, method_obj, method, m, resume=resume, limit=limit)
 
 
-def _run_one_mode(  # noqa: PLR0915 — one linear pipeline, split further hurts readability
+def _run_one_mode(
     cfg: AppConfig,
     method_obj: AttributionMethod,
     method: str,

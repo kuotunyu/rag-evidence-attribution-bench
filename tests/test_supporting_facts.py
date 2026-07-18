@@ -8,7 +8,7 @@ from pathlib import Path
 from rag_evidence.data.hotpot import build_example, normalize_hf_example
 
 
-def _example(fixtures_dir: Path, i: int):  # noqa: ANN202
+def _example(fixtures_dir: Path, i: int):
     rows = json.loads((fixtures_dir / "tiny_hotpot.json").read_text(encoding="utf-8"))["rows"]
     return build_example(normalize_hf_example(rows[i]))
 

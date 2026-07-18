@@ -35,7 +35,7 @@ def test_minimal_config_defaults(tmp_path: Path) -> None:
 
 
 def test_unknown_key_rejected(tmp_path: Path) -> None:
-    with pytest.raises(ConfigError, match="extra_forbidden|not permitted|Extra inputs"):
+    with pytest.raises(ConfigError, match=r"extra_forbidden|not permitted|Extra inputs"):
         load_config(_write(tmp_path, MINIMAL + "\ntypo_key: 1\n"))
 
 

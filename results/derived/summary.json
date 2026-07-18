@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "splits": {
+    "smoke": {
+      "n_questions": 20,
+      "retrieval": {
+        "bm25": {
+          "run": "results/raw/smoke/retrieve/bm25",
+          "execution_kind": "real",
+          "partial": false,
+          "device": "cpu",
+          "n_evaluated": 20,
+          "n_failed": 0,
+          "failure_rate": 0.0,
+          "recall_at": {
+            "2": 0.65,
+            "5": 0.725,
+            "10": 1.0
+          },
+          "mrr": 0.8520833333333332,
+          "ndcg_at_10": 0.8317348569133765,
+          "latency_ms": {
+            "mean": 1.0865500000000001,
+            "p50": 1.02,
+            "p95": 1.38
+          }
+        },
+        "dense": {
+          "run": "results/raw/smoke/retrieve/dense",
+          "execution_kind": "real",
+          "partial": false,
+          "device": "cpu",
+          "n_evaluated": 20,
+          "n_failed": 0,
+          "failure_rate": 0.0,
+          "recall_at": {
+            "2": 0.625,
+            "5": 0.85,
+            "10": 1.0
+          },
+          "mrr": 0.8738095238095237,
+          "ndcg_at_10": 0.848561854156122,
+          "latency_ms": {
+            "mean": 68923.51705,
+            "p50": 54265.473,
+            "p95": 135512.803
+          }
+        },
+        "hybrid_rrf": {
+          "run": "results/raw/smoke/retrieve/hybrid_rrf",
+          "execution_kind": "real",
+          "partial": false,
+          "device": "cpu",
+          "n_evaluated": 20,
+          "n_failed": 0,
+          "failure_rate": 0.0,
+          "recall_at": {
+            "2": 0.625,
+            "5": 0.85,
+            "10": 1.0
+          },
+          "mrr": 0.8138888888888889,
+          "ndcg_at_10": 0.8194735297718058,
+          "latency_ms": {
+            "mean": 0.27305,
+            "p50": 0.049,
+            "p95": 0.072
+          }
+        }
+      },
+      "generation": {},
+      "attribution": {}
+    },
+    "dev": {
+      "n_questions": 60,
+      "retrieval": {
+        "bm25": {
+          "run": "results/raw/dev/retrieve/bm25",
+          "execution_kind": "real",
+          "n_evaluated": 60,
+          "n_failed": 0,
+          "failure_rate": 0.0,
+          "recall_at": {
+            "2": 0.6,
+            "5": 0.7416666666666667,
+            "10": 1.0
+          },
+          "mrr": 0.8605753968253969,
+          "ndcg_at_10": 0.8206018451668017,
+          "latency_ms": {
+            "mean": 1.0904500000000004,
+            "p50": 1.074,
+            "p95": 1.448
+          }
+        }
+      },
+      "generation": {},
+      "attribution": {}
+    },
+    "eval": {
+      "n_questions": 240,
+      "retrieval": {
+        "bm25": {
+          "run": "results/raw/eval/retrieve/bm25",
+          "execution_kind": "real",
+          "n_evaluated": 240,
+          "n_failed": 0,
+          "failure_rate": 0.0,
+          "recall_at": {
+            "2": 0.5979166666666667,
+            "5": 0.8229166666666666,
+            "10": 1.0
+          },
+          "mrr": 0.8620419973544973,
+          "ndcg_at_10": 0.8306478620219401,
+          "latency_ms": {
+            "mean": 1.168375,
+            "p50": 1.106,
+            "p95": 1.678
+          }
+        }
+      },
+      "generation": {},
+      "attribution": {}
+    }
+  },
+  "generated_utc": "2026-07-18T18:04:59Z",
+  "package_version": "0.1.0",
+  "dataset_hash": "aa57b60128d8f13286ad4b72249e0b5c845ec4f670f78f528d59e99af650a6e9",
+  "primary_k": 2
+}
