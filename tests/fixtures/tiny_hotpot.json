@@ -1,0 +1,68 @@
+{
+  "_comment": "SYNTHETIC HotpotQA-shaped fixture in HF parallel-array row format. All text is invented for tests — this is NOT HotpotQA data.",
+  "rows": [
+    {
+      "id": "fixt000000000000000000a1",
+      "question": "In which city is the headquarters of the company that makes the Zephyr 9 drone?",
+      "answer": "Blueport",
+      "type": "bridge",
+      "level": "medium",
+      "context": {
+        "title": ["Zephyr 9", "Aerodyne Labs", "Blueport Harbor", "Kite Festival", "Marn River"],
+        "sentences": [
+          ["The Zephyr 9 is a lightweight survey drone.", "It is manufactured by Aerodyne Labs."],
+          ["Aerodyne Labs is a robotics company.", "Its headquarters are in the city of Blueport.", "It was founded in 2004."],
+          ["Blueport Harbor is a fishing port.", "It hosts a yearly regatta."],
+          ["The Kite Festival is held every spring.", "Children fly paper kites."],
+          ["The Marn River flows through several valleys."]
+        ]
+      },
+      "supporting_facts": {
+        "title": ["Zephyr 9", "Aerodyne Labs"],
+        "sent_id": [1, 1]
+      }
+    },
+    {
+      "id": "fixt000000000000000000b2",
+      "question": "Were the painter of 'Grey Morning' and the sculptor of 'Iron Bloom' both born in Tallvik?",
+      "answer": "yes",
+      "type": "comparison",
+      "level": "hard",
+      "context": {
+        "title": ["Grey Morning", "Iron Bloom", "Tallvik", "Salt Cellar Museum", "Nera Falls"],
+        "sentences": [
+          ["Grey Morning is an oil painting.", "It was painted by Ilsa Kron, who was born in Tallvik."],
+          ["Iron Bloom is a public sculpture.", "Its sculptor Odd Varen was born in Tallvik.", "It stands in a plaza."],
+          ["Tallvik is a small northern town."],
+          ["The Salt Cellar Museum displays regional art."],
+          ["Nera Falls is a waterfall popular with hikers."]
+        ]
+      },
+      "supporting_facts": {
+        "title": ["Grey Morning", "Iron Bloom", "Iron Bloom"],
+        "sent_id": [1, 1, 7]
+      }
+    },
+    {
+      "id": "fixt000000000000000000c3",
+      "question": "What instrument does the founder of the Quiet Hollow ensemble play?",
+      "answer": "cello",
+      "type": "bridge",
+      "level": "easy",
+      "context": {
+        "title": ["Quiet Hollow", "Mira Voss", "Reed Valley Hall", "Winter Chorale", "Pine Radio"],
+        "sentences": [
+          ["Quiet Hollow is a chamber music ensemble.", "It was founded by Mira Voss."],
+          ["Mira Voss is a musician.", "She plays the cello."],
+          ["Reed Valley Hall hosts weekly concerts."],
+          ["The Winter Chorale performs in December."],
+          ["Pine Radio broadcasts folk music at night."]
+        ]
+      },
+      "supporting_facts": {
+        "title": ["Quiet Hollow", "Mira Voss", "Ghost Article"],
+        "sent_id": [1, 1, 0]
+      }
+    }
+  ]
+}

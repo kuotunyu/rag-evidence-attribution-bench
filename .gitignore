@@ -1,0 +1,46 @@
+# environments / caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# secrets & env
+.env
+*.token
+
+# data & model weights — never committed
+models/
+*.safetensors
+*.bin
+*.gguf
+*.ckpt
+.cache/
+huggingface/
+
+# keep the committed split manifest despite data/ being ignored
+!data/
+data/*
+!data/manifests/
+data/manifests/*
+!data/manifests/split_manifest.json
+
+# heavy raw artifacts — committed raw results are JSONL/JSON only
+results/raw/**/embeddings/
+results/raw/cache/
+results/**/*.pt
+results/**/*.npy
+results/**/*.npz
+results/export/
+
+# notebooks
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

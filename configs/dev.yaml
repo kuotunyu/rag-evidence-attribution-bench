@@ -1,0 +1,73 @@
+# Development split: 60 questions. For iteration; never tune on the locked eval split.
+run_name: dev
+split: dev
+seed: 42
+
+data:
+  hf_path: hotpotqa/hotpot_qa
+  hf_config: distractor
+  hf_split: validation
+  hf_revision: null
+  manifest_path: data/manifests/split_manifest.json
+  prepared_dir: data/prepared
+  split_seed: 20260718
+  split_sizes:
+    smoke: 20
+    dev: 60
+    eval: 240
+
+paths:
+  data_dir: data
+  results_raw: results/raw
+  results_derived: results/derived
+  assets_dir: assets
+
+retrieval:
+  ks: [2, 5, 10]
+  rrf_k: 60
+  bm25:
+    k1: 1.5
+    b: 0.75
+  dense:
+    model_id: Qwen/Qwen3-Embedding-0.6B
+    batch_size: 16
+    max_length: 1024
+    normalize: true
+
+generation:
+  model_id: Qwen/Qwen3-4B-Instruct-2507
+  name: qwen3-4b
+  backend: qwen
+  dtype: auto
+  quantization: none
+  fallback_4bit: true
+  max_new_tokens: 256
+  context_source: dataset
+  retrieval_run: null
+  top_k_context: 10
+  prompt_version: v1
+
+attribution:
+  modes: [gold, generated]
+  faithfulness:
+    enabled: true
+    k: 2
+  embedding:
+    model_id: Qwen/Qwen3-Embedding-0.6B
+  controls:
+    retrieval_run: bm25
+    shuffled_source: leave_one_out
+
+evaluation:
+  attribution_ks: [1, 2, 3]
+  primary_k: 2
+  correctness_criterion: em
+
+runtime:
+  device: auto
+  log_level: INFO
+
+serve:
+  mode: precomputed
+  host: 127.0.0.1
+  port: 8000
