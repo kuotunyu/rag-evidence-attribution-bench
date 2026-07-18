@@ -10,9 +10,9 @@
 | M0 | Repo scaffold (pyproject/uv, CLI skeleton, configs, docs) | ✅ done | `uv sync --extra ml --extra app` + `uv run python -m rag_evidence.cli --help` |
 | M1 | storage / config / telemetry + tests | ✅ done (31 tests green) | `uv run pytest tests/test_config.py tests/test_artifacts.py tests/test_runmeta.py` |
 | M2 | data layer + REAL HotpotQA prepare + split manifest | 🔄 code done, real run in progress | `uv run python -m rag_evidence.cli data prepare --config configs/smoke.yaml` |
-| M3 | retrieval (bm25 / dense / hybrid) + REAL CPU runs | ⬜ pending | `uv run python -m rag_evidence.cli retrieve --method bm25 --config configs/smoke.yaml` |
-| M4 | generation module (QwenBackend + FakeLM, checkpoint/--resume) | ⬜ pending | `uv run pytest tests/test_resume.py` |
-| M5 | attribution (3 methods + 5 controls + faithfulness) | ⬜ pending | `uv run pytest tests/test_attribution_metrics.py tests/test_sufficiency.py` |
+| M3 | retrieval (bm25 / dense / hybrid) + REAL CPU runs | 🔄 bm25 real runs done (all splits); dense smoke running | `uv run python -m rag_evidence.cli retrieve --method bm25 --config configs/smoke.yaml` |
+| M4 | generation module (QwenBackend + FakeLM, checkpoint/--resume) | ✅ done (mocked tests; real gen = Colab) | `uv run pytest tests/test_resume.py tests/test_citation_parser.py` |
+| M5 | attribution (3 methods + 5 controls + faithfulness) | ✅ done (FakeLM-verified; real numbers = Colab) | `uv run pytest tests/test_attribution_runner.py tests/test_sufficiency.py` |
 | M6 | evaluate + report (mode A/B, summary.json, README injection) | ⬜ pending | `uv run python -m rag_evidence.cli evaluate --config configs/smoke.yaml` |
 | M7 | FastAPI + Gradio explorer + serve | ⬜ pending | `uv run pytest tests/test_api.py` |
 | M8 | Docker (CPU, no torch) + CI | ⬜ pending | `docker compose up` → GET /health |

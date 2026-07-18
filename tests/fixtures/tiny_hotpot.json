@@ -63,6 +63,48 @@
         "title": ["Quiet Hollow", "Mira Voss", "Ghost Article"],
         "sent_id": [1, 1, 0]
       }
+    },
+    {
+      "id": "fixt000000000000000000d4",
+      "question": "Which harbor town is home to the lighthouse painted by the author of 'Tide Charts'?",
+      "answer": "Gullwick",
+      "type": "bridge",
+      "level": "medium",
+      "context": {
+        "title": ["Tide Charts", "Rees Alder", "Gullwick Light", "Copper Kettle", "Fenn Moor"],
+        "sentences": [
+          ["Tide Charts is a memoir.", "It was written by Rees Alder."],
+          ["Rees Alder is a writer and amateur painter.", "Alder painted the Gullwick Light lighthouse."],
+          ["The Gullwick Light stands in the harbor town of Gullwick."],
+          ["The Copper Kettle is a tea house."],
+          ["Fenn Moor is a protected wetland."]
+        ]
+      },
+      "supporting_facts": {
+        "title": ["Tide Charts", "Rees Alder", "Gullwick Light"],
+        "sent_id": [1, 1, 0]
+      }
+    },
+    {
+      "id": "fixt000000000000000000e5",
+      "question": "Did the architect of the Lark Bridge also design the Sorrel Pavilion?",
+      "answer": "no",
+      "type": "comparison",
+      "level": "hard",
+      "context": {
+        "title": ["Lark Bridge", "Sorrel Pavilion", "Bess Hartle", "Juno Marsh", "Old Granary"],
+        "sentences": [
+          ["The Lark Bridge is a footbridge.", "It was designed by Bess Hartle."],
+          ["The Sorrel Pavilion is a garden structure.", "It was designed by Juno Marsh."],
+          ["Bess Hartle is a structural engineer."],
+          ["Juno Marsh is a landscape architect."],
+          ["The Old Granary was converted into studios."]
+        ]
+      },
+      "supporting_facts": {
+        "title": ["Lark Bridge", "Sorrel Pavilion"],
+        "sent_id": [1, 1]
+      }
     }
   ]
 }

@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "run_id": "dev_retrieve_bm25_20260718T173158Z",
+  "stage": "retrieve",
+  "name": "bm25",
+  "split": "dev",
+  "run_name": "dev",
+  "execution_kind": "real",
+  "config_hash": "sha256:151f27c31bc13e4f1acd200bbbc7df961f8be55499eef020406038f30dfa625a",
+  "config_scientific": {
+    "stage": "retrieve",
+    "split": "dev",
+    "seed": 42,
+    "data": {
+      "hf_path": "hotpotqa/hotpot_qa",
+      "hf_config": "distractor",
+      "hf_split": "validation",
+      "hf_revision": null,
+      "split_seed": 20260718,
+      "split_sizes": {
+        "smoke": 20,
+        "dev": 60,
+        "eval": 240
+      }
+    },
+    "retrieval": {
+      "method": "bm25",
+      "bm25": {
+        "k1": 1.5,
+        "b": 0.75
+      }
+    },
+    "method": "bm25"
+  },
+  "package_version": "0.1.0",
+  "started_utc": "2026-07-18T17:31:58Z",
+  "finished_utc": "2026-07-18T17:32:03Z",
+  "status": "completed",
+  "expected_count": 60,
+  "limit": null,
+  "n_attempted": 60,
+  "n_success": 60,
+  "n_failed": 0,
+  "n_skipped": 0,
+  "env": {
+    "python": "3.11.7",
+    "platform": "win32",
+    "machine": "AMD64",
+    "torch": "2.6.0+cpu",
+    "cuda": null,
+    "gpu_name": null,
+    "gpu_total_vram_mb": null
+  },
+  "libs": {
+    "torch": "2.6.0+cpu",
+    "transformers": "5.14.1",
+    "tokenizers": "0.22.2",
+    "accelerate": "1.14.0",
+    "bitsandbytes": null,
+    "datasets": "5.0.0"
+  },
+  "model": {},
+  "run_peak_vram_mb": null,
+  "total_wall_s": 0.21,
+  "resume_events": [],
+  "notes": ""
+}
