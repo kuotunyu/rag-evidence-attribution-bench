@@ -321,6 +321,7 @@ def _run_one_mode(
             "seed": cfg.seed,
             "question_id": example.question_id,
             "alias_map": sample.alias_map,
+            "prompt_version": cfg.generation.prompt_version,
             "scorer": scorer,
             "generation_record": sample.generation_record,
             "retrieval_run_name": cfg.attribution.controls.retrieval_run,

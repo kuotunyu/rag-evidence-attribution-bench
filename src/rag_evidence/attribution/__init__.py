@@ -6,6 +6,7 @@ adapters whose third-party dependency is installed.
 
 from rag_evidence.attribution import (  # noqa: F401
     adapters,
+    arc_jsd,
     citation,
     controls,
     embedding,

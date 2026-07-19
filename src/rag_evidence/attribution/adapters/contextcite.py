@@ -51,7 +51,7 @@ def _build_partitioner(passage_texts: list[str]) -> Any:
 
         def get_context(self, mask: Any = None) -> str:
             if mask is None:
-                return self.context
+                return str(self.context)
             kept = [p for p, keep in zip(self.parts, mask, strict=True) if keep]
             return _SEPARATOR.join(kept)
 

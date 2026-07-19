@@ -1,0 +1,24 @@
+# Legacy environment for reproducing the OFFICIAL ARC-JSD implementation.
+# Pins follow ruizheliUOA/ARC_JSD (transformers 4.43.3 predates Qwen3 — that is the
+# whole reason this environment exists). Intended for Linux/Colab; not part of the
+# main lock, never imported by src/rag_evidence.
+
+[project]
+name = "arc-jsd-legacy"
+version = "0.0.1"
+description = "Isolated environment reproducing the official ARC-JSD flow (arXiv:2505.16415)"
+requires-python = ">=3.10,<3.12"
+dependencies = [
+    "transformers==4.43.3",
+    "torch>=2.4,<2.5",
+    "accelerate>=0.33",
+    "datasets>=2.20,<3.0",
+    "numpy==1.26.*",
+    "spacy==3.8.*",
+    "nltk>=3.8.2",
+    "tqdm",
+]
+
+[tool.uv]
+# resolution target is Linux (Colab); the Win10 dev box cannot run this stack anyway
+environments = ["sys_platform == 'linux'"]

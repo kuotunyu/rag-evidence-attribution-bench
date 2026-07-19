@@ -59,6 +59,11 @@ class GeneratorBackend(Protocol):
 
     def target_logprob(self, messages: list[dict[str, str]], target: str) -> TargetScore: ...
 
+    def target_distributions(self, messages: list[dict[str, str]], target: str) -> Any:
+        """Teacher-forced next-token LOG-prob distributions at each target position:
+        float32 array [n_target_tokens, vocab] on CPU (numpy). Used by ARC-JSD."""
+        ...
+
     def info(self) -> dict[str, Any]: ...
 
 
@@ -219,6 +224,21 @@ class QwenBackend:
             num_target_tokens=int(target_ids.shape[-1]),
         )
 
+    def target_distributions(self, messages: list[dict[str, str]], target: str) -> Any:
+        torch = self._torch
+        prompt_ids = self._render(messages, add_generation_prompt=True)["input_ids"]
+        target_ids = self._tokenizer(target, return_tensors="pt", add_special_tokens=False)[
+            "input_ids"
+        ].to(prompt_ids.device)
+        if target_ids.shape[-1] == 0:
+            raise RagEvidenceError("empty target for distribution scoring")
+        input_ids = torch.cat([prompt_ids, target_ids], dim=-1)
+        with torch.inference_mode():
+            logits = self._model(input_ids).logits
+        n_prompt = prompt_ids.shape[-1]
+        pred_slice = logits[0, n_prompt - 1 : -1, :].float()
+        return torch.log_softmax(pred_slice, dim=-1).cpu().numpy()
+
 
 # ------------------------------------------------------------------------------- FakeLM
 
@@ -304,6 +324,34 @@ class FakeLM:
         score = base + sum(self.passage_weight(title, text, target) for _a, title, text in passages)
         n_tokens = max(1, len(target.split()))
         return TargetScore(sum_logprob=score, num_target_tokens=n_tokens)
+
+    _FAKE_VOCAB = 32
+
+    def target_distributions(self, messages: list[dict[str, str]], target: str) -> Any:
+        """Deterministic fake distributions with the same design property as
+        target_logprob: removing an 'important' passage (weight ~2.0) shifts the
+        distribution strongly, so ARC-JSD recovers important passages."""
+        import numpy as np
+
+        _question, passages = self._parse(messages)
+        n_tokens = max(1, len(target.split()))
+
+        def direction(material: str) -> Any:
+            seed = int.from_bytes(hashlib.sha256(material.encode("utf-8")).digest()[:8], "big")
+            rng = np.random.default_rng(seed)
+            v = rng.standard_normal(self._FAKE_VOCAB)
+            return v / np.linalg.norm(v)
+
+        rows = []
+        for i in range(n_tokens):
+            logits = direction(f"base:{target}:{i}")
+            for _alias, title, text in passages:
+                weight = self.passage_weight(title, text, target)
+                logits = logits + weight * direction(f"dir:{title}:{i}")
+            logits = logits - logits.max()
+            log_probs = logits - np.log(np.exp(logits).sum())
+            rows.append(log_probs.astype(np.float32))
+        return np.stack(rows)
 
 
 # ------------------------------------------------------------------------------ factory
