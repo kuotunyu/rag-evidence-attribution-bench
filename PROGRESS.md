@@ -18,21 +18,21 @@
 | M8 | Docker (CPU, no torch) + CI | ✅ done — real build + /health probe passed (240 eval samples served) | `docker build -t rag-evidence . && docker run -d -p 8000:8000 rag-evidence` → GET /health |
 | M9 | Colab notebooks + export / import-results / status | ✅ done — 3 notebooks nbformat-valid; bundle 1.9MB built; transfer round-trip tested | `uv run python scripts/make_colab_bundle.py` |
 | M10 | ContextCite adapter attempt (4h stop-loss) | ✅ SUCCEEDED (~1h) — works vs transformers 5.14; passage-level partitioner; real CPU run verified | `uv run python -m rag_evidence.cli attribute --method contextcite …` (Colab) |
-| M11 | ARC-JSD legacy env + experimental native method | ⬜ pending | — |
-| M12 | docs finalization + final commit | ⬜ pending | — |
+| M11 | ARC-JSD legacy env + experimental native method | ✅ done — native `arc_jsd` (FakeLM-tested, EXPERIMENTAL) + legacy/arc_jsd/ env + official-repro notebook | `uv run pytest tests/test_arc_jsd.py` |
+| M12 | docs finalization + final commit | ✅ done | read README.md / DATA_CARD.md / MODEL_CARD.md |
 
 ## Acceptance checklist (from spec)
 
-| Item | State | Flips when |
+| Item | State | Notes |
 |------|-------|-----------|
-| 20-question smoke end-to-end success | ⏳ pending-Colab | user runs `notebooks/00_colab_smoke.ipynb`, results imported via `import-results` |
-| BM25 + dense retrieval working | ⬜ pending-local | M3 real CPU runs |
-| ≥ 3 attribution methods | ⬜ pending-local (code + mocked tests) | M5; real numbers pending-Colab |
-| Teacher-forced vs generated-correct reported separately | ⬜ pending-local | M6 (structure) + Colab run (numbers) |
-| Quality / latency / VRAM comparison | ⏳ pending-Colab | Colab smoke import |
-| Docker precomputed explorer boots | ⬜ pending-local | M8 real `docker compose up` + /health |
-| All README numbers generated from results/derived/summary.json | ⬜ pending-local | M6 report stage (PENDING block is already machine-generated) |
-| No fabricated results | ✅ enforced by design | `execution_kind: mock` gated out of README; PENDING blocks machine-generated |
+| 20-question smoke end-to-end success | ⏳ **pending-Colab (user action)** | run `notebooks/00_colab_smoke.ipynb`, then `import-results` + `evaluate` + `report` locally |
+| BM25 + dense retrieval working | ✅ verified-local (REAL) | bm25 20/60/240, dense+hybrid smoke 20/20, 0 failures; real numbers in README |
+| ≥ 3 attribution methods | ✅ code + mocked-e2e verified (6 methods + 5 controls) | real GPU numbers pending-Colab |
+| Teacher-forced vs generated-correct reported separately | ✅ verified (mock e2e + subset tests) | numbers pending-Colab |
+| Quality / latency / VRAM comparison | ⏳ pending-Colab | tables/figures render automatically once real runs are imported |
+| Docker precomputed explorer boots | ✅ verified-local (REAL) | container /health → 240 eval samples; /methods honest-empty for pending stages |
+| All README numbers generated from results/derived/summary.json | ✅ verified-local (REAL) | retrieval tables injected by `report`; PENDING blocks machine-generated |
+| No fabricated results | ✅ enforced by design + tested | `execution_kind: mock` gated out of README; partial-run guard; sha256 import gate |
 
 ## How to resume
 
@@ -79,3 +79,15 @@
 - M10 ContextCite: SUCCESS inside stop-loss — resolves+runs against transformers 5.14.1/torch 2.6;
   adapter reuses the loaded backend model (no double VRAM) + custom passage partitioner; caveat
   documented: it attributes its own regeneration (mode B only, mismatch flag recorded).
+- M11 ARC-JSD: native experimental `arc_jsd` method (mean positional JSD, teacher-forced;
+  target_distributions on both backends; JSD math unit-tested) + legacy/arc_jsd/ isolated env
+  (transformers 4.43.3) with official-repro notebook and validation protocol. EXPERIMENTAL label
+  stays until the user validates against the official Qwen2.5 flow on Colab.
+- M12: READMEs (en/zh-TW) finalized with real retrieval tables preserved; DATA_CARD carries the
+  real manifest fingerprints; MODEL_CARD lists all 6 methods + 5 controls with caveats.
+- **SESSION END STATE: all 13 milestones done. Final gate: 92 tests passed, ruff clean,
+  mypy clean. Remaining user actions: (1) rebuild bundle (`uv run python
+  scripts/make_colab_bundle.py`) and upload to Drive MyDrive/reab/, (2) run
+  00_colab_smoke.ipynb, (3) bring the export zip back for `import-results` — that flips the
+  three pending-Colab acceptance items. Optional later: 01_colab_run (dev+locked eval),
+  legacy ARC-JSD validation.**
