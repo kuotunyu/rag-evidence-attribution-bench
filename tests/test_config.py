@@ -55,6 +55,15 @@ def test_env_overrides_applied(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     assert cfg.paths.results_raw == "colab_results/raw"
 
 
+def test_env_override_may_be_absolute_but_yaml_may_not(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Colab points checkpoints at the Drive mount via env — absolute is allowed there
+    monkeypatch.setenv("RAG_EVIDENCE_RESULTS_RAW", "/content/drive/MyDrive/reab/results/raw")
+    cfg = load_config(_write(tmp_path, MINIMAL))
+    assert cfg.paths.results_raw.startswith("/content/")
+
+
 def test_resolve_device_and_dtype_cpu() -> None:
     assert resolve_device("cpu") == "cpu"
     # torch is installed as CPU build locally/CI, so auto must resolve to cpu

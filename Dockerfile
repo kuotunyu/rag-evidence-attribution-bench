@@ -10,10 +10,10 @@ WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project --extra app
-# project layer
+# project layer (--no-editable: the runtime stage copies only .venv, not src/)
 COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --extra app
+    uv sync --frozen --no-dev --no-editable --extra app
 
 FROM python:3.11-slim-bookworm AS runtime
 RUN useradd --create-home appuser

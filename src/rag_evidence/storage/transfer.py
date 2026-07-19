@@ -33,25 +33,34 @@ def _sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
-def _collect_files(cfg: AppConfig) -> list[Path]:
-    """Everything that travels: this split's raw dir, all derived, the split manifest."""
-    files: list[Path] = []
+def _collect_files(cfg: AppConfig) -> list[tuple[Path, str]]:
+    """(file, canonical arcname) pairs. Arcnames are ALWAYS the repo-relative form
+    (results/raw/<split>/…, results/derived/…, data/manifests/…) even when the live
+    results dirs are absolute (Colab writes checkpoints to a Drive mount via
+    RAG_EVIDENCE_RESULTS_* env overrides) — import always lands in the repo layout."""
+    pairs: list[tuple[Path, str]] = []
     raw_split = cfg.results_raw_dir / cfg.split
     if not raw_split.exists():
         raise ArtifactError(f"nothing to export: {raw_split} does not exist")
-    for base in (raw_split, cfg.results_derived_dir):
-        if base.exists():
-            files += [p for p in base.rglob("*") if p.is_file()]
+    for f in raw_split.rglob("*"):
+        if f.is_file():
+            rel = f.relative_to(raw_split).as_posix()
+            pairs.append((f, f"results/raw/{cfg.split}/{rel}"))
+    if cfg.results_derived_dir.exists():
+        for f in cfg.results_derived_dir.rglob("*"):
+            if f.is_file():
+                rel = f.relative_to(cfg.results_derived_dir).as_posix()
+                pairs.append((f, f"results/derived/{rel}"))
     if cfg.manifest_file.exists():
-        files.append(cfg.manifest_file)
-    return files
+        pairs.append((cfg.manifest_file, "data/manifests/split_manifest.json"))
+    return pairs
 
 
 def export_results(cfg: AppConfig, *, out: Path | None) -> None:
-    files = _collect_files(cfg)
+    pairs = _collect_files(cfg)
     # validate every JSONL parses before shipping (truncated tails are fine, mid-file
     # corruption is not — same rule as resume)
-    for f in files:
+    for f, _arc in pairs:
         if f.suffix == ".jsonl":
             for _ in read_records(f):
                 pass
@@ -69,12 +78,11 @@ def export_results(cfg: AppConfig, *, out: Path | None) -> None:
         "files": {},
     }
     with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-        for f in sorted(files):
-            arcname = f.as_posix()
+        for f, arcname in sorted(pairs, key=lambda p: p[1]):
             manifest["files"][arcname] = _sha256_file(f)
             zf.write(f, arcname)
         zf.writestr(EXPORT_MANIFEST, json.dumps(manifest, indent=2, ensure_ascii=False))
-    logger.info("exported %d files -> %s", len(files), out)
+    logger.info("exported %d files -> %s", len(pairs), out)
 
 
 def import_results(cfg: AppConfig, *, zip_path: Path) -> None:

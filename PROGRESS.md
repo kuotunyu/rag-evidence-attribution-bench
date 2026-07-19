@@ -15,9 +15,9 @@
 | M5 | attribution (3 methods + 5 controls + faithfulness) | ✅ done (FakeLM-verified; real numbers = Colab) | `uv run pytest tests/test_attribution_runner.py tests/test_sufficiency.py` |
 | M6 | evaluate + report (mode A/B, summary.json, README injection) | ✅ done — real retrieval numbers in README; PENDING blocks machine-generated; partial-run guard + mock gating tested | `uv run python -m rag_evidence.cli evaluate --config configs/smoke.yaml` |
 | M7 | FastAPI + Gradio explorer + serve | ✅ done (TestClient 10/10; store torch-free) | `uv run pytest tests/test_api.py tests/test_store.py` |
-| M8 | Docker (CPU, no torch) + CI | ⬜ pending | `docker compose up` → GET /health |
-| M9 | Colab notebooks + export / import-results / status | ⬜ pending | `uv run pytest` (full CPU gate) |
-| M10 | ContextCite adapter attempt (4h stop-loss) | ⬜ pending | — |
+| M8 | Docker (CPU, no torch) + CI | ✅ done — real build + /health probe passed (240 eval samples served) | `docker build -t rag-evidence . && docker run -d -p 8000:8000 rag-evidence` → GET /health |
+| M9 | Colab notebooks + export / import-results / status | ✅ done — 3 notebooks nbformat-valid; bundle 1.9MB built; transfer round-trip tested | `uv run python scripts/make_colab_bundle.py` |
+| M10 | ContextCite adapter attempt (4h stop-loss) | ✅ SUCCEEDED (~1h) — works vs transformers 5.14; passage-level partitioner; real CPU run verified | `uv run python -m rag_evidence.cli attribute --method contextcite …` (Colab) |
 | M11 | ARC-JSD legacy env + experimental native method | ⬜ pending | — |
 | M12 | docs finalization + final commit | ⬜ pending | — |
 
@@ -71,3 +71,11 @@
 - Integrity hardening from a live near-miss: evaluate initially aggregated the still-running dense
   run → added partial-run guard (`--allow-partial` + `partial` flags + ⚠ labels in tables).
 - samples.jsonl now emitted per split (explorer works without dataset download; CC BY-SA noted).
+- M8 real verification: docker build (2 fixes: Docker Desktop engine was off; editable-install
+  venv needed --no-editable) → container /health = 240 eval samples, /methods honest-empty for
+  generation/attribution. M9: notebooks validated, bundle 1.9MB, export/import sha256 round-trip
+  + zip-slip/conflict guards tested. Env-override paths may now be absolute (Colab Drive), YAML
+  paths still must be relative; export normalizes arcnames to repo-relative form.
+- M10 ContextCite: SUCCESS inside stop-loss — resolves+runs against transformers 5.14.1/torch 2.6;
+  adapter reuses the loaded backend model (no double VRAM) + custom passage partitioner; caveat
+  documented: it attributes its own regeneration (mode B only, mismatch flag recorded).

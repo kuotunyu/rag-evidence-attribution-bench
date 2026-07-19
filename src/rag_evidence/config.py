@@ -49,11 +49,6 @@ class DataConfig(_StrictModel):
         default_factory=lambda: {"smoke": 20, "dev": 60, "eval": 240}
     )
 
-    @field_validator("manifest_path", "prepared_dir")
-    @classmethod
-    def _rel(cls, v: str) -> str:
-        return _require_relative(v, "data path")
-
     @field_validator("split_sizes")
     @classmethod
     def _splits(cls, v: dict[str, int]) -> dict[str, int]:
@@ -69,11 +64,6 @@ class PathsConfig(_StrictModel):
     results_raw: str = "results/raw"
     results_derived: str = "results/derived"
     assets_dir: str = "assets"
-
-    @field_validator("data_dir", "results_raw", "results_derived", "assets_dir")
-    @classmethod
-    def _rel(cls, v: str) -> str:
-        return _require_relative(v, "paths entry")
 
 
 class BM25Config(_StrictModel):
@@ -107,13 +97,6 @@ class GenerationConfig(_StrictModel):
     retrieval_run: str | None = None
     top_k_context: int = 10
     prompt_version: str = "v1"
-
-    @field_validator("retrieval_run")
-    @classmethod
-    def _no_paths(cls, v: str | None) -> str | None:
-        if v is not None:
-            _require_relative(v, "generation.retrieval_run")
-        return v
 
 
 class FaithfulnessConfig(_StrictModel):
@@ -210,6 +193,29 @@ def _apply_env_overrides(raw: dict[str, Any]) -> dict[str, Any]:
     return raw
 
 
+_YAML_PATH_FIELDS: tuple[tuple[str, str], ...] = (
+    ("data", "manifest_path"),
+    ("data", "prepared_dir"),
+    ("paths", "data_dir"),
+    ("paths", "results_raw"),
+    ("paths", "results_derived"),
+    ("paths", "assets_dir"),
+)
+
+
+def _check_yaml_paths_relative(raw: dict[str, Any], source: Path) -> None:
+    """Paths written in a CONFIG FILE must be repo-relative (rule: no machine-specific
+    absolute paths in committed files). Env overrides (RAG_EVIDENCE_*) may be absolute —
+    that is exactly how Colab points checkpoints at a Drive mount."""
+    for section, key in _YAML_PATH_FIELDS:
+        value = (raw.get(section) or {}).get(key)
+        if isinstance(value, str):
+            try:
+                _require_relative(value, f"{section}.{key}")
+            except ValueError as exc:
+                raise ConfigError(f"invalid config {source}: {exc}") from exc
+
+
 def load_config(path: Path | str) -> AppConfig:
     """Load and validate a YAML config; raises ConfigError with a precise message."""
     p = Path(path)
@@ -221,6 +227,7 @@ def load_config(path: Path | str) -> AppConfig:
         raise ConfigError(f"invalid YAML in {p}: {exc}") from exc
     if not isinstance(raw, dict):
         raise ConfigError(f"config {p} must be a YAML mapping, got {type(raw).__name__}")
+    _check_yaml_paths_relative(raw, p)
     raw = _apply_env_overrides(raw)
     try:
         return AppConfig.model_validate(raw)

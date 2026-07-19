@@ -156,6 +156,15 @@ class QwenBackend:
             "quantization_effective": self.effective_quantization,
         }
 
+    @property
+    def hf_model(self) -> Any:
+        """The underlying transformers model — for adapters (ContextCite) that need it."""
+        return self._model
+
+    @property
+    def hf_tokenizer(self) -> Any:
+        return self._tokenizer
+
     def _render(self, messages: list[dict[str, str]], *, add_generation_prompt: bool) -> Any:
         return self._tokenizer.apply_chat_template(
             messages,

@@ -38,6 +38,9 @@ gpu = [
     "rag-evidence-attribution-bench[ml]",
     "bitsandbytes>=0.46; sys_platform == 'linux'",
 ]
+contextcite = [
+    "context-cite>=0.0.4",
+]
 
 [dependency-groups]
 dev = [
@@ -47,6 +50,7 @@ dev = [
     "mypy>=1.10",
     "httpx>=0.27",
     "types-PyYAML",
+    "nbformat>=5.10.4",
 ]
 
 [project.scripts]

@@ -1,6 +1,7 @@
 .git
 .venv
 data
+!data/manifests
 notebooks
 tests
 legacy
