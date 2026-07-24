@@ -85,6 +85,14 @@
   stays until the user validates against the official Qwen2.5 flow on Colab.
 - M12: READMEs (en/zh-TW) finalized with real retrieval tables preserved; DATA_CARD carries the
   real manifest fingerprints; MODEL_CARD lists all 6 methods + 5 controls with caveats.
+- 2026-07 hotfix: user's first real smoke run hit a Drive-path AssertionError (bundle
+  wasn't at the hardcoded `MyDrive/reab/reab_bundle.zip`). Root cause: manual "place a
+  file at an exact path" step is inherently error-prone. Fixed in both notebooks:
+  bundle upload now uses `google.colab.files.upload()` (native picker, no folder/path
+  to get right); 00_colab_smoke drops Drive entirely (short run, browser download at
+  the end is already the real transport home); 01_colab_run keeps Drive ONLY for
+  checkpoint durability across the long run, which still needs zero manual setup
+  (`os.makedirs(..., exist_ok=True)`).
 - **SESSION END STATE: all 13 milestones done. Final gate: 92 tests passed, ruff clean,
   mypy clean. Remaining user actions: (1) rebuild bundle (`uv run python
   scripts/make_colab_bundle.py`) and upload to Drive MyDrive/reab/, (2) run
