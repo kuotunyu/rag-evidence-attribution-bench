@@ -93,6 +93,18 @@
   the end is already the real transport home); 01_colab_run keeps Drive ONLY for
   checkpoint durability across the long run, which still needs zero manual setup
   (`os.makedirs(..., exist_ok=True)`).
+- 2026-07 perf fix (found live, during user's actual smoke run): `run_attribution_stage`
+  called `_build_resources` (full Qwen3-4B + Qwen3-Embedding load) once PER MODE inside
+  `_run_one_mode`, so every `attribute --method X` invocation reloaded both models twice
+  (gold, then generated) even within one process — and since faithfulness is on by
+  default, this hit every method including cheap ones (embedding, all 5 controls), not
+  just leave_one_out. Fixed: resources/scorer built ONCE per CLI invocation in
+  `run_attribution_stage`, passed into `_run_one_mode` for both modes to share. No
+  behavior/output change (same records, same manifests) — pure fixed-cost reduction.
+  Matters far more for `01_colab_run.ipynb` (240q = 12x the redundant reloads avoided
+  vs smoke's 20q). 92 tests still green after the fix; bundle rebuilt (133 files, 2.0MB).
+  Did NOT affect the user's already-running Colab session (old code already unzipped
+  there) — applies to the next upload/run.
 - **SESSION END STATE: all 13 milestones done. Final gate: 92 tests passed, ruff clean,
   mypy clean. Remaining user actions: (1) rebuild bundle (`uv run python
   scripts/make_colab_bundle.py`) and upload to Drive MyDrive/reab/, (2) run

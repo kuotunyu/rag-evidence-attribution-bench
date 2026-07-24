@@ -215,6 +215,8 @@ def run_attribution_stage(
 ) -> None:
     method_obj = get_method(method)
     modes = [mode] if mode else [m for m in cfg.attribution.modes]
+
+    runnable_modes: list[str] = []
     for m in modes:
         if m == "gold" and not method_obj.supports_teacher_forced:
             if mode is not None:  # explicitly requested → that's a config error
@@ -226,7 +228,33 @@ def run_attribution_stage(
                 raise ConfigError(f"method {method!r} does not support generated mode")
             logger.info("method %s does not support mode 'generated' — skipped", method)
             continue
-        _run_one_mode(cfg, method_obj, method, m, resume=resume, limit=limit)
+        runnable_modes.append(m)
+
+    if not runnable_modes:
+        return
+
+    # Build the model/embedder resources ONCE per CLI invocation and reuse across
+    # modes: a fresh Qwen3-4B load is the single biggest fixed cost of an `attribute`
+    # call, and teacher-forced scoring has no cross-mode state, so gold+generated can
+    # safely share one loaded backend instead of paying the load twice.
+    need_faith = cfg.attribution.faithfulness.enabled
+    resources, scorer, faith_unavailable, execution_kind = _build_resources(
+        cfg, method_obj, need_faithfulness=need_faith
+    )
+
+    for m in runnable_modes:
+        _run_one_mode(
+            cfg,
+            method_obj,
+            method,
+            m,
+            resume=resume,
+            limit=limit,
+            resources=resources,
+            scorer=scorer,
+            faith_unavailable=faith_unavailable,
+            execution_kind=execution_kind,
+        )
 
 
 def _run_one_mode(
@@ -237,6 +265,10 @@ def _run_one_mode(
     *,
     resume: bool,
     limit: int | None,
+    resources: ModelResources,
+    scorer: LogprobScorer | None,
+    faith_unavailable: dict[str, Any] | None,
+    execution_kind: Literal["real", "mock"],
 ) -> None:
     examples = load_prepared_verified(cfg)
     if limit is not None:
@@ -254,9 +286,6 @@ def _run_one_mode(
         source_scores = _load_source_scores(cfg, mode, cfg.attribution.controls.shuffled_source)
 
     need_faith = cfg.attribution.faithfulness.enabled
-    resources, scorer, faith_unavailable, execution_kind = _build_resources(
-        cfg, method_obj, need_faithfulness=need_faith
-    )
 
     run_dir = _mode_dir(cfg, mode, method)
     meta = start_or_resume_run(
