@@ -68,8 +68,664 @@
           }
         }
       },
-      "generation": {},
-      "attribution": {}
+      "generation": {
+        "qwen3-4b": {
+          "run": "results/raw/smoke/generate/qwen3-4b",
+          "execution_kind": "real",
+          "partial": false,
+          "device": "Tesla T4",
+          "model": {
+            "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+            "device": "cuda",
+            "dtype_requested": "bfloat16",
+            "dtype_effective": "bfloat16",
+            "quantization_requested": "none",
+            "quantization_effective": "none"
+          },
+          "n_evaluated": 20,
+          "n_failed": 0,
+          "failure_rate": 0.0,
+          "abstain_rate": 0.05,
+          "em": 0.5,
+          "f1": 0.6361408,
+          "citation": {
+            "precision": 0.9122807017543861,
+            "recall": 0.7368421052631579,
+            "f1": 0.7859649122807016,
+            "no_citation_rate": 0.0,
+            "n_scored": 19
+          },
+          "latency_ms": {
+            "mean": 7660.38985,
+            "p50": 6616.516,
+            "p95": 13221.438
+          },
+          "throughput_tokens_per_s": 2.4802915219778274,
+          "peak_vram_mb": 12119.9306640625
+        }
+      },
+      "attribution": {
+        "gold": {
+          "control_length": {
+            "run": "results/raw/smoke/attribute/gold/control_length",
+            "execution_kind": "real",
+            "partial": false,
+            "device": "Tesla T4",
+            "is_control": true,
+            "n_attempted": 20,
+            "n_success": 20,
+            "n_failed": 0,
+            "n_skipped": 0,
+            "failure_rate": 0.0,
+            "n_agreement": 20,
+            "prf_at": {
+              "1": {
+                "p": 0.05,
+                "r": 0.025,
+                "f1": 0.03333333333333333
+              },
+              "2": {
+                "p": 0.025,
+                "r": 0.025,
+                "f1": 0.025
+              },
+              "3": {
+                "p": 0.09999999999999999,
+                "r": 0.15,
+                "f1": 0.12
+              }
+            },
+            "auprc": 0.2487599206349207,
+            "ndcg_at_10": 0.4496284651480894,
+            "sufficiency": 6.551098912416343,
+            "comprehensiveness": 0.02605117774793081,
+            "n_faithfulness": 20,
+            "seconds_per_sample": 7.55139,
+            "num_model_calls_mean": 0.0,
+            "peak_vram_mb": 9888.30029296875
+          },
+          "control_lexical": {
+            "run": "results/raw/smoke/attribute/gold/control_lexical",
+            "execution_kind": "real",
+            "partial": false,
+            "device": "Tesla T4",
+            "is_control": true,
+            "n_attempted": 20,
+            "n_success": 20,
+            "n_failed": 0,
+            "n_skipped": 0,
+            "failure_rate": 0.0,
+            "n_agreement": 20,
+            "prf_at": {
+              "1": {
+                "p": 0.85,
+                "r": 0.425,
+                "f1": 0.5666666666666665
+              },
+              "2": {
+                "p": 0.65,
+                "r": 0.65,
+                "f1": 0.65
+              },
+              "3": {
+                "p": 0.4833333333333332,
+                "r": 0.725,
+                "f1": 0.5800000000000002
+              }
+            },
+            "auprc": 0.7439484126984126,
+            "ndcg_at_10": 0.8499933041624745,
+            "sufficiency": 1.563186746677372,
+            "comprehensiveness": 3.9143061050697874,
+            "n_faithfulness": 20,
+            "seconds_per_sample": 2.592125,
+            "num_model_calls_mean": 0.0,
+            "peak_vram_mb": 8486.9658203125
+          },
+          "control_random": {
+            "run": "results/raw/smoke/attribute/gold/control_random",
+            "execution_kind": "real",
+            "partial": false,
+            "device": "Tesla T4",
+            "is_control": true,
+            "n_attempted": 20,
+            "n_success": 20,
+            "n_failed": 0,
+            "n_skipped": 0,
+            "failure_rate": 0.0,
+            "n_agreement": 20,
+            "prf_at": {
+              "1": {
+                "p": 0.3,
+                "r": 0.15,
+                "f1": 0.19999999999999998
+              },
+              "2": {
+                "p": 0.25,
+                "r": 0.25,
+                "f1": 0.25
+              },
+              "3": {
+                "p": 0.2333333333333333,
+                "r": 0.35,
+                "f1": 0.2800000000000001
+              }
+            },
+            "auprc": 0.4105257936507936,
+            "ndcg_at_10": 0.5950210770514998,
+            "sufficiency": 4.904407571237701,
+            "comprehensiveness": 1.5564676696369075,
+            "n_faithfulness": 20,
+            "seconds_per_sample": 7.780280000000002,
+            "num_model_calls_mean": 0.0,
+            "peak_vram_mb": 11883.9091796875
+          },
+          "control_retrieval": {
+            "run": "results/raw/smoke/attribute/gold/control_retrieval",
+            "execution_kind": "real",
+            "partial": false,
+            "device": "Tesla T4",
+            "is_control": true,
+            "n_attempted": 20,
+            "n_success": 20,
+            "n_failed": 0,
+            "n_skipped": 0,
+            "failure_rate": 0.0,
+            "n_agreement": 20,
+            "prf_at": {
+              "1": {
+                "p": 0.8,
+                "r": 0.4,
+                "f1": 0.5333333333333332
+              },
+              "2": {
+                "p": 0.65,
+                "r": 0.65,
+                "f1": 0.65
+              },
+              "3": {
+                "p": 0.45,
+                "r": 0.675,
+                "f1": 0.5400000000000001
+              }
+            },
+            "auprc": 0.733799603174603,
+            "ndcg_at_10": 0.8317348569133765,
+            "sufficiency": 1.561827741901641,
+            "comprehensiveness": 4.271753181499496,
+            "n_faithfulness": 20,
+            "seconds_per_sample": 4.128795000000001,
+            "num_model_calls_mean": 0.0,
+            "peak_vram_mb": 8911.20068359375
+          },
+          "control_shuffled": {
+            "run": "results/raw/smoke/attribute/gold/control_shuffled",
+            "execution_kind": "real",
+            "partial": false,
+            "device": "Tesla T4",
+            "is_control": true,
+            "n_attempted": 20,
+            "n_success": 20,
+            "n_failed": 0,
+            "n_skipped": 0,
+            "failure_rate": 0.0,
+            "n_agreement": 20,
+            "prf_at": {
+              "1": {
+                "p": 0.15,
+                "r": 0.075,
+                "f1": 0.1
+              },
+              "2": {
+                "p": 0.25,
+                "r": 0.25,
+                "f1": 0.25
+              },
+              "3": {
+                "p": 0.28333333333333327,
+                "r": 0.425,
+                "f1": 0.3400000000000001
+              }
+            },
+            "auprc": 0.4270138888888889,
+            "ndcg_at_10": 0.5922790890970604,
+            "sufficiency": 5.037510371646629,
+            "comprehensiveness": 2.1250214807856223,
+            "n_faithfulness": 20,
+            "seconds_per_sample": 7.233050000000001,
+            "num_model_calls_mean": 0.0,
+            "peak_vram_mb": 11362.81884765625
+          },
+          "embedding": {
+            "run": "results/raw/smoke/attribute/gold/embedding",
+            "execution_kind": "real",
+            "partial": false,
+            "device": "Tesla T4",
+            "is_control": false,
+            "n_attempted": 20,
+            "n_success": 20,
+            "n_failed": 0,
+            "n_skipped": 0,
+            "failure_rate": 0.0,
+            "n_agreement": 20,
+            "prf_at": {
+              "1": {
+                "p": 0.85,
+                "r": 0.425,
+                "f1": 0.5666666666666665
+              },
+              "2": {
+                "p": 0.75,
+                "r": 0.75,
+                "f1": 0.75
+              },
+              "3": {
+                "p": 0.5666666666666667,
+                "r": 0.85,
+                "f1": 0.6800000000000003
+              }
+            },
+            "auprc": 0.8405555555555555,
+            "ndcg_at_10": 0.9055634185338775,
+            "sufficiency": 1.550752181900948,
+            "comprehensiveness": 4.939473857857234,
+            "n_faithfulness": 20,
+            "seconds_per_sample": 13.10503,
+            "num_model_calls_mean": 0.0,
+            "peak_vram_mb": 13266.88818359375
+          },
+          "leave_one_out": {
+            "run": "results/raw/smoke/attribute/gold/leave_one_out",
+            "execution_kind": "real",
+            "partial": false,
+            "device": "Tesla T4",
+            "is_control": false,
+            "n_attempted": 20,
+            "n_success": 20,
+            "n_failed": 0,
+            "n_skipped": 0,
+            "failure_rate": 0.0,
+            "n_agreement": 20,
+            "prf_at": {
+              "1": {
+                "p": 0.9,
+                "r": 0.45,
+                "f1": 0.5999999999999999
+              },
+              "2": {
+                "p": 0.675,
+                "r": 0.675,
+                "f1": 0.675
+              },
+              "3": {
+                "p": 0.4666666666666666,
+                "r": 0.7,
+                "f1": 0.5600000000000003
+              }
+            },
+            "auprc": 0.7754365079365079,
+            "ndcg_at_10": 0.8687502743834908,
+            "sufficiency": 0.6412164584955629,
+            "comprehensiveness": 5.773088862680563,
+            "n_faithfulness": 20,
+            "seconds_per_sample": 79.45719,
+            "num_model_calls_mean": 10.0,
+            "peak_vram_mb": 12007.50146484375
+          }
+        },
+        "generated": {
+          "generation_run": "qwen3-4b",
+          "subset": {
+            "criterion": "em",
+            "n_total": 20,
+            "n_generated_ok": 20,
+            "n_abstained": 1,
+            "n_correct": 10
+          },
+          "citations": {
+            "run": "results/raw/smoke/attribute/generated/citations",
+            "execution_kind": "real",
+            "partial": false,
+            "device": "Tesla T4",
+            "is_control": false,
+            "n_attempted": 19,
+            "n_success": 19,
+            "n_failed": 0,
+            "n_skipped": 1,
+            "failure_rate": 0.0,
+            "n_agreement": 10,
+            "prf_at": {
+              "1": {
+                "p": 0.9,
+                "r": 0.45,
+                "f1": 0.6
+              },
+              "2": {
+                "p": 0.65,
+                "r": 0.65,
+                "f1": 0.65
+              },
+              "3": {
+                "p": 0.4666666666666667,
+                "r": 0.7,
+                "f1": 0.56
+              }
+            },
+            "auprc": 0.7484523809523809,
+            "ndcg_at_10": 0.862137023460545,
+            "sufficiency": 1.4767037476338896,
+            "comprehensiveness": 6.6464125381630375,
+            "n_faithfulness": 19,
+            "seconds_per_sample": 16.484863157894733,
+            "num_model_calls_mean": 0.0,
+            "peak_vram_mb": 12126.54052734375
+          },
+          "contextcite": {
+            "run": "results/raw/smoke/attribute/generated/contextcite",
+            "execution_kind": "real",
+            "partial": false,
+            "device": "Tesla T4",
+            "is_control": false,
+            "n_attempted": 19,
+            "n_success": 18,
+            "n_failed": 1,
+            "n_skipped": 1,
+            "failure_rate": 0.05263157894736842,
+            "n_agreement": 10,
+            "prf_at": {
+              "1": {
+                "p": 0.9,
+                "r": 0.45,
+                "f1": 0.6
+              },
+              "2": {
+                "p": 0.75,
+                "r": 0.75,
+                "f1": 0.75
+              },
+              "3": {
+                "p": 0.5333333333333334,
+                "r": 0.8,
+                "f1": 0.6399999999999999
+              }
+            },
+            "auprc": 0.836111111111111,
+            "ndcg_at_10": 0.9077134553422018,
+            "sufficiency": 0.9741016817840501,
+            "comprehensiveness": 5.840507341167238,
+            "n_faithfulness": 18,
+            "seconds_per_sample": 78.2797,
+            "num_model_calls_mean": 65.0,
+            "peak_vram_mb": 13222.57373046875
+          },
+          "control_length": {
+            "run": "results/raw/smoke/attribute/generated/control_length",
+            "execution_kind": "real",
+            "partial": false,
+            "device": "Tesla T4",
+            "is_control": true,
+            "n_attempted": 19,
+            "n_success": 19,
+            "n_failed": 0,
+            "n_skipped": 1,
+            "failure_rate": 0.0,
+            "n_agreement": 10,
+            "prf_at": {
+              "1": {
+                "p": 0.1,
+                "r": 0.05,
+                "f1": 0.06666666666666667
+              },
+              "2": {
+                "p": 0.05,
+                "r": 0.05,
+                "f1": 0.05
+              },
+              "3": {
+                "p": 0.13333333333333333,
+                "r": 0.2,
+                "f1": 0.16
+              }
+            },
+            "auprc": 0.2675396825396825,
+            "ndcg_at_10": 0.46879722426123316,
+            "sufficiency": 7.052777347721594,
+            "comprehensiveness": 0.31303980172203905,
+            "n_faithfulness": 19,
+            "seconds_per_sample": 3.7561684210526316,
+            "num_model_calls_mean": 0.0,
+            "peak_vram_mb": 9886.810546875
+          },
+          "control_lexical": {
+            "run": "results/raw/smoke/attribute/generated/control_lexical",
+            "execution_kind": "real",
+            "partial": false,
+            "device": "Tesla T4",
+            "is_control": true,
+            "n_attempted": 19,
+            "n_success": 19,
+            "n_failed": 0,
+            "n_skipped": 1,
+            "failure_rate": 0.0,
+            "n_agreement": 10,
+            "prf_at": {
+              "1": {
+                "p": 0.8,
+                "r": 0.4,
+                "f1": 0.5333333333333333
+              },
+              "2": {
+                "p": 0.65,
+                "r": 0.65,
+                "f1": 0.65
+              },
+              "3": {
+                "p": 0.5,
+                "r": 0.75,
+                "f1": 0.6000000000000001
+              }
+            },
+            "auprc": 0.7512301587301586,
+            "ndcg_at_10": 0.8449410268600503,
+            "sufficiency": 2.4569499076996224,
+            "comprehensiveness": 5.015591065413344,
+            "n_faithfulness": 19,
+            "seconds_per_sample": 1.12911052631579,
+            "num_model_calls_mean": 0.0,
+            "peak_vram_mb": 8446.20751953125
+          },
+          "control_random": {
+            "run": "results/raw/smoke/attribute/generated/control_random",
+            "execution_kind": "real",
+            "partial": false,
+            "device": "Tesla T4",
+            "is_control": true,
+            "n_attempted": 19,
+            "n_success": 19,
+            "n_failed": 0,
+            "n_skipped": 1,
+            "failure_rate": 0.0,
+            "n_agreement": 10,
+            "prf_at": {
+              "1": {
+                "p": 0.2,
+                "r": 0.1,
+                "f1": 0.13333333333333333
+              },
+              "2": {
+                "p": 0.15,
+                "r": 0.15,
+                "f1": 0.15
+              },
+              "3": {
+                "p": 0.19999999999999998,
+                "r": 0.3,
+                "f1": 0.24
+              }
+            },
+            "auprc": 0.35164682539682535,
+            "ndcg_at_10": 0.5474499269238786,
+            "sufficiency": 5.053602654948831,
+            "comprehensiveness": 1.6899580328381796,
+            "n_faithfulness": 19,
+            "seconds_per_sample": 3.3819842105263165,
+            "num_model_calls_mean": 0.0,
+            "peak_vram_mb": 8791.02490234375
+          },
+          "control_retrieval": {
+            "run": "results/raw/smoke/attribute/generated/control_retrieval",
+            "execution_kind": "real",
+            "partial": false,
+            "device": "Tesla T4",
+            "is_control": true,
+            "n_attempted": 19,
+            "n_success": 19,
+            "n_failed": 0,
+            "n_skipped": 1,
+            "failure_rate": 0.0,
+            "n_agreement": 10,
+            "prf_at": {
+              "1": {
+                "p": 0.6,
+                "r": 0.3,
+                "f1": 0.39999999999999997
+              },
+              "2": {
+                "p": 0.6,
+                "r": 0.6,
+                "f1": 0.6
+              },
+              "3": {
+                "p": 0.4,
+                "r": 0.6,
+                "f1": 0.4800000000000001
+              }
+            },
+            "auprc": 0.6653769841269842,
+            "ndcg_at_10": 0.7647244555361405,
+            "sufficiency": 2.2256539328589393,
+            "comprehensiveness": 5.2745107316196504,
+            "n_faithfulness": 19,
+            "seconds_per_sample": 2.0974842105263165,
+            "num_model_calls_mean": 0.0,
+            "peak_vram_mb": 8504.30859375
+          },
+          "control_shuffled": {
+            "run": "results/raw/smoke/attribute/generated/control_shuffled",
+            "execution_kind": "real",
+            "partial": false,
+            "device": "Tesla T4",
+            "is_control": true,
+            "n_attempted": 19,
+            "n_success": 19,
+            "n_failed": 0,
+            "n_skipped": 1,
+            "failure_rate": 0.0,
+            "n_agreement": 10,
+            "prf_at": {
+              "1": {
+                "p": 0.1,
+                "r": 0.05,
+                "f1": 0.06666666666666667
+              },
+              "2": {
+                "p": 0.2,
+                "r": 0.2,
+                "f1": 0.2
+              },
+              "3": {
+                "p": 0.26666666666666666,
+                "r": 0.4,
+                "f1": 0.31999999999999995
+              }
+            },
+            "auprc": 0.39652777777777776,
+            "ndcg_at_10": 0.5699963463430219,
+            "sufficiency": 6.4829457671214294,
+            "comprehensiveness": 0.9490097499576453,
+            "n_faithfulness": 19,
+            "seconds_per_sample": 4.431136842105264,
+            "num_model_calls_mean": 0.0,
+            "peak_vram_mb": 11590.83544921875
+          },
+          "embedding": {
+            "run": "results/raw/smoke/attribute/generated/embedding",
+            "execution_kind": "real",
+            "partial": false,
+            "device": "Tesla T4",
+            "is_control": false,
+            "n_attempted": 19,
+            "n_success": 19,
+            "n_failed": 0,
+            "n_skipped": 1,
+            "failure_rate": 0.0,
+            "n_agreement": 10,
+            "prf_at": {
+              "1": {
+                "p": 0.9,
+                "r": 0.45,
+                "f1": 0.6
+              },
+              "2": {
+                "p": 0.7,
+                "r": 0.7,
+                "f1": 0.7
+              },
+              "3": {
+                "p": 0.5333333333333333,
+                "r": 0.8,
+                "f1": 0.64
+              }
+            },
+            "auprc": 0.8227777777777778,
+            "ndcg_at_10": 0.9015645618521339,
+            "sufficiency": 2.123768483880955,
+            "comprehensiveness": 5.289848431802022,
+            "n_faithfulness": 19,
+            "seconds_per_sample": 2.276847368421052,
+            "num_model_calls_mean": 0.0,
+            "peak_vram_mb": 12944.15234375
+          },
+          "leave_one_out": {
+            "run": "results/raw/smoke/attribute/generated/leave_one_out",
+            "execution_kind": "real",
+            "partial": false,
+            "device": "Tesla T4",
+            "is_control": false,
+            "n_attempted": 19,
+            "n_success": 19,
+            "n_failed": 0,
+            "n_skipped": 1,
+            "failure_rate": 0.0,
+            "n_agreement": 10,
+            "prf_at": {
+              "1": {
+                "p": 1.0,
+                "r": 0.5,
+                "f1": 0.6666666666666667
+              },
+              "2": {
+                "p": 0.8,
+                "r": 0.8,
+                "f1": 0.8
+              },
+              "3": {
+                "p": 0.5333333333333333,
+                "r": 0.8,
+                "f1": 0.64
+              }
+            },
+            "auprc": 0.8766666666666666,
+            "ndcg_at_10": 0.9376371739809228,
+            "sufficiency": 1.0551218794000146,
+            "comprehensiveness": 6.371019473034288,
+            "n_faithfulness": 19,
+            "seconds_per_sample": 41.11995263157895,
+            "num_model_calls_mean": 4.7368421052631575,
+            "peak_vram_mb": 12004.5107421875
+          }
+        }
+      }
     },
     "dev": {
       "n_questions": 60,
@@ -124,7 +780,7 @@
       "attribution": {}
     }
   },
-  "generated_utc": "2026-07-18T18:04:59Z",
+  "generated_utc": "2026-07-24T18:19:04Z",
   "package_version": "0.1.0",
   "dataset_hash": "aa57b60128d8f13286ad4b72249e0b5c845ec4f670f78f528d59e99af650a6e9",
   "primary_k": 2

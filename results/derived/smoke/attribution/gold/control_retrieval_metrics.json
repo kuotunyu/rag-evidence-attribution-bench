@@ -1,0 +1,38 @@
+{
+  "run": "results/raw/smoke/attribute/gold/control_retrieval",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "Tesla T4",
+  "is_control": true,
+  "n_attempted": 20,
+  "n_success": 20,
+  "n_failed": 0,
+  "n_skipped": 0,
+  "failure_rate": 0.0,
+  "n_agreement": 20,
+  "prf_at": {
+    "1": {
+      "p": 0.8,
+      "r": 0.4,
+      "f1": 0.5333333333333332
+    },
+    "2": {
+      "p": 0.65,
+      "r": 0.65,
+      "f1": 0.65
+    },
+    "3": {
+      "p": 0.45,
+      "r": 0.675,
+      "f1": 0.5400000000000001
+    }
+  },
+  "auprc": 0.733799603174603,
+  "ndcg_at_10": 0.8317348569133765,
+  "sufficiency": 1.561827741901641,
+  "comprehensiveness": 4.271753181499496,
+  "n_faithfulness": 20,
+  "seconds_per_sample": 4.128795000000001,
+  "num_model_calls_mean": 0.0,
+  "peak_vram_mb": 8911.20068359375
+}

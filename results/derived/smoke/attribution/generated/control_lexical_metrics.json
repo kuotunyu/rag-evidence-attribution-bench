@@ -1,0 +1,38 @@
+{
+  "run": "results/raw/smoke/attribute/generated/control_lexical",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "Tesla T4",
+  "is_control": true,
+  "n_attempted": 19,
+  "n_success": 19,
+  "n_failed": 0,
+  "n_skipped": 1,
+  "failure_rate": 0.0,
+  "n_agreement": 10,
+  "prf_at": {
+    "1": {
+      "p": 0.8,
+      "r": 0.4,
+      "f1": 0.5333333333333333
+    },
+    "2": {
+      "p": 0.65,
+      "r": 0.65,
+      "f1": 0.65
+    },
+    "3": {
+      "p": 0.5,
+      "r": 0.75,
+      "f1": 0.6000000000000001
+    }
+  },
+  "auprc": 0.7512301587301586,
+  "ndcg_at_10": 0.8449410268600503,
+  "sufficiency": 2.4569499076996224,
+  "comprehensiveness": 5.015591065413344,
+  "n_faithfulness": 19,
+  "seconds_per_sample": 1.12911052631579,
+  "num_model_calls_mean": 0.0,
+  "peak_vram_mb": 8446.20751953125
+}

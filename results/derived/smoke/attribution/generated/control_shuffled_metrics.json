@@ -1,0 +1,38 @@
+{
+  "run": "results/raw/smoke/attribute/generated/control_shuffled",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "Tesla T4",
+  "is_control": true,
+  "n_attempted": 19,
+  "n_success": 19,
+  "n_failed": 0,
+  "n_skipped": 1,
+  "failure_rate": 0.0,
+  "n_agreement": 10,
+  "prf_at": {
+    "1": {
+      "p": 0.1,
+      "r": 0.05,
+      "f1": 0.06666666666666667
+    },
+    "2": {
+      "p": 0.2,
+      "r": 0.2,
+      "f1": 0.2
+    },
+    "3": {
+      "p": 0.26666666666666666,
+      "r": 0.4,
+      "f1": 0.31999999999999995
+    }
+  },
+  "auprc": 0.39652777777777776,
+  "ndcg_at_10": 0.5699963463430219,
+  "sufficiency": 6.4829457671214294,
+  "comprehensiveness": 0.9490097499576453,
+  "n_faithfulness": 19,
+  "seconds_per_sample": 4.431136842105264,
+  "num_model_calls_mean": 0.0,
+  "peak_vram_mb": 11590.83544921875
+}

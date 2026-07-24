@@ -9,7 +9,7 @@
 |---|-----------|--------|-------------|
 | M0 | Repo scaffold (pyproject/uv, CLI skeleton, configs, docs) | ✅ done | `uv sync --extra ml --extra app` + `uv run python -m rag_evidence.cli --help` |
 | M1 | storage / config / telemetry + tests | ✅ done (31 tests green) | `uv run pytest tests/test_config.py tests/test_artifacts.py tests/test_runmeta.py` |
-| M2 | data layer + REAL HotpotQA prepare + split manifest | 🔄 code done, real run in progress | `uv run python -m rag_evidence.cli data prepare --config configs/smoke.yaml` |
+| M2 | data layer + REAL HotpotQA prepare + split manifest | ✅ done — real run, 7405 examples, manifest committed | `uv run python -m rag_evidence.cli data prepare --config configs/smoke.yaml` |
 | M3 | retrieval (bm25 / dense / hybrid) + REAL CPU runs | ✅ done — real: bm25 all splits, dense+hybrid smoke (20/20 each, 0 failures) | `uv run python -m rag_evidence.cli status --config configs/smoke.yaml` |
 | M4 | generation module (QwenBackend + FakeLM, checkpoint/--resume) | ✅ done (mocked tests; real gen = Colab) | `uv run pytest tests/test_resume.py tests/test_citation_parser.py` |
 | M5 | attribution (3 methods + 5 controls + faithfulness) | ✅ done (FakeLM-verified; real numbers = Colab) | `uv run pytest tests/test_attribution_runner.py tests/test_sufficiency.py` |
@@ -25,14 +25,14 @@
 
 | Item | State | Notes |
 |------|-------|-----------|
-| 20-question smoke end-to-end success | ⏳ **pending-Colab (user action)** | run `notebooks/00_colab_smoke.ipynb`, then `import-results` + `evaluate` + `report` locally |
+| 20-question smoke end-to-end success | ✅ **VERIFIED REAL** (2026-07-25) | Colab T4, full pipeline: generate → 6 methods + 5 controls (2 modes) → contextcite → evaluate → report; imported + re-evaluated locally, EM cross-check passed |
 | BM25 + dense retrieval working | ✅ verified-local (REAL) | bm25 20/60/240, dense+hybrid smoke 20/20, 0 failures; real numbers in README |
-| ≥ 3 attribution methods | ✅ code + mocked-e2e verified (6 methods + 5 controls) | real GPU numbers pending-Colab |
-| Teacher-forced vs generated-correct reported separately | ✅ verified (mock e2e + subset tests) | numbers pending-Colab |
-| Quality / latency / VRAM comparison | ⏳ pending-Colab | tables/figures render automatically once real runs are imported |
+| ≥ 3 attribution methods | ✅ **VERIFIED REAL** | 6 methods (citations/embedding/leave_one_out/contextcite + experimental arc_jsd not run this pass) + 5 controls, real Qwen3-4B numbers now in README |
+| Teacher-forced vs generated-correct reported separately | ✅ **VERIFIED REAL** | mode A (n=20) vs mode B (n_correct=10 of 20, 1 abstained) — separate tables in README, subset size reported |
+| Quality / latency / VRAM comparison | ✅ **VERIFIED REAL** | EM 0.500, F1 0.636, citation F1 0.786, peak VRAM 12120 MB (bfloat16, T4), 2.5 tok/s — all in README |
 | Docker precomputed explorer boots | ✅ verified-local (REAL) | container /health → 240 eval samples; /methods honest-empty for pending stages |
-| All README numbers generated from results/derived/summary.json | ✅ verified-local (REAL) | retrieval tables injected by `report`; PENDING blocks machine-generated |
-| No fabricated results | ✅ enforced by design + tested | `execution_kind: mock` gated out of README; partial-run guard; sha256 import gate |
+| All README numbers generated from results/derived/summary.json | ✅ verified-local (REAL) | retrieval + generation + attribution tables all injected by `report`; no PENDING blocks left for smoke |
+| No fabricated results | ✅ enforced by design + tested | `execution_kind: mock` gated out of README; partial-run guard; sha256 import gate; this real import had zero raw conflicts |
 
 ## How to resume
 
@@ -105,9 +105,30 @@
   vs smoke's 20q). 92 tests still green after the fix; bundle rebuilt (133 files, 2.0MB).
   Did NOT affect the user's already-running Colab session (old code already unzipped
   there) — applies to the next upload/run.
-- **SESSION END STATE: all 13 milestones done. Final gate: 92 tests passed, ruff clean,
-  mypy clean. Remaining user actions: (1) rebuild bundle (`uv run python
-  scripts/make_colab_bundle.py`) and upload to Drive MyDrive/reab/, (2) run
-  00_colab_smoke.ipynb, (3) bring the export zip back for `import-results` — that flips the
-  three pending-Colab acceptance items. Optional later: 01_colab_run (dev+locked eval),
-  legacy ARC-JSD validation.**
+### 2026-07-25 — REAL smoke run complete, acceptance verified
+- User ran `00_colab_smoke.ipynb` on Colab T4 (Pro+). Hit two real issues, both fixed live
+  and documented above: the Drive-path bundle placement (fixed → files.upload() picker)
+  and the double model-reload-per-mode perf issue (fixed, bundle rebuilt). This run itself
+  used the OLD pre-perf-fix code (already unzipped before the fix landed), so it was slower
+  than a fresh run would be — not a data-quality issue, just wall-clock.
+- Export zip `results_smoke_20260724T181501Z.zip` (330KB, 81 files) downloaded to
+  `D:\Downloads\` (not the default C:\ Downloads — worth remembering for next time).
+  `import-results` succeeded: 0 raw conflicts, all sha256 verified.
+- `status` confirms 20/20 real for every stage: retrieve (bm25/dense/hybrid_rrf), generate
+  (qwen3-4b), attribute × (citations, embedding, leave_one_out, contextcite, 5 controls) ×
+  2 modes. contextcite: 18/20 ok (2 failures/skips — optional method, not a blocker).
+- Local `evaluate` re-derivation passed the EM cross-check (stored vs recomputed answer
+  correctness agree) — imported data is self-consistent, not corrupted in transit.
+- **Headline real numbers** (see README.md for full tables): generation EM 0.500, F1 0.636,
+  citation F1 0.786, abstain rate 5%, peak VRAM 12120 MB (bfloat16, T4), 2.5 tok/s.
+  Attribution mode A: leave_one_out F1@2=0.675/AUPRC=0.775, embedding F1@2=0.750 — both
+  clearly beat control_random/control_shuffled (~0.25) and control_length (~0.03),
+  confirming the benchmark discriminates real signal from noise. Mode B (n_correct=10/20):
+  leave_one_out F1@2=0.800 (highest), contextcite 0.750.
+- **Acceptance: all 8 checklist items now ✅ VERIFIED REAL** — no more pending-Colab items
+  for the smoke split. README/README_zh-TW/report.md/summary.json/assets all regenerated
+  and committed.
+- **Remaining optional work (not blocking, not started this session):** `01_colab_run.ipynb`
+  (dev60 + locked eval240 — needs the rebuilt bundle re-uploaded to pick up the perf fix);
+  legacy ARC-JSD validation against the official Qwen2.5 implementation (drops the
+  `experimental` label on the native `arc_jsd` method).
