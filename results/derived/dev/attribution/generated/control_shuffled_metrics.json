@@ -1,0 +1,38 @@
+{
+  "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/generated/control_shuffled",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "NVIDIA A100-SXM4-40GB",
+  "is_control": true,
+  "n_attempted": 53,
+  "n_success": 53,
+  "n_failed": 0,
+  "n_skipped": 7,
+  "failure_rate": 0.0,
+  "n_agreement": 26,
+  "prf_at": {
+    "1": {
+      "p": 0.15384615384615385,
+      "r": 0.07692307692307693,
+      "f1": 0.10256410256410256
+    },
+    "2": {
+      "p": 0.17307692307692307,
+      "r": 0.17307692307692307,
+      "f1": 0.17307692307692307
+    },
+    "3": {
+      "p": 0.16666666666666666,
+      "r": 0.25,
+      "f1": 0.2
+    }
+  },
+  "auprc": 0.34126221001221,
+  "ndcg_at_10": 0.5297336965284942,
+  "sufficiency": 6.604168282893582,
+  "comprehensiveness": 0.833472512791647,
+  "n_faithfulness": 53,
+  "seconds_per_sample": 0.07765283018867924,
+  "num_model_calls_mean": 0.0,
+  "peak_vram_mb": 8489.53955078125
+}

@@ -1,0 +1,38 @@
+{
+  "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/generated/embedding",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "NVIDIA A100-SXM4-40GB",
+  "is_control": false,
+  "n_attempted": 53,
+  "n_success": 53,
+  "n_failed": 0,
+  "n_skipped": 7,
+  "failure_rate": 0.0,
+  "n_agreement": 26,
+  "prf_at": {
+    "1": {
+      "p": 1.0,
+      "r": 0.5,
+      "f1": 0.6666666666666666
+    },
+    "2": {
+      "p": 0.8076923076923077,
+      "r": 0.8076923076923077,
+      "f1": 0.8076923076923077
+    },
+    "3": {
+      "p": 0.5769230769230769,
+      "r": 0.8653846153846154,
+      "f1": 0.6923076923076923
+    }
+  },
+  "auprc": 0.8895604395604395,
+  "ndcg_at_10": 0.9441136433954426,
+  "sufficiency": 1.9817481621294468,
+  "comprehensiveness": 6.970970645825701,
+  "n_faithfulness": 53,
+  "seconds_per_sample": 0.08567924528301887,
+  "num_model_calls_mean": 0.0,
+  "peak_vram_mb": 9609.5771484375
+}

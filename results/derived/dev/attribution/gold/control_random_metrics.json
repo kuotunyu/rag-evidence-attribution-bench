@@ -1,0 +1,38 @@
+{
+  "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/gold/control_random",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "NVIDIA A100-SXM4-40GB",
+  "is_control": true,
+  "n_attempted": 60,
+  "n_success": 60,
+  "n_failed": 0,
+  "n_skipped": 0,
+  "failure_rate": 0.0,
+  "n_agreement": 60,
+  "prf_at": {
+    "1": {
+      "p": 0.11666666666666667,
+      "r": 0.058333333333333334,
+      "f1": 0.07777777777777777
+    },
+    "2": {
+      "p": 0.16666666666666666,
+      "r": 0.16666666666666666,
+      "f1": 0.16666666666666666
+    },
+    "3": {
+      "p": 0.18333333333333332,
+      "r": 0.275,
+      "f1": 0.22000000000000003
+    }
+  },
+  "auprc": 0.32959325396825395,
+  "ndcg_at_10": 0.5232262332800298,
+  "sufficiency": 5.694979827198818,
+  "comprehensiveness": 1.3219711571004094,
+  "n_faithfulness": 60,
+  "seconds_per_sample": 0.148195,
+  "num_model_calls_mean": 0.0,
+  "peak_vram_mb": 8499.00634765625
+}

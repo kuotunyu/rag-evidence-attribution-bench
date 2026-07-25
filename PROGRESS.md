@@ -26,6 +26,8 @@
 | Item | State | Notes |
 |------|-------|-----------|
 | 20-question smoke end-to-end success | ✅ **VERIFIED REAL** (2026-07-25) | Colab T4, full pipeline: generate → 6 methods + 5 controls (2 modes) → contextcite → evaluate → report; imported + re-evaluated locally, EM cross-check passed |
+| Locked eval (240) full run | ✅ **VERIFIED REAL** (2026-07-25) | Colab A100, 240/240 every stage, imported + re-evaluated locally, EM cross-check passed — the statistically meaningful headline numbers |
+| Dev (60) full run | 🟡 real numbers present, not yet independently re-verified locally | dev's export zip didn't download; numbers came via eval zip's merged summary.json, not re-derived from raw on this machine |
 | BM25 + dense retrieval working | ✅ verified-local (REAL) | bm25 20/60/240, dense+hybrid smoke 20/20, 0 failures; real numbers in README |
 | ≥ 3 attribution methods | ✅ **VERIFIED REAL** | 6 methods (citations/embedding/leave_one_out/contextcite + experimental arc_jsd not run this pass) + 5 controls, real Qwen3-4B numbers now in README |
 | Teacher-forced vs generated-correct reported separately | ✅ **VERIFIED REAL** | mode A (n=20) vs mode B (n_correct=10 of 20, 1 abstained) — separate tables in README, subset size reported |
@@ -149,3 +151,44 @@
   attribution records yet exits cleanly rather than crashing.
 - Bundle rebuilt: 202 files, 2.3 MB, verified to contain dev/eval prepared data, samples,
   committed bm25 runs, both configs, AND the model-reload perf fix. 92 tests green.
+
+### 2026-07-25 (later still) — REAL locked eval (240) + dev (60) imported
+- User ran `01_colab_run.ipynb` on Colab A100 (Pro+) end-to-end, both sections, in one
+  session. Two export zips were produced (`results_dev_...zip`, `results_eval_...zip`);
+  only the **eval** zip actually downloaded (same browser-blocked-download pattern as
+  the smoke run) — dev's zip is still on Drive/undownloaded as of this entry.
+- **eval (240, locked) — fully imported and independently verified**: `import-results`
+  (141 files, 0 raw conflicts) → local `evaluate --config configs/full.yaml` recomputed
+  from raw and passed the EM cross-check → `report`. 240/240 real on every stage
+  (retrieve×3, generate, attribute × 8 methods × 2 modes — contextcite intentionally
+  excluded from 01 per its own time-cost note).
+- **dev (60) — real numbers present, NOT independently re-derivable locally yet**: the
+  eval zip's copy of `results/derived/summary.json` already carried a fully-merged dev
+  entry (written by Colab's own live `evaluate --config configs/dev.yaml` call earlier
+  in the same session) — genuine real numbers, not fabricated. But dev's raw per-sample
+  generate/attribute JSONL never arrived locally (only the dev zip has them), so
+  `evaluate --config configs/dev.yaml` was deliberately NOT run locally this pass — doing
+  so with dev's raw retrieval-only present would have overwritten the good imported dev
+  entry with a regressed retrieval-only one. Confirmed by direct check:
+  `results/raw/dev/{generate,attribute}` do not exist on this machine.
+- **Headline real numbers, locked eval (n=240, the statistically meaningful split)**:
+  generation EM 0.362, F1 0.496, citation F1 0.801, abstain 20.0%, peak VRAM 8437 MB
+  (bfloat16, A100), 19.7 tok/s. Attribution mode A: embedding F1@2=0.812/AUPRC=0.894,
+  leave_one_out F1@2=0.727/AUPRC=0.813 — both far above control_random/control_shuffled
+  (~0.18–0.21) and control_length (~0.10). Mode B (n_correct=87/240, 48 abstained):
+  embedding F1@2=0.816, leave_one_out 0.793, citations 0.753.
+- **Cross-split consistency check (real signal, not noise)**: F1@2 for embedding/
+  leave_one_out is stable within ~0.05–0.10 across smoke(20)/dev(60)/eval(240), and the
+  real-method vs null-control separation (~0.6–0.8 vs ~0.15–0.21) holds at every scale —
+  strong evidence the benchmark discriminates genuine causal/similarity signal, not an
+  artifact of the small smoke sample. EM/F1 correctly DECREASES with split size
+  (smoke 0.500 → dev 0.433 → eval 0.362 EM) — expected: 20-sample smoke accuracy is
+  noisy and not representative; eval(240) is the number that matters for reporting.
+  Device names confirm real hardware: dev/eval retrieval+generation ran on
+  `NVIDIA A100-SXM4-40GB` (~8x the smoke run's T4 throughput, matching the notebook's
+  own estimate).
+- **Remaining to fully close this out (not blocking, low priority):** find/download the
+  missing `results_dev_...zip` (Ctrl+J in the browser, or re-run just the dev export
+  cell) so dev's raw records can be imported and independently re-verified the same way
+  eval's were — currently dev is "real but not locally re-derived," everything else is
+  "real and independently re-verified from raw."

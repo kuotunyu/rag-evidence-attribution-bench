@@ -1,0 +1,38 @@
+{
+  "run": "results/raw/eval/attribute/gold/control_lexical",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "NVIDIA A100-SXM4-40GB",
+  "is_control": true,
+  "n_attempted": 240,
+  "n_success": 240,
+  "n_failed": 0,
+  "n_skipped": 0,
+  "failure_rate": 0.0,
+  "n_agreement": 240,
+  "prf_at": {
+    "1": {
+      "p": 0.7916666666666666,
+      "r": 0.3958333333333333,
+      "f1": 0.5277777777777792
+    },
+    "2": {
+      "p": 0.61875,
+      "r": 0.61875,
+      "f1": 0.61875
+    },
+    "3": {
+      "p": 0.4736111111111109,
+      "r": 0.7104166666666667,
+      "f1": 0.5683333333333339
+    }
+  },
+  "auprc": 0.7314153439153436,
+  "ndcg_at_10": 0.8332321371504811,
+  "sufficiency": 2.7279065159726987,
+  "comprehensiveness": 5.383850605491451,
+  "n_faithfulness": 240,
+  "seconds_per_sample": 0.0724858333333334,
+  "num_model_calls_mean": 0.0,
+  "peak_vram_mb": 8905.2373046875
+}

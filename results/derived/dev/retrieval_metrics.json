@@ -1,6 +1,6 @@
 {
   "bm25": {
-    "run": "results/raw/dev/retrieve/bm25",
+    "run": "/content/drive/MyDrive/reab/results/raw/dev/retrieve/bm25",
     "execution_kind": "real",
     "partial": false,
     "device": "cpu",
@@ -12,12 +12,54 @@
       "5": 0.7416666666666667,
       "10": 1.0
     },
-    "mrr": 0.8605753968253969,
-    "ndcg_at_10": 0.8206018451668017,
+    "mrr": 0.8605753968253967,
+    "ndcg_at_10": 0.8206018451668018,
     "latency_ms": {
-      "mean": 1.0904500000000004,
+      "mean": 1.09045,
       "p50": 1.074,
       "p95": 1.448
+    }
+  },
+  "dense": {
+    "run": "/content/drive/MyDrive/reab/results/raw/dev/retrieve/dense",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "NVIDIA A100-SXM4-40GB",
+    "n_evaluated": 60,
+    "n_failed": 0,
+    "failure_rate": 0.0,
+    "recall_at": {
+      "2": 0.6833333333333333,
+      "5": 0.8416666666666667,
+      "10": 1.0
+    },
+    "mrr": 0.9284722222222223,
+    "ndcg_at_10": 0.8802944332130357,
+    "latency_ms": {
+      "mean": 391.5640833333334,
+      "p50": 377.52,
+      "p95": 605.068
+    }
+  },
+  "hybrid_rrf": {
+    "run": "/content/drive/MyDrive/reab/results/raw/dev/retrieve/hybrid_rrf",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "NVIDIA A100-SXM4-40GB",
+    "n_evaluated": 60,
+    "n_failed": 0,
+    "failure_rate": 0.0,
+    "recall_at": {
+      "2": 0.675,
+      "5": 0.8416666666666667,
+      "10": 1.0
+    },
+    "mrr": 0.9574074074074074,
+    "ndcg_at_10": 0.8847535724177992,
+    "latency_ms": {
+      "mean": 0.10438333333333333,
+      "p50": 0.083,
+      "p95": 0.134
     }
   }
 }

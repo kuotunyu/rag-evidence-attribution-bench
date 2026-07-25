@@ -1,0 +1,38 @@
+{
+  "run": "results/raw/eval/attribute/generated/embedding",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "NVIDIA A100-SXM4-40GB",
+  "is_control": false,
+  "n_attempted": 192,
+  "n_success": 192,
+  "n_failed": 0,
+  "n_skipped": 48,
+  "failure_rate": 0.0,
+  "n_agreement": 87,
+  "prf_at": {
+    "1": {
+      "p": 0.9540229885057471,
+      "r": 0.47701149425287354,
+      "f1": 0.6360153256704973
+    },
+    "2": {
+      "p": 0.8160919540229885,
+      "r": 0.8160919540229885,
+      "f1": 0.8160919540229885
+    },
+    "3": {
+      "p": 0.6053639846743293,
+      "r": 0.9080459770114943,
+      "f1": 0.7264367816091943
+    }
+  },
+  "auprc": 0.9002234993614304,
+  "ndcg_at_10": 0.94507316027671,
+  "sufficiency": 2.5211059181373683,
+  "comprehensiveness": 6.555105968505735,
+  "n_faithfulness": 192,
+  "seconds_per_sample": 0.09069166666666668,
+  "num_model_calls_mean": 0.0,
+  "peak_vram_mb": 9988.03076171875
+}

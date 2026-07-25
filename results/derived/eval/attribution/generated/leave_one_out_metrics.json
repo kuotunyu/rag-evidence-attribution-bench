@@ -1,0 +1,38 @@
+{
+  "run": "results/raw/eval/attribute/generated/leave_one_out",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "NVIDIA A100-SXM4-40GB",
+  "is_control": false,
+  "n_attempted": 192,
+  "n_success": 192,
+  "n_failed": 0,
+  "n_skipped": 48,
+  "failure_rate": 0.0,
+  "n_agreement": 87,
+  "prf_at": {
+    "1": {
+      "p": 0.9540229885057471,
+      "r": 0.47701149425287354,
+      "f1": 0.6360153256704973
+    },
+    "2": {
+      "p": 0.7931034482758621,
+      "r": 0.7931034482758621,
+      "f1": 0.7931034482758621
+    },
+    "3": {
+      "p": 0.5555555555555552,
+      "r": 0.8333333333333334,
+      "f1": 0.6666666666666657
+    }
+  },
+  "auprc": 0.8571177704798398,
+  "ndcg_at_10": 0.9206500423676574,
+  "sufficiency": 0.8596174175979057,
+  "comprehensiveness": 7.156480125345827,
+  "n_faithfulness": 192,
+  "seconds_per_sample": 0.6495057291666676,
+  "num_model_calls_mean": 6.197916666666667,
+  "peak_vram_mb": 9120.31103515625
+}

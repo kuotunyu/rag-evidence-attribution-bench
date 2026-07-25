@@ -1,0 +1,36 @@
+{
+  "qwen3-4b": {
+    "run": "/content/drive/MyDrive/reab/results/raw/dev/generate/qwen3-4b",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "NVIDIA A100-SXM4-40GB",
+    "model": {
+      "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+      "device": "cuda",
+      "dtype_requested": "bfloat16",
+      "dtype_effective": "bfloat16",
+      "quantization_requested": "none",
+      "quantization_effective": "none"
+    },
+    "n_evaluated": 60,
+    "n_failed": 0,
+    "failure_rate": 0.0,
+    "abstain_rate": 0.11666666666666667,
+    "em": 0.43333333333333335,
+    "f1": 0.5470253333333334,
+    "citation": {
+      "precision": 0.8921832884097035,
+      "recall": 0.8018867924528302,
+      "f1": 0.8159329140461217,
+      "no_citation_rate": 0.018867924528301886,
+      "n_scored": 53
+    },
+    "latency_ms": {
+      "mean": 1114.6480999999999,
+      "p50": 596.149,
+      "p95": 3459.538
+    },
+    "throughput_tokens_per_s": 20.036218904722787,
+    "peak_vram_mb": 8196.912109375
+  }
+}
