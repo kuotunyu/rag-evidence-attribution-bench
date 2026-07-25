@@ -27,7 +27,7 @@
 |------|-------|-----------|
 | 20-question smoke end-to-end success | ✅ **VERIFIED REAL** (2026-07-25) | Colab T4, full pipeline: generate → 6 methods + 5 controls (2 modes) → contextcite → evaluate → report; imported + re-evaluated locally, EM cross-check passed |
 | Locked eval (240) full run | ✅ **VERIFIED REAL** (2026-07-25) | Colab A100, 240/240 every stage, imported + re-evaluated locally, EM cross-check passed — the statistically meaningful headline numbers |
-| Dev (60) full run | 🟡 real numbers present, not yet independently re-verified locally | dev's export zip didn't download; numbers came via eval zip's merged summary.json, not re-derived from raw on this machine |
+| Dev (60) full run | ✅ **VERIFIED REAL** (2026-07-25) | Colab A100, 60/60 every stage, imported + re-evaluated locally from raw, EM cross-check passed; re-derived numbers matched the earlier eval-zip copy exactly |
 | BM25 + dense retrieval working | ✅ verified-local (REAL) | bm25 20/60/240, dense+hybrid smoke 20/20, 0 failures; real numbers in README |
 | ≥ 3 attribution methods | ✅ **VERIFIED REAL** | 6 methods (citations/embedding/leave_one_out/contextcite + experimental arc_jsd not run this pass) + 5 controls, real Qwen3-4B numbers now in README |
 | Teacher-forced vs generated-correct reported separately | ✅ **VERIFIED REAL** | mode A (n=20) vs mode B (n_correct=10 of 20, 1 abstained) — separate tables in README, subset size reported |
@@ -187,8 +187,23 @@
   Device names confirm real hardware: dev/eval retrieval+generation ran on
   `NVIDIA A100-SXM4-40GB` (~8x the smoke run's T4 throughput, matching the notebook's
   own estimate).
-- **Remaining to fully close this out (not blocking, low priority):** find/download the
-  missing `results_dev_...zip` (Ctrl+J in the browser, or re-run just the dev export
-  cell) so dev's raw records can be imported and independently re-verified the same way
-  eval's were — currently dev is "real but not locally re-derived," everything else is
-  "real and independently re-verified from raw."
+- **dev zip recovered same session**: root cause found — the export cell ends with
+  `files.download(zips[-1])`, which downloads only the LAST zip, so dev's was generated
+  but never sent to the browser. Recovered by running a one-line `files.download(...)`
+  cell against the still-live Colab session (the file would have been lost on runtime
+  shutdown, costing a 1 h re-run).
+- **dev (60) now fully imported and independently verified**: `import-results` (110 files,
+  0 raw conflicts) → all three splits re-derived locally from raw
+  (`evaluate` on smoke + dev + full, each passing the EM cross-check) → `report`.
+  60/60 real on every stage. **Integrity result worth recording: the locally re-derived
+  dev numbers matched the earlier eval-zip-carried copy EXACTLY** (EM 0.433, F1 0.547,
+  embedding F1@2 0.817, leave_one_out 0.758, n_correct=26/60) — independent confirmation
+  that those numbers were genuine and that the export/import round-trip is lossless.
+- **All three splits (smoke 20 / dev 60 / locked eval 240) are now "real AND independently
+  re-derived from raw records on this machine."** No split is in a weaker evidentiary
+  state than any other.
+- **Notebook bug fixed (not just documented):** `01_colab_run.ipynb`'s dev section ran
+  `export` but never downloaded, and the eval section downloaded only `zips[-1]` — so a
+  single-session run of both sections silently stranded dev's zip on the Colab VM. Fixed:
+  the dev cell now downloads its own zip immediately after exporting, and the eval cell
+  loops over ALL export zips instead of taking the last one. Both notebooks re-validated.

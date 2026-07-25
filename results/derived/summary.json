@@ -731,7 +731,7 @@
       "n_questions": 60,
       "retrieval": {
         "bm25": {
-          "run": "/content/drive/MyDrive/reab/results/raw/dev/retrieve/bm25",
+          "run": "results/raw/dev/retrieve/bm25",
           "execution_kind": "real",
           "partial": false,
           "device": "cpu",
@@ -743,16 +743,16 @@
             "5": 0.7416666666666667,
             "10": 1.0
           },
-          "mrr": 0.8605753968253967,
-          "ndcg_at_10": 0.8206018451668018,
+          "mrr": 0.8605753968253969,
+          "ndcg_at_10": 0.8206018451668017,
           "latency_ms": {
-            "mean": 1.09045,
+            "mean": 1.0904500000000004,
             "p50": 1.074,
             "p95": 1.448
           }
         },
         "dense": {
-          "run": "/content/drive/MyDrive/reab/results/raw/dev/retrieve/dense",
+          "run": "results/raw/dev/retrieve/dense",
           "execution_kind": "real",
           "partial": false,
           "device": "NVIDIA A100-SXM4-40GB",
@@ -764,16 +764,16 @@
             "5": 0.8416666666666667,
             "10": 1.0
           },
-          "mrr": 0.9284722222222223,
+          "mrr": 0.9284722222222221,
           "ndcg_at_10": 0.8802944332130357,
           "latency_ms": {
-            "mean": 391.5640833333334,
+            "mean": 391.56408333333343,
             "p50": 377.52,
             "p95": 605.068
           }
         },
         "hybrid_rrf": {
-          "run": "/content/drive/MyDrive/reab/results/raw/dev/retrieve/hybrid_rrf",
+          "run": "results/raw/dev/retrieve/hybrid_rrf",
           "execution_kind": "real",
           "partial": false,
           "device": "NVIDIA A100-SXM4-40GB",
@@ -788,7 +788,7 @@
           "mrr": 0.9574074074074074,
           "ndcg_at_10": 0.8847535724177992,
           "latency_ms": {
-            "mean": 0.10438333333333333,
+            "mean": 0.10438333333333336,
             "p50": 0.083,
             "p95": 0.134
           }
@@ -796,7 +796,7 @@
       },
       "generation": {
         "qwen3-4b": {
-          "run": "/content/drive/MyDrive/reab/results/raw/dev/generate/qwen3-4b",
+          "run": "results/raw/dev/generate/qwen3-4b",
           "execution_kind": "real",
           "partial": false,
           "device": "NVIDIA A100-SXM4-40GB",
@@ -817,7 +817,7 @@
           "citation": {
             "precision": 0.8921832884097035,
             "recall": 0.8018867924528302,
-            "f1": 0.8159329140461217,
+            "f1": 0.8159329140461216,
             "no_citation_rate": 0.018867924528301886,
             "n_scored": 53
           },
@@ -826,14 +826,14 @@
             "p50": 596.149,
             "p95": 3459.538
           },
-          "throughput_tokens_per_s": 20.036218904722787,
+          "throughput_tokens_per_s": 20.036218904722784,
           "peak_vram_mb": 8196.912109375
         }
       },
       "attribution": {
         "gold": {
           "control_length": {
-            "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/gold/control_length",
+            "run": "results/raw/dev/attribute/gold/control_length",
             "execution_kind": "real",
             "partial": false,
             "device": "NVIDIA A100-SXM4-40GB",
@@ -856,22 +856,22 @@
                 "f1": 0.11666666666666667
               },
               "3": {
-                "p": 0.12222222222222222,
+                "p": 0.12222222222222218,
                 "r": 0.18333333333333332,
-                "f1": 0.14666666666666667
+                "f1": 0.1466666666666667
               }
             },
-            "auprc": 0.28708333333333336,
-            "ndcg_at_10": 0.4828970287574766,
-            "sufficiency": 6.064664538387821,
+            "auprc": 0.28708333333333313,
+            "ndcg_at_10": 0.48289702875747664,
+            "sufficiency": 6.064664538387822,
             "comprehensiveness": 0.3542506468312504,
             "n_faithfulness": 60,
-            "seconds_per_sample": 0.13492666666666667,
+            "seconds_per_sample": 0.1349266666666667,
             "num_model_calls_mean": 0.0,
             "peak_vram_mb": 8428.19091796875
           },
           "control_lexical": {
-            "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/gold/control_lexical",
+            "run": "results/raw/dev/attribute/gold/control_lexical",
             "execution_kind": "real",
             "partial": false,
             "device": "NVIDIA A100-SXM4-40GB",
@@ -886,7 +886,7 @@
               "1": {
                 "p": 0.7166666666666667,
                 "r": 0.35833333333333334,
-                "f1": 0.47777777777777775
+                "f1": 0.477777777777778
               },
               "2": {
                 "p": 0.6583333333333333,
@@ -894,22 +894,22 @@
                 "f1": 0.6583333333333333
               },
               "3": {
-                "p": 0.4944444444444444,
+                "p": 0.4944444444444446,
                 "r": 0.7416666666666667,
-                "f1": 0.5933333333333334
+                "f1": 0.5933333333333333
               }
             },
-            "auprc": 0.7370171957671958,
+            "auprc": 0.7370171957671959,
             "ndcg_at_10": 0.8309613813059793,
-            "sufficiency": 1.6715734426919748,
-            "comprehensiveness": 4.971653590091231,
+            "sufficiency": 1.6715734426919746,
+            "comprehensiveness": 4.971653590091228,
             "n_faithfulness": 60,
             "seconds_per_sample": 0.06791166666666666,
             "num_model_calls_mean": 0.0,
             "peak_vram_mb": 8514.82275390625
           },
           "control_random": {
-            "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/gold/control_random",
+            "run": "results/raw/dev/attribute/gold/control_random",
             "execution_kind": "real",
             "partial": false,
             "device": "NVIDIA A100-SXM4-40GB",
@@ -932,22 +932,22 @@
                 "f1": 0.16666666666666666
               },
               "3": {
-                "p": 0.18333333333333332,
+                "p": 0.18333333333333338,
                 "r": 0.275,
-                "f1": 0.22000000000000003
+                "f1": 0.2200000000000001
               }
             },
-            "auprc": 0.32959325396825395,
+            "auprc": 0.32959325396825384,
             "ndcg_at_10": 0.5232262332800298,
-            "sufficiency": 5.694979827198818,
+            "sufficiency": 5.694979827198816,
             "comprehensiveness": 1.3219711571004094,
             "n_faithfulness": 60,
-            "seconds_per_sample": 0.148195,
+            "seconds_per_sample": 0.14819499999999997,
             "num_model_calls_mean": 0.0,
             "peak_vram_mb": 8499.00634765625
           },
           "control_retrieval": {
-            "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/gold/control_retrieval",
+            "run": "results/raw/dev/attribute/gold/control_retrieval",
             "execution_kind": "real",
             "partial": false,
             "device": "NVIDIA A100-SXM4-40GB",
@@ -962,7 +962,7 @@
               "1": {
                 "p": 0.7833333333333333,
                 "r": 0.39166666666666666,
-                "f1": 0.5222222222222223
+                "f1": 0.5222222222222226
               },
               "2": {
                 "p": 0.6,
@@ -972,20 +972,20 @@
               "3": {
                 "p": 0.4666666666666667,
                 "r": 0.7,
-                "f1": 0.56
+                "f1": 0.5599999999999999
               }
             },
-            "auprc": 0.7069146825396826,
-            "ndcg_at_10": 0.8206018451668018,
-            "sufficiency": 2.315449313569971,
+            "auprc": 0.7069146825396828,
+            "ndcg_at_10": 0.8206018451668017,
+            "sufficiency": 2.31544931356997,
             "comprehensiveness": 4.005555477932217,
             "n_faithfulness": 60,
-            "seconds_per_sample": 0.09605,
+            "seconds_per_sample": 0.09605000000000004,
             "num_model_calls_mean": 0.0,
             "peak_vram_mb": 8500.83447265625
           },
           "control_shuffled": {
-            "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/gold/control_shuffled",
+            "run": "results/raw/dev/attribute/gold/control_shuffled",
             "execution_kind": "real",
             "partial": false,
             "device": "NVIDIA A100-SXM4-40GB",
@@ -1000,7 +1000,7 @@
               "1": {
                 "p": 0.16666666666666666,
                 "r": 0.08333333333333333,
-                "f1": 0.1111111111111111
+                "f1": 0.11111111111111112
               },
               "2": {
                 "p": 0.16666666666666666,
@@ -1010,20 +1010,20 @@
               "3": {
                 "p": 0.1722222222222222,
                 "r": 0.25833333333333336,
-                "f1": 0.20666666666666667
+                "f1": 0.20666666666666675
               }
             },
-            "auprc": 0.3461243386243386,
+            "auprc": 0.34612433862433867,
             "ndcg_at_10": 0.5355605319642621,
             "sufficiency": 6.302124371340577,
             "comprehensiveness": 0.611427539405904,
             "n_faithfulness": 60,
-            "seconds_per_sample": 0.14425666666666667,
+            "seconds_per_sample": 0.1442566666666667,
             "num_model_calls_mean": 0.0,
             "peak_vram_mb": 8581.27001953125
           },
           "embedding": {
-            "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/gold/embedding",
+            "run": "results/raw/dev/attribute/gold/embedding",
             "execution_kind": "real",
             "partial": false,
             "device": "NVIDIA A100-SXM4-40GB",
@@ -1046,22 +1046,22 @@
                 "f1": 0.8166666666666667
               },
               "3": {
-                "p": 0.5833333333333334,
+                "p": 0.5833333333333335,
                 "r": 0.875,
-                "f1": 0.7
+                "f1": 0.6999999999999995
               }
             },
             "auprc": 0.8846164021164021,
-            "ndcg_at_10": 0.9380824023796291,
-            "sufficiency": 0.6688477804629559,
+            "ndcg_at_10": 0.938082402379629,
+            "sufficiency": 0.6688477804629562,
             "comprehensiveness": 5.741622591463069,
             "n_faithfulness": 60,
-            "seconds_per_sample": 0.24140166666666665,
+            "seconds_per_sample": 0.2414016666666666,
             "num_model_calls_mean": 0.0,
             "peak_vram_mb": 9796.75634765625
           },
           "leave_one_out": {
-            "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/gold/leave_one_out",
+            "run": "results/raw/dev/attribute/gold/leave_one_out",
             "execution_kind": "real",
             "partial": false,
             "device": "NVIDIA A100-SXM4-40GB",
@@ -1076,7 +1076,7 @@
               "1": {
                 "p": 0.9333333333333333,
                 "r": 0.4666666666666667,
-                "f1": 0.6222222222222221
+                "f1": 0.6222222222222222
               },
               "2": {
                 "p": 0.7583333333333333,
@@ -1084,15 +1084,15 @@
                 "f1": 0.7583333333333333
               },
               "3": {
-                "p": 0.5277777777777778,
+                "p": 0.527777777777778,
                 "r": 0.7916666666666666,
-                "f1": 0.6333333333333333
+                "f1": 0.6333333333333332
               }
             },
-            "auprc": 0.8233994708994709,
-            "ndcg_at_10": 0.8993608286941497,
-            "sufficiency": -0.35935621481306573,
-            "comprehensiveness": 6.637482664466946,
+            "auprc": 0.8233994708994713,
+            "ndcg_at_10": 0.8993608286941496,
+            "sufficiency": -0.3593562148130656,
+            "comprehensiveness": 6.637482664466948,
             "n_faithfulness": 60,
             "seconds_per_sample": 1.04961,
             "num_model_calls_mean": 10.0,
@@ -1109,7 +1109,7 @@
             "n_correct": 26
           },
           "citations": {
-            "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/generated/citations",
+            "run": "results/raw/dev/attribute/generated/citations",
             "execution_kind": "real",
             "partial": false,
             "device": "NVIDIA A100-SXM4-40GB",
@@ -1124,7 +1124,7 @@
               "1": {
                 "p": 0.9230769230769231,
                 "r": 0.46153846153846156,
-                "f1": 0.6153846153846154
+                "f1": 0.6153846153846151
               },
               "2": {
                 "p": 0.7884615384615384,
@@ -1134,7 +1134,7 @@
               "3": {
                 "p": 0.5897435897435896,
                 "r": 0.8846153846153846,
-                "f1": 0.7076923076923077
+                "f1": 0.7076923076923081
               }
             },
             "auprc": 0.8677808302808303,
@@ -1142,12 +1142,12 @@
             "sufficiency": 1.854110249568752,
             "comprehensiveness": 6.742306689856425,
             "n_faithfulness": 53,
-            "seconds_per_sample": 0.2618264150943396,
+            "seconds_per_sample": 0.26182641509433957,
             "num_model_calls_mean": 0.0,
             "peak_vram_mb": 8659.28369140625
           },
           "control_length": {
-            "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/generated/control_length",
+            "run": "results/raw/dev/attribute/generated/control_length",
             "execution_kind": "real",
             "partial": false,
             "device": "NVIDIA A100-SXM4-40GB",
@@ -1175,17 +1175,17 @@
                 "f1": 0.07692307692307693
               }
             },
-            "auprc": 0.22897588522588522,
+            "auprc": 0.2289758852258853,
             "ndcg_at_10": 0.43634870842084494,
             "sufficiency": 7.6605144925094475,
-            "comprehensiveness": 0.6742268542829131,
+            "comprehensiveness": 0.674226854282913,
             "n_faithfulness": 53,
             "seconds_per_sample": 0.07206415094339623,
             "num_model_calls_mean": 0.0,
             "peak_vram_mb": 8461.30810546875
           },
           "control_lexical": {
-            "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/generated/control_lexical",
+            "run": "results/raw/dev/attribute/generated/control_lexical",
             "execution_kind": "real",
             "partial": false,
             "device": "NVIDIA A100-SXM4-40GB",
@@ -1200,7 +1200,7 @@
               "1": {
                 "p": 0.6923076923076923,
                 "r": 0.34615384615384615,
-                "f1": 0.46153846153846156
+                "f1": 0.4615384615384614
               },
               "2": {
                 "p": 0.6346153846153846,
@@ -1208,9 +1208,9 @@
                 "f1": 0.6346153846153846
               },
               "3": {
-                "p": 0.5,
+                "p": 0.49999999999999994,
                 "r": 0.75,
-                "f1": 0.6000000000000001
+                "f1": 0.6000000000000003
               }
             },
             "auprc": 0.7242368742368742,
@@ -1218,12 +1218,12 @@
             "sufficiency": 2.679514792585611,
             "comprehensiveness": 5.80233166201625,
             "n_faithfulness": 53,
-            "seconds_per_sample": 0.027150943396226417,
+            "seconds_per_sample": 0.027150943396226385,
             "num_model_calls_mean": 0.0,
             "peak_vram_mb": 8357.90673828125
           },
           "control_random": {
-            "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/generated/control_random",
+            "run": "results/raw/dev/attribute/generated/control_random",
             "execution_kind": "real",
             "partial": false,
             "device": "NVIDIA A100-SXM4-40GB",
@@ -1246,22 +1246,22 @@
                 "f1": 0.17307692307692307
               },
               "3": {
-                "p": 0.19230769230769232,
+                "p": 0.19230769230769226,
                 "r": 0.28846153846153844,
-                "f1": 0.23076923076923078
+                "f1": 0.2307692307692308
               }
             },
-            "auprc": 0.34251373626373627,
+            "auprc": 0.3425137362637364,
             "ndcg_at_10": 0.5364532567240358,
-            "sufficiency": 6.786130901624378,
-            "comprehensiveness": 1.4002110623074275,
+            "sufficiency": 6.786130901624376,
+            "comprehensiveness": 1.400211062307427,
             "n_faithfulness": 53,
-            "seconds_per_sample": 0.07999811320754716,
+            "seconds_per_sample": 0.07999811320754721,
             "num_model_calls_mean": 0.0,
             "peak_vram_mb": 8488.02734375
           },
           "control_retrieval": {
-            "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/generated/control_retrieval",
+            "run": "results/raw/dev/attribute/generated/control_retrieval",
             "execution_kind": "real",
             "partial": false,
             "device": "NVIDIA A100-SXM4-40GB",
@@ -1276,7 +1276,7 @@
               "1": {
                 "p": 0.8076923076923077,
                 "r": 0.40384615384615385,
-                "f1": 0.5384615384615384
+                "f1": 0.5384615384615382
               },
               "2": {
                 "p": 0.6730769230769231,
@@ -1286,20 +1286,20 @@
               "3": {
                 "p": 0.5,
                 "r": 0.75,
-                "f1": 0.6000000000000001
+                "f1": 0.6000000000000003
               }
             },
-            "auprc": 0.7534111721611721,
-            "ndcg_at_10": 0.8512213854595457,
+            "auprc": 0.753411172161172,
+            "ndcg_at_10": 0.8512213854595456,
             "sufficiency": 3.4651754261603207,
             "comprehensiveness": 5.3500787159730825,
             "n_faithfulness": 53,
-            "seconds_per_sample": 0.04748867924528302,
+            "seconds_per_sample": 0.04748867924528307,
             "num_model_calls_mean": 0.0,
             "peak_vram_mb": 8357.61669921875
           },
           "control_shuffled": {
-            "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/generated/control_shuffled",
+            "run": "results/raw/dev/attribute/generated/control_shuffled",
             "execution_kind": "real",
             "partial": false,
             "device": "NVIDIA A100-SXM4-40GB",
@@ -1327,17 +1327,17 @@
                 "f1": 0.2
               }
             },
-            "auprc": 0.34126221001221,
+            "auprc": 0.3412622100122101,
             "ndcg_at_10": 0.5297336965284942,
             "sufficiency": 6.604168282893582,
             "comprehensiveness": 0.833472512791647,
             "n_faithfulness": 53,
-            "seconds_per_sample": 0.07765283018867924,
+            "seconds_per_sample": 0.0776528301886793,
             "num_model_calls_mean": 0.0,
             "peak_vram_mb": 8489.53955078125
           },
           "embedding": {
-            "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/generated/embedding",
+            "run": "results/raw/dev/attribute/generated/embedding",
             "execution_kind": "real",
             "partial": false,
             "device": "NVIDIA A100-SXM4-40GB",
@@ -1352,7 +1352,7 @@
               "1": {
                 "p": 1.0,
                 "r": 0.5,
-                "f1": 0.6666666666666666
+                "f1": 0.6666666666666665
               },
               "2": {
                 "p": 0.8076923076923077,
@@ -1360,22 +1360,22 @@
                 "f1": 0.8076923076923077
               },
               "3": {
-                "p": 0.5769230769230769,
+                "p": 0.5769230769230768,
                 "r": 0.8653846153846154,
-                "f1": 0.6923076923076923
+                "f1": 0.6923076923076926
               }
             },
-            "auprc": 0.8895604395604395,
-            "ndcg_at_10": 0.9441136433954426,
-            "sufficiency": 1.9817481621294468,
-            "comprehensiveness": 6.970970645825701,
+            "auprc": 0.8895604395604396,
+            "ndcg_at_10": 0.9441136433954427,
+            "sufficiency": 1.9817481621294466,
+            "comprehensiveness": 6.9709706458257,
             "n_faithfulness": 53,
-            "seconds_per_sample": 0.08567924528301887,
+            "seconds_per_sample": 0.08567924528301889,
             "num_model_calls_mean": 0.0,
             "peak_vram_mb": 9609.5771484375
           },
           "leave_one_out": {
-            "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/generated/leave_one_out",
+            "run": "results/raw/dev/attribute/generated/leave_one_out",
             "execution_kind": "real",
             "partial": false,
             "device": "NVIDIA A100-SXM4-40GB",
@@ -1390,7 +1390,7 @@
               "1": {
                 "p": 1.0,
                 "r": 0.5,
-                "f1": 0.6666666666666666
+                "f1": 0.6666666666666665
               },
               "2": {
                 "p": 0.7884615384615384,
@@ -1400,13 +1400,13 @@
               "3": {
                 "p": 0.5512820512820512,
                 "r": 0.8269230769230769,
-                "f1": 0.6615384615384615
+                "f1": 0.6615384615384616
               }
             },
             "auprc": 0.8663919413919413,
-            "ndcg_at_10": 0.9318452631861356,
+            "ndcg_at_10": 0.9318452631861357,
             "sufficiency": 1.4489514343368806,
-            "comprehensiveness": 6.884107277091415,
+            "comprehensiveness": 6.884107277091417,
             "n_faithfulness": 53,
             "seconds_per_sample": 0.5736452830188679,
             "num_model_calls_mean": 5.849056603773585,
@@ -2104,7 +2104,7 @@
       }
     }
   },
-  "generated_utc": "2026-07-25T03:44:51Z",
+  "generated_utc": "2026-07-25T08:20:56Z",
   "package_version": "0.1.0",
   "dataset_hash": "aa57b60128d8f13286ad4b72249e0b5c845ec4f670f78f528d59e99af650a6e9",
   "primary_k": 2

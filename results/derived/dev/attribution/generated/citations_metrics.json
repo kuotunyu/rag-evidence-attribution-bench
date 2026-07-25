@@ -1,5 +1,5 @@
 {
-  "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/generated/citations",
+  "run": "results/raw/dev/attribute/generated/citations",
   "execution_kind": "real",
   "partial": false,
   "device": "NVIDIA A100-SXM4-40GB",
@@ -14,7 +14,7 @@
     "1": {
       "p": 0.9230769230769231,
       "r": 0.46153846153846156,
-      "f1": 0.6153846153846154
+      "f1": 0.6153846153846151
     },
     "2": {
       "p": 0.7884615384615384,
@@ -24,7 +24,7 @@
     "3": {
       "p": 0.5897435897435896,
       "r": 0.8846153846153846,
-      "f1": 0.7076923076923077
+      "f1": 0.7076923076923081
     }
   },
   "auprc": 0.8677808302808303,
@@ -32,7 +32,7 @@
   "sufficiency": 1.854110249568752,
   "comprehensiveness": 6.742306689856425,
   "n_faithfulness": 53,
-  "seconds_per_sample": 0.2618264150943396,
+  "seconds_per_sample": 0.26182641509433957,
   "num_model_calls_mean": 0.0,
   "peak_vram_mb": 8659.28369140625
 }

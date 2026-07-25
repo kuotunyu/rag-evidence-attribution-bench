@@ -1,5 +1,5 @@
 {
-  "run": "/content/drive/MyDrive/reab/results/raw/dev/attribute/generated/control_lexical",
+  "run": "results/raw/dev/attribute/generated/control_lexical",
   "execution_kind": "real",
   "partial": false,
   "device": "NVIDIA A100-SXM4-40GB",
@@ -14,7 +14,7 @@
     "1": {
       "p": 0.6923076923076923,
       "r": 0.34615384615384615,
-      "f1": 0.46153846153846156
+      "f1": 0.4615384615384614
     },
     "2": {
       "p": 0.6346153846153846,
@@ -22,9 +22,9 @@
       "f1": 0.6346153846153846
     },
     "3": {
-      "p": 0.5,
+      "p": 0.49999999999999994,
       "r": 0.75,
-      "f1": 0.6000000000000001
+      "f1": 0.6000000000000003
     }
   },
   "auprc": 0.7242368742368742,
@@ -32,7 +32,7 @@
   "sufficiency": 2.679514792585611,
   "comprehensiveness": 5.80233166201625,
   "n_faithfulness": 53,
-  "seconds_per_sample": 0.027150943396226417,
+  "seconds_per_sample": 0.027150943396226385,
   "num_model_calls_mean": 0.0,
   "peak_vram_mb": 8357.90673828125
 }
