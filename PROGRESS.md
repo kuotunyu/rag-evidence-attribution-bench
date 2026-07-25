@@ -132,3 +132,20 @@
   (dev60 + locked eval240 — needs the rebuilt bundle re-uploaded to pick up the perf fix);
   legacy ARC-JSD validation against the official Qwen2.5 implementation (drops the
   `experimental` label on the native `arc_jsd` method).
+
+### 2026-07-25 (later) — preparing the full run (01)
+- Derived REAL per-sample costs from the smoke `run_meta.json` files instead of guessing:
+  mode A ≈ 122 s/sample (leave_one_out 79.5 dominates), mode B ≈ 75 s/sample
+  (leave_one_out 41.1, citations 16.5), generation 7.7 s/sample → **≈ 3.4 min/sample on T4**.
+  Projection: dev60 ≈ 3.5 h, eval240 ≈ 13–14 h, total ≈ 17 h on T4; ≈ 5 h on A100.
+  → **A100 recommended for 01.** Rejected the obvious speedup (batching the 11 LOO passes):
+  it would violate the batch-1 determinism promise in MODEL_CARD.md and make the numbers
+  incomparable to the already-published smoke results.
+- `01_colab_run.ipynb` intro rewritten with these measured numbers + a note that the dev
+  and eval sections write to disjoint paths, so they MAY be run in two parallel Colab
+  sessions (only `summary.json` is shared, and it is regenerable locally from raw records).
+- `02_report.ipynb` upgraded from smoke-only to re-deriving ALL splits (smoke+dev+eval)
+  and made cwd-robust; verified locally that `evaluate` on a split with no generation/
+  attribution records yet exits cleanly rather than crashing.
+- Bundle rebuilt: 202 files, 2.3 MB, verified to contain dev/eval prepared data, samples,
+  committed bm25 runs, both configs, AND the model-reload perf fix. 92 tests green.

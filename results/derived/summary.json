@@ -733,6 +733,8 @@
         "bm25": {
           "run": "results/raw/dev/retrieve/bm25",
           "execution_kind": "real",
+          "partial": false,
+          "device": "cpu",
           "n_evaluated": 60,
           "n_failed": 0,
           "failure_rate": 0.0,
@@ -759,6 +761,8 @@
         "bm25": {
           "run": "results/raw/eval/retrieve/bm25",
           "execution_kind": "real",
+          "partial": false,
+          "device": "cpu",
           "n_evaluated": 240,
           "n_failed": 0,
           "failure_rate": 0.0,
@@ -780,7 +784,7 @@
       "attribution": {}
     }
   },
-  "generated_utc": "2026-07-24T18:19:04Z",
+  "generated_utc": "2026-07-25T02:45:06Z",
   "package_version": "0.1.0",
   "dataset_hash": "aa57b60128d8f13286ad4b72249e0b5c845ec4f670f78f528d59e99af650a6e9",
   "primary_k": 2

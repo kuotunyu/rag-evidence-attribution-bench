@@ -2,6 +2,8 @@
   "bm25": {
     "run": "results/raw/eval/retrieve/bm25",
     "execution_kind": "real",
+    "partial": false,
+    "device": "cpu",
     "n_evaluated": 240,
     "n_failed": 0,
     "failure_rate": 0.0,

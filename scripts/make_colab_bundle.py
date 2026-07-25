@@ -41,7 +41,8 @@ def main() -> None:
             zf.write(f, f"data/prepared/{f.name}")
             n += 1
     size_mb = out.stat().st_size / (1024 * 1024)
-    print(f"wrote {out} ({n} files, {size_mb:.1f} MB) — upload to Drive MyDrive/reab/")
+    print(f"wrote {out} ({n} files, {size_mb:.1f} MB)")
+    print("next: open a Colab notebook and pick this file when the upload cell prompts")
 
 
 if __name__ == "__main__":
