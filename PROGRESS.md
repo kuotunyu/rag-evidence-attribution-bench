@@ -202,6 +202,22 @@
 - **All three splits (smoke 20 / dev 60 / locked eval 240) are now "real AND independently
   re-derived from raw records on this machine."** No split is in a weaker evidentiary
   state than any other.
+### 2026-07-25 — 02_report.ipynb verified end-to-end locally
+- `02` needs no Colab and no GPU; added `jupyterlab` to the dev group so it is runnable
+  from a clean checkout with one command (`uv run jupyter lab notebooks/02_report.ipynb`).
+- Hardened the notebook before handing it over: replaced the `%cd` magic inside an
+  `if` block (not portable across execution frontends) with plain `os.chdir`, and
+  replaced bare `!python` shell-outs with `subprocess` on `sys.executable` so the CLI
+  always runs on the same interpreter as the kernel. Failed commands now raise instead
+  of silently continuing. The summary cell prints a readable per-split digest
+  (generation metrics + best real method vs strongest control + mode-B subset size)
+  instead of dumping 4000 chars of raw JSON.
+- **Verified by actually executing it**, not by inspection: `jupyter nbconvert --execute`
+  into a temp dir → **0 error outputs, 9 figures rendered**, digest correct for all three
+  splits. The repo's copy stays output-free (executed to a temp path, never in place).
+- **Reproducibility bonus**: that execution re-ran `evaluate` on all three splits and
+  `report`; the resulting diff touched ONLY the generated-at timestamp — every metric in
+  README/summary.json was bit-identical. Re-deriving from raw records is deterministic.
 - **Notebook bug fixed (not just documented):** `01_colab_run.ipynb`'s dev section ran
   `export` but never downloaded, and the eval section downloaded only `zips[-1]` — so a
   single-session run of both sections silently stranded dev's zip on the Colab VM. Fixed:
