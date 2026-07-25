@@ -202,6 +202,32 @@
 - **All three splits (smoke 20 / dev 60 / locked eval 240) are now "real AND independently
   re-derived from raw records on this machine."** No split is in a weaker evidentiary
   state than any other.
+### 2026-07-25 — pre-transfer hardening (moving to a Win11 + RTX 4090 box via USB)
+- **Pre-GitHub audit passed**: 337 tracked files / 19 MB (all text JSONL, largest 1.8 MB);
+  no tokens, no `.env` (only `.env.example`), no local absolute paths. The only absolute
+  paths in tracked files are Colab's own `/content/drive/…` (in `01_colab_run.ipynb` and
+  one test fixture asserting env overrides MAY be absolute) — correct and necessary.
+- **Found a real blocker for the 4090 machine, documented rather than silently shipped**:
+  `uv sync` on Windows resolves torch from the **pytorch-cpu index** (`[tool.uv.sources]`)
+  AND caps it at `<2.7` (the Win10 `WinError 1114` workaround). Both are deliberate for
+  CI/Docker/CPU reproducibility, but together they mean a CUDA workstation gets
+  `torch 2.6.0+cpu` and cannot use its GPU. Failure mode is loud (`GpuRequiredError`),
+  not silent. Written up in the new `TRANSFER.md` with the opt-in command and two honest
+  caveats: the `<2.7` cap is a Win10-laptop workaround that may be unnecessary on Win11,
+  and **the CUDA path has never been executed by this project** — every GPU number came
+  from Colab, so the documented command is a starting point, not a tested procedure.
+- **`TRANSFER.md` added**: what to copy (git bundle, not the folder — `.venv`/dataset/
+  caches must not travel), setup + verification on the new machine, the CUDA opt-in, and
+  the GitHub publish steps incl. the MIT-code / CC-BY-SA-results licensing split.
+- **README/README_zh-TW freshness pass**: the results preamble no longer says GPU numbers
+  are "pending Colab" (they landed); the Colab section documents the file-picker flow with
+  measured times (T4 ~1.5 h smoke, A100 ~4.5 h dev+eval) instead of the stale
+  "upload to Drive MyDrive/reab/" instructions.
+- **Not re-verified this pass**: the Docker image (Docker Desktop was not running). It was
+  verified earlier when `results/` held retrieval only; it now bakes in the full 19 MB of
+  results. Nothing suggests it breaks — `ResultsStore` just loads more JSONL — but the
+  boot+`/health` probe should be re-run once before publishing.
+
 ### 2026-07-25 — 02_report.ipynb verified end-to-end locally
 - `02` needs no Colab and no GPU; added `jupyterlab` to the dev group so it is runnable
   from a clean checkout with one command (`uv run jupyter lab notebooks/02_report.ipynb`).
