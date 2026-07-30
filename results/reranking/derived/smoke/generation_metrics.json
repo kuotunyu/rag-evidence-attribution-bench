@@ -1,0 +1,146 @@
+{
+  "qwen3-4b-reranking-v1-2026-07-29-bm25-k5": {
+    "run": "results/reranking/raw/smoke/generate/qwen3-4b-reranking-v1-2026-07-29-bm25-k5",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "NVIDIA GeForce RTX 4090",
+    "model": {
+      "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+      "device": "cuda",
+      "dtype_requested": "bfloat16",
+      "dtype_effective": "bfloat16",
+      "quantization_requested": "none",
+      "quantization_effective": "none"
+    },
+    "n_evaluated": 20,
+    "n_failed": 0,
+    "failure_rate": 0.0,
+    "abstain_rate": 0.3,
+    "em": 0.35,
+    "f1": 0.5094444499999999,
+    "citation": {
+      "precision": 0.8928571428571429,
+      "recall": 0.7142857142857143,
+      "f1": 0.7642857142857141,
+      "no_citation_rate": 0.0,
+      "n_scored": 14,
+      "coverage_all": 0.5,
+      "complete_coverage_all": 0.3
+    },
+    "latency_ms": {
+      "mean": 1114.74555,
+      "p50": 495.647,
+      "p95": 3660.312
+    },
+    "throughput_tokens_per_s": 20.58765787403233,
+    "peak_vram_mb": 7726.392578125
+  },
+  "qwen3-4b-reranking-v1-2026-07-29-dense-k5": {
+    "run": "results/reranking/raw/smoke/generate/qwen3-4b-reranking-v1-2026-07-29-dense-k5",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "NVIDIA GeForce RTX 4090",
+    "model": {
+      "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+      "device": "cuda",
+      "dtype_requested": "bfloat16",
+      "dtype_effective": "bfloat16",
+      "quantization_requested": "none",
+      "quantization_effective": "none"
+    },
+    "n_evaluated": 20,
+    "n_failed": 0,
+    "failure_rate": 0.0,
+    "abstain_rate": 0.25,
+    "em": 0.35,
+    "f1": 0.4927778,
+    "citation": {
+      "precision": 0.8888888888888888,
+      "recall": 0.6,
+      "f1": 0.6933333333333332,
+      "no_citation_rate": 0.0,
+      "n_scored": 15,
+      "coverage_all": 0.45,
+      "complete_coverage_all": 0.2
+    },
+    "latency_ms": {
+      "mean": 1694.50775,
+      "p50": 716.425,
+      "p95": 5747.127
+    },
+    "throughput_tokens_per_s": 13.809320140318036,
+    "peak_vram_mb": 8523.2685546875
+  },
+  "qwen3-4b-reranking-v1-2026-07-29-hybrid_rrf-k5": {
+    "run": "results/reranking/raw/smoke/generate/qwen3-4b-reranking-v1-2026-07-29-hybrid_rrf-k5",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "NVIDIA GeForce RTX 4090",
+    "model": {
+      "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+      "device": "cuda",
+      "dtype_requested": "bfloat16",
+      "dtype_effective": "bfloat16",
+      "quantization_requested": "none",
+      "quantization_effective": "none"
+    },
+    "n_evaluated": 20,
+    "n_failed": 0,
+    "failure_rate": 0.0,
+    "abstain_rate": 0.15,
+    "em": 0.4,
+    "f1": 0.55876525,
+    "citation": {
+      "precision": 0.8235294117647058,
+      "recall": 0.6764705882352942,
+      "f1": 0.7058823529411764,
+      "no_citation_rate": 0.0,
+      "n_scored": 17,
+      "coverage_all": 0.575,
+      "complete_coverage_all": 0.4
+    },
+    "latency_ms": {
+      "mean": 614.07855,
+      "p50": 433.036,
+      "p95": 1246.04
+    },
+    "throughput_tokens_per_s": 24.99680211920771,
+    "peak_vram_mb": 8519.234375
+  },
+  "qwen3-4b-reranking-v1-2026-07-29-hybrid_rrf_rerank-k5": {
+    "run": "results/reranking/raw/smoke/generate/qwen3-4b-reranking-v1-2026-07-29-hybrid_rrf_rerank-k5",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "NVIDIA GeForce RTX 4090",
+    "model": {
+      "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+      "device": "cuda",
+      "dtype_requested": "bfloat16",
+      "dtype_effective": "bfloat16",
+      "quantization_requested": "none",
+      "quantization_effective": "none"
+    },
+    "n_evaluated": 20,
+    "n_failed": 0,
+    "failure_rate": 0.0,
+    "abstain_rate": 0.15,
+    "em": 0.5,
+    "f1": 0.6330159,
+    "citation": {
+      "precision": 0.7941176470588235,
+      "recall": 0.5588235294117647,
+      "f1": 0.6294117647058823,
+      "no_citation_rate": 0.0,
+      "n_scored": 17,
+      "coverage_all": 0.475,
+      "complete_coverage_all": 0.2
+    },
+    "latency_ms": {
+      "mean": 749.34805,
+      "p50": 448.115,
+      "p95": 943.398
+    },
+    "throughput_tokens_per_s": 23.62053254158732,
+    "peak_vram_mb": 8601.0068359375
+  }
+}

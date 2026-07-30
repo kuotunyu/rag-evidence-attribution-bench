@@ -1,0 +1,42 @@
+{
+  "run": "results/reranking/raw/smoke/attribute/gold/hybrid_rrf_rerank__embedding",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "NVIDIA GeForce RTX 4090",
+  "method": "embedding",
+  "run_namespace": "hybrid_rrf_rerank",
+  "generation_run": "qwen3-4b-reranking-v1-2026-07-29-hybrid_rrf_rerank-k5",
+  "subset": null,
+  "is_control": false,
+  "n_attempted": 20,
+  "n_success": 20,
+  "n_failed": 0,
+  "n_skipped": 0,
+  "failure_rate": 0.0,
+  "n_agreement": 20,
+  "prf_at": {
+    "1": {
+      "p": 0.8,
+      "r": 0.4,
+      "f1": 0.5333333333333332
+    },
+    "2": {
+      "p": 0.725,
+      "r": 0.725,
+      "f1": 0.725
+    },
+    "3": {
+      "p": 0.5666666666666665,
+      "r": 0.85,
+      "f1": 0.6800000000000003
+    }
+  },
+  "auprc": 0.8020833333333334,
+  "ndcg_at_10": 0.8582256963963897,
+  "sufficiency": 1.041789496844736,
+  "comprehensiveness": 5.194035878210407,
+  "n_faithfulness": 20,
+  "seconds_per_sample": 0.17962,
+  "num_model_calls_mean": 0.0,
+  "peak_vram_mb": 9201.39404296875
+}

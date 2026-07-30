@@ -1,0 +1,75 @@
+{
+  "type": {
+    "bridge": {
+      "n": 48,
+      "retrieval_ndcg_at_5_delta": 0.14263345482147144,
+      "complete_evidence_at_5_delta": 0.3125,
+      "answer_em_delta": 0.14583333333333334,
+      "answer_f1_delta": 0.17059416666666669,
+      "citation_coverage_delta": 0.08333333333333333,
+      "attribution_f1_at_2_delta": {
+        "citations": null,
+        "embedding": null,
+        "leave_one_out": null
+      },
+      "leave_one_out_faithfulness_delta": {
+        "sufficiency": null,
+        "comprehensiveness": null
+      },
+      "primary_transfer_taxonomy_counts": {
+        "pending": 48
+      },
+      "retrieval_better_attribution_worse_count": 0,
+      "consolidation_loss_count": 1,
+      "consolidation_gain_count": 16
+    },
+    "comparison": {
+      "n": 12,
+      "retrieval_ndcg_at_5_delta": 0.07470752492758616,
+      "complete_evidence_at_5_delta": 0.08333333333333333,
+      "answer_em_delta": 0.0,
+      "answer_f1_delta": -0.0623195,
+      "citation_coverage_delta": -0.08333333333333333,
+      "attribution_f1_at_2_delta": {
+        "citations": null,
+        "embedding": null,
+        "leave_one_out": null
+      },
+      "leave_one_out_faithfulness_delta": {
+        "sufficiency": null,
+        "comprehensiveness": null
+      },
+      "primary_transfer_taxonomy_counts": {
+        "pending": 12
+      },
+      "retrieval_better_attribution_worse_count": 0,
+      "consolidation_loss_count": 0,
+      "consolidation_gain_count": 1
+    }
+  },
+  "level": {
+    "hard": {
+      "n": 60,
+      "retrieval_ndcg_at_5_delta": 0.12904826884269438,
+      "complete_evidence_at_5_delta": 0.26666666666666666,
+      "answer_em_delta": 0.11666666666666667,
+      "answer_f1_delta": 0.12401143333333334,
+      "citation_coverage_delta": 0.05,
+      "attribution_f1_at_2_delta": {
+        "citations": null,
+        "embedding": null,
+        "leave_one_out": null
+      },
+      "leave_one_out_faithfulness_delta": {
+        "sufficiency": null,
+        "comprehensiveness": null
+      },
+      "primary_transfer_taxonomy_counts": {
+        "pending": 60
+      },
+      "retrieval_better_attribution_worse_count": 0,
+      "consolidation_loss_count": 1,
+      "consolidation_gain_count": 17
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "run": "results/reranking/raw/smoke/attribute/gold/dense__control_shuffled",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "NVIDIA GeForce RTX 4090",
+  "method": "control_shuffled",
+  "run_namespace": "dense",
+  "generation_run": "qwen3-4b-reranking-v1-2026-07-29-dense-k5",
+  "subset": null,
+  "is_control": true,
+  "n_attempted": 20,
+  "n_success": 20,
+  "n_failed": 0,
+  "n_skipped": 0,
+  "failure_rate": 0.0,
+  "n_agreement": 20,
+  "prf_at": {
+    "1": {
+      "p": 0.45,
+      "r": 0.225,
+      "f1": 0.3
+    },
+    "2": {
+      "p": 0.325,
+      "r": 0.325,
+      "f1": 0.325
+    },
+    "3": {
+      "p": 0.29999999999999993,
+      "r": 0.45,
+      "f1": 0.3600000000000001
+    }
+  },
+  "auprc": 0.48958333333333337,
+  "ndcg_at_10": 0.6277494904434723,
+  "sufficiency": 3.136126000139262,
+  "comprehensiveness": 1.6488539343133244,
+  "n_faithfulness": 20,
+  "seconds_per_sample": 0.10585499999999999,
+  "num_model_calls_mean": 0.0,
+  "peak_vram_mb": 8210.7490234375
+}

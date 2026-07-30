@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "run_id": "dev_retrieve_hybrid_rrf_rerank_20260730T024835Z",
+  "stage": "retrieve",
+  "name": "hybrid_rrf_rerank",
+  "split": "dev",
+  "run_name": "reranking_dev",
+  "execution_kind": "real",
+  "config_hash": "sha256:f900706d09e2ec3f7e008eb0727aa8e0bc683520e75a1a6b7fb4fb144cf7a5fd",
+  "config_scientific": {
+    "stage": "retrieve",
+    "split": "dev",
+    "seed": 42,
+    "data": {
+      "hf_path": "hotpotqa/hotpot_qa",
+      "hf_config": "distractor",
+      "hf_split": "validation",
+      "hf_revision": null,
+      "split_seed": 20260718,
+      "split_sizes": {
+        "smoke": 20,
+        "dev": 60,
+        "eval": 240
+      }
+    },
+    "retrieval": {
+      "method": "hybrid_rrf_rerank",
+      "source_method": "hybrid_rrf",
+      "source_rrf_k": 60,
+      "experiment_id": "reranking-v1-2026-07-29",
+      "preregistration_sha256": "fdef3b33d5a78ac939f0cab1a7523a1a29ed3ef1ee4d8b9705447045fbc2e42f",
+      "candidate_k": 10,
+      "adapter": "hf_sequence_classification",
+      "model_id": "BAAI/bge-reranker-v2-m3",
+      "model_revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+      "tokenizer_id": "BAAI/bge-reranker-v2-m3",
+      "tokenizer_revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+      "max_length": 512,
+      "device": "cuda",
+      "dtype": "float16"
+    },
+    "method": "hybrid_rrf_rerank",
+    "experiment_id": "reranking-v1-2026-07-29",
+    "preregistration_sha256": "fdef3b33d5a78ac939f0cab1a7523a1a29ed3ef1ee4d8b9705447045fbc2e42f"
+  },
+  "package_version": "0.1.0",
+  "started_utc": "2026-07-30T02:48:35Z",
+  "finished_utc": "2026-07-30T02:48:44Z",
+  "status": "completed",
+  "expected_count": 60,
+  "limit": null,
+  "n_attempted": 60,
+  "n_success": 60,
+  "n_failed": 0,
+  "n_skipped": 0,
+  "env": {
+    "python": "3.11.15",
+    "platform": "win32",
+    "machine": "AMD64",
+    "torch": "2.13.0+cu126",
+    "cuda": "12.6",
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "gpu_total_vram_mb": 24563.5
+  },
+  "libs": {
+    "torch": "2.13.0+cu126",
+    "transformers": "5.14.1",
+    "tokenizers": "0.22.2",
+    "accelerate": "1.14.0",
+    "bitsandbytes": null,
+    "datasets": "5.0.0"
+  },
+  "model": {
+    "adapter": "hf_sequence_classification",
+    "model_id": "BAAI/bge-reranker-v2-m3",
+    "model_revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+    "tokenizer_id": "BAAI/bge-reranker-v2-m3",
+    "tokenizer_revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+    "tokenizer_class": "XLMRobertaTokenizer",
+    "max_length": 512,
+    "device": "cuda",
+    "dtype_requested": "float16",
+    "dtype_effective": "float16",
+    "batch_size": 16,
+    "num_parameters": 567755777
+  },
+  "run_peak_vram_mb": 1204.73779296875,
+  "total_wall_s": 2.139,
+  "resume_events": [],
+  "notes": "",
+  "reranker_systems": {
+    "model_load_s": 4.887099,
+    "model_load_s_sessions": [
+      4.887099
+    ],
+    "cache_hits": 0,
+    "cache_misses": 600,
+    "cache_hit_rate": 0.0,
+    "pairs_seen": 600,
+    "pairs_scored": 600,
+    "scoring_s": 1.590557199990144,
+    "scored_pairs_per_s": 377.22629529055473
+  }
+}
