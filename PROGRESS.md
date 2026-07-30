@@ -20,6 +20,7 @@
 | M10 | ContextCite adapter attempt (4h stop-loss) | ✅ SUCCEEDED (~1h) — works vs transformers 5.14; passage-level partitioner; real CPU run verified | `uv run python -m rag_evidence.cli attribute --method contextcite …` (Colab) |
 | M11 | ARC-JSD legacy env + experimental native method | ✅ done — native `arc_jsd` (FakeLM-tested, EXPERIMENTAL) + legacy/arc_jsd/ env + official-repro notebook | `uv run pytest tests/test_arc_jsd.py` |
 | M12 | docs finalization + final commit | ✅ done | read README.md / DATA_CARD.md / MODEL_CARD.md |
+| M13 | Preregistered cross-encoder reranking extension | 🟡 CPU scaffold/smoke done; GPU dev/eval pending because SafeSynth owns RTX 4090 | `python -m rag_evidence.cli reranking evaluate --config configs/reranking/smoke.yaml` |
 
 ## Acceptance checklist (from spec)
 
@@ -249,3 +250,40 @@
   single-session run of both sections silently stranded dev's zip on the Colab VM. Fixed:
   the dev cell now downloads its own zip immediately after exporting, and the eval cell
   loops over ALL export zips instead of taking the last one. Both notebooks re-validated.
+
+### 2026-07-29 — preregistered reranking extension, CPU boundary reached
+- Fully re-read the project contract/code/tests/results and parsed all 218 committed
+  JSON/JSONL artifacts (10,901 objects, zero parse failures). Re-derived smoke/dev/eval
+  into a temporary derived directory; the summary matched the committed
+  `results/derived/summary.json` exactly after ignoring only `generated_utc`.
+- Locked `PREREGISTRATION_RERANKING.md` before implementation or any new eval run
+  (SHA-256 `fdef3b33d5a78ac939f0cab1a7523a1a29ed3ef1ee4d8b9705447045fbc2e42f`).
+  Candidate-k is 10 because the committed distractor corpus has exactly 10 passages per
+  question; final context-k is 5 for every arm.
+- Added replaceable `RerankerAdapter`, pinned `BAAI/bge-reranker-v2-m3` model/tokenizer
+  revision `953dc6f...`, append-only content cache, resume/config guards, systems telemetry,
+  four namespaced downstream arms, per-arm Mode-A context, attribution stability/control
+  separation, machine-generated comparison/error/group artifacts, and separate
+  smoke/dev/eval configs under `configs/reranking/`.
+- Existing 92 tests remained green; extension tests increased the suite to **105 passed**.
+  Ruff and strict mypy are green.
+- Observed and documented the CP950 editable `.pth` failure caused by this workspace's
+  non-ASCII path; used an ASCII temp environment with a non-editable wheel instead.
+- SafeSynth (`preflight_supervised_labeler_v18`) and Longcare production evaluation were
+  both active on the RTX 4090. No CUDA process was interrupted or started.
+- Real CPU/float32 smoke rerank completed: 20/20, 0 failures, 200 cache misses on the cold
+  run, 3.05 scored pairs/s, model load 24.2 s, scoring 65.6 s, no VRAM claim. Exploratory
+  retrieval-only deltas versus hybrid RRF: nDCG@5 `0.761 → 0.895`, Recall@5
+  `0.850 → 0.925`, complete necessary-passage coverage@5 `0.750 → 0.850`. CPU rerank p95
+  was 7.37 s and is explicitly not evaluated against the preregistered CUDA cost gate.
+- Pending commands and the locked eval order are in `docs/RERANKING_RUNBOOK.md`. No
+  reranking dev/eval or downstream Qwen/attribution result has been run.
+- Locked a separate secondary analysis plan before any reranking downstream/dev/eval
+  result (SHA-256 `4b60cc6f...6f48`). Machine artifacts now include 10,000-replicate
+  paired bootstrap intervals, correct-answer-subset transfer taxonomy, type/level
+  grouping, and observed cold/warm/mixed cache plus amortized model-load accounting.
+- Final CPU publication checks: Ruff format/lint, strict mypy, 105 tests (77% coverage),
+  226 JSON/JSONL artifacts parsed (11,146 objects), secret/machine-path scans, and
+  original-result integrity all passed. Docker build/probe remains unverified because
+  the Docker Desktop daemon was not running; do not run locked eval until that existing
+  CI gate can be repeated.

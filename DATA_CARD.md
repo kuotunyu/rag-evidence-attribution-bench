@@ -10,6 +10,10 @@
 - Each example: a question, a short answer, 10 context paragraphs (2 gold + 8 distractors),
   and sentence-level supporting facts for the gold paragraphs.
 
+The reranking extension preserves those exact 10 query-specific candidates. Candidate
+top-30/top-50 ablations are structurally inapplicable unless a future study defines a
+new corpus and reruns every retrieval arm over that same corpus.
+
 ## What this repo stores (and what it never stores)
 
 Never committed: the downloaded dataset, `data/prepared/` JSONL, model weights, HF caches,

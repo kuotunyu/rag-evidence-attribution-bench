@@ -32,3 +32,20 @@ Format:
   Linux (CI/Docker/Colab) is unaffected and uses current torch; Colab keeps its
   preinstalled CUDA torch. Local Windows runs use torch 2.6.0+cpu for CPU-only work
   (dense retrieval, tests). GPU benchmark numbers are produced on Colab regardless.
+
+## 2026-07-29 editable install fails under a UTF-8 workspace path on CP950 Windows
+
+- Command: `uv run python -m rag_evidence.cli evaluate --config configs/smoke.yaml`
+  from a repository path containing non-ASCII directory names on CP950 Windows.
+- Observed: uv rebuilt `.venv`, then Python failed in `site.addpackage` with
+  `UnicodeDecodeError: 'cp950' codec can't decode byte 0xe9 ...`. The generated
+  `_editable_impl_rag_evidence_attribution_bench.pth` stored the non-ASCII workspace
+  path as UTF-8 bytes while Python 3.11 decoded `.pth` with the active CP950 locale.
+  `PYTHONUTF8=1` did not change `.pth` decoding in this startup path.
+- Time spent: ~0.2 h (stop-loss: switched environment strategy after one failed UTF-8
+  mode attempt).
+- Fallback adopted: create an ASCII-path environment with
+  `UV_PROJECT_ENVIRONMENT=%TEMP%\reab-codex-env uv sync --no-editable ...`; run checks
+  from that interpreter with the repository `src/` on `PYTHONPATH`. The project wheel
+  contains no editable `.pth`, all 105 tests pass, and the repo path itself need not be
+  renamed. This is an environment-only issue, not an experiment failure.

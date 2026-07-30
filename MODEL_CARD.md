@@ -6,6 +6,28 @@
 |---|---|---|---|
 | Generator | `Qwen/Qwen3-4B-Instruct-2507` | Apache-2.0 | non-thinking instruct variant; official chat template; transformers ≥ 4.51 (repo locks 5.14.1) |
 | Embedder (dense retrieval + embedding attribution) | `Qwen/Qwen3-Embedding-0.6B` | Apache-2.0 | 1024-dim, last-token pooling; instruction prompt applied to QUERIES only (asymmetric use) |
+| Reranker (extension only) | `BAAI/bge-reranker-v2-m3` revision `953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e` | Apache-2.0 | multilingual 0.6B cross-encoder; raw scalar classification logit; tokenizer pinned to the same revision |
+
+## Controlled reranking extension
+
+The original benchmark does not use a reranker. The isolated extension under
+`results/reranking/` compares BM25, dense, hybrid RRF, and hybrid RRF + cross-encoder
+while holding every downstream setting fixed. Its locked protocol is
+[PREREGISTRATION_RERANKING.md](PREREGISTRATION_RERANKING.md). Paired uncertainty,
+per-question transfer taxonomy, subgroup descriptions, and cache-cost decomposition are
+locked separately in
+[SECONDARY_ANALYSIS_RERANKING.md](SECONDARY_ANALYSIS_RERANKING.md); they cannot replace
+the primary decision rule.
+
+- Adapter: in-repo `RerankerAdapter`; the initial implementation uses Transformers
+  `AutoTokenizer` and `AutoModelForSequenceClassification` with `trust_remote_code=False`.
+- Pair rendering: `(question, title + "\n" + passage)`.
+- Candidate-k: 10 (the complete fixed Hotpot distractor candidate set); final context-k: 5.
+- Max pair length 512, batch size 16, exact revision, raw logits, hybrid-rank tie-break.
+- Smoke: CPU/float32. Dev and locked eval: CUDA/float16.
+- Every run records effective dtype/device, tokenizer class, model load time, peak VRAM,
+  pair throughput, and cache hit/miss counts.
+- This repository does not import Longcare RAG runtime code or model objects.
 
 ## Decoding (benchmark mode)
 

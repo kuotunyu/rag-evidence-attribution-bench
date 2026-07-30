@@ -42,8 +42,22 @@ git fsck                      # integrity check of the transferred objects
 
 ```bash
 uv sync --extra ml --extra app
-uv run pytest -m "not gpu and not slow"     # expect: 92 passed
+uv run pytest -m "not gpu and not slow"     # expect: 105 passed
 ```
+
+On a Traditional-Chinese Windows locale, an editable install can fail if the repository
+path itself contains non-ASCII characters (`UnicodeDecodeError: cp950` while reading the
+generated `.pth`). The verified fallback is an ASCII environment path plus a non-editable
+install:
+
+```powershell
+$env:UV_PROJECT_ENVIRONMENT = "$env:TEMP\reab-env"
+uv sync --no-editable --extra ml --extra app
+& "$env:TEMP\reab-env\Scripts\python.exe" -m pytest -m "not gpu and not slow"
+```
+
+The current suite including the reranking extension has **105 tests**. See
+[FAILURES.md](FAILURES.md) for the exact observed failure.
 
 The test suite is fully offline (synthetic fixtures + a deterministic fake model), so a
 green run here proves the transfer and the environment, not the network.
@@ -109,6 +123,10 @@ no Colab, no bundle, no export/import round-trip:
 uv run python -m rag_evidence.cli generate  --config configs/smoke.yaml --resume
 uv run python -m rag_evidence.cli attribute --method leave_one_out --config configs/smoke.yaml --resume
 ```
+
+For the isolated cross-encoder extension, use
+[docs/RERANKING_RUNBOOK.md](docs/RERANKING_RUNBOOK.md). Never start its CUDA dev/eval
+stages while SafeSynth or another declared GPU owner is active.
 
 Note that re-running a stage that already has results will refuse to overwrite them
 (`--resume` skips completed samples; a changed config refuses to resume at all). To
