@@ -1,0 +1,51 @@
+{
+  "run": "results/reranking/raw/dev/attribute/generated/hybrid_rrf_rerank__control_random",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "NVIDIA GeForce RTX 4090",
+  "method": "control_random",
+  "run_namespace": "hybrid_rrf_rerank",
+  "generation_run": "qwen3-4b-reranking-v1-2026-07-29-hybrid_rrf_rerank-k5",
+  "subset": {
+    "criterion": "em",
+    "n_total": 60,
+    "n_generated_ok": 60,
+    "n_abstained": 8,
+    "n_correct": 30
+  },
+  "is_control": true,
+  "n_attempted": 52,
+  "n_success": 52,
+  "n_failed": 0,
+  "n_skipped": 8,
+  "n_record_attempts": 81,
+  "n_retry_records": 21,
+  "n_historical_failure_records": 21,
+  "failure_rate": 0.0,
+  "n_agreement": 30,
+  "prf_at": {
+    "1": {
+      "p": 0.4,
+      "r": 0.2,
+      "f1": 0.26666666666666666
+    },
+    "2": {
+      "p": 0.43333333333333335,
+      "r": 0.43333333333333335,
+      "f1": 0.43333333333333335
+    },
+    "3": {
+      "p": 0.3777777777777779,
+      "r": 0.5666666666666667,
+      "f1": 0.45333333333333364
+    }
+  },
+  "auprc": 0.5888888888888888,
+  "ndcg_at_10": 0.7274453824795108,
+  "sufficiency": 4.523848398313761,
+  "comprehensiveness": 3.8190148079319437,
+  "n_faithfulness": 52,
+  "seconds_per_sample": 0.08866346153846152,
+  "num_model_calls_mean": 0.0,
+  "peak_vram_mb": 8173.49169921875
+}

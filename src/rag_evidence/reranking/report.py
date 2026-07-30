@@ -720,7 +720,18 @@ def _answer_rqs(
         "evidentiary_status": (
             "Formal locked eval."
             if decision.get("formal")
-            else f"{split} artifacts are incomplete or non-eval; not formal eval."
+            else (
+                f"{split} artifacts are complete but non-eval; not formal eval."
+                if all(
+                    decision.get(key)
+                    for key in (
+                        "complete_retrieval",
+                        "complete_generation",
+                        "complete_attribution",
+                    )
+                )
+                else f"{split} artifacts are incomplete; not formal eval."
+            )
         ),
     }
 

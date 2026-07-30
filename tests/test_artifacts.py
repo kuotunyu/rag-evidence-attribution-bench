@@ -58,6 +58,16 @@ def test_completed_keys_simple_and_composite(tmp_path: Path) -> None:
     assert completed_keys(tmp_path / "missing.jsonl") == set()
 
 
+def test_completed_keys_can_leave_failed_records_for_retry(tmp_path: Path) -> None:
+    path = tmp_path / "records.jsonl"
+    append_record(path, {"question_id": "ok", "error": None})
+    append_record(path, {"question_id": "failed", "error": {"type": "RuntimeError"}})
+    append_record(path, {"question_id": "skipped", "skipped": True, "error": None})
+
+    assert completed_keys(path) == {("ok",), ("failed",), ("skipped",)}
+    assert completed_keys(path, include_failed=False) == {("ok",), ("skipped",)}
+
+
 def test_write_json_atomic_roundtrip_and_no_temp_left(tmp_path: Path) -> None:
     path = tmp_path / "meta.json"
     obj = {"b": 1, "a": {"nested": True}}

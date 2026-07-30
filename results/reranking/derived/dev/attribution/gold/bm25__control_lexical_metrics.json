@@ -12,6 +12,9 @@
   "n_success": 60,
   "n_failed": 0,
   "n_skipped": 0,
+  "n_record_attempts": 60,
+  "n_retry_records": 0,
+  "n_historical_failure_records": 0,
   "failure_rate": 0.0,
   "n_agreement": 60,
   "prf_at": {

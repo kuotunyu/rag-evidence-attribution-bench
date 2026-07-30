@@ -147,12 +147,27 @@ def attribute(
         typer.Option("--mode", help="gold | generated (default: both modes from config)"),
     ] = None,
     resume: ResumeOpt = False,
+    retry_failures: Annotated[
+        bool,
+        typer.Option(
+            "--retry-failures",
+            help="With --resume, append retries only for records whose latest attempt failed.",
+        ),
+    ] = False,
     limit: LimitOpt = None,
 ) -> None:
     """Score how much each passage contributed to the target answer."""
     from rag_evidence.pipeline import run_attribute
 
-    _run(run_attribute, config, method=method, mode=mode, resume=resume, limit=limit)
+    _run(
+        run_attribute,
+        config,
+        method=method,
+        mode=mode,
+        resume=resume,
+        retry_failures=retry_failures,
+        limit=limit,
+    )
 
 
 @app.command()
@@ -247,6 +262,13 @@ def reranking_attribute(
         typer.Option("--mode", help="gold | generated (default: both modes from config)"),
     ] = None,
     resume: ResumeOpt = False,
+    retry_failures: Annotated[
+        bool,
+        typer.Option(
+            "--retry-failures",
+            help="With --resume, append retries only for records whose latest attempt failed.",
+        ),
+    ] = False,
     limit: LimitOpt = None,
 ) -> None:
     """Run an attribution method in one namespaced reranking arm."""
@@ -259,6 +281,7 @@ def reranking_attribute(
         method=method,
         mode=mode,
         resume=resume,
+        retry_failures=retry_failures,
         limit=limit,
     )
 

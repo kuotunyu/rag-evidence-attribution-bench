@@ -299,6 +299,10 @@ def evaluate_attribution(
         for run_dir in methods:
             run_key = run_dir.name
             meta, records = _load_run(run_dir)
+            record_attempts = len(records)
+            historical_failures = sum(rec.get("error") is not None for rec in records)
+            records = list({str(rec["question_id"]): rec for rec in records}.values())
+            retry_records = record_attempts - len(records)
             scientific = meta.get("config_scientific") or {}
             record_method = records[0].get("method") if records else None
             actual_method = str(scientific.get("method") or record_method or run_key)
@@ -425,6 +429,9 @@ def evaluate_attribution(
                 "n_success": len(ok),
                 "n_failed": len(failed),
                 "n_skipped": len(skipped),
+                "n_record_attempts": record_attempts,
+                "n_retry_records": retry_records,
+                "n_historical_failure_records": historical_failures,
                 "failure_rate": len(failed) / max(1, len(ok) + len(failed)),
                 "n_agreement": n_agreement,
                 "prf_at": {

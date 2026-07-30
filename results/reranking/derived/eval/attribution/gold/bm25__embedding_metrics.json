@@ -1,0 +1,45 @@
+{
+  "run": "results/reranking/raw/eval/attribute/gold/bm25__embedding",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "NVIDIA GeForce RTX 4090",
+  "method": "embedding",
+  "run_namespace": "bm25",
+  "generation_run": "qwen3-4b-reranking-v1-2026-07-29-bm25-k5",
+  "subset": null,
+  "is_control": false,
+  "n_attempted": 240,
+  "n_success": 240,
+  "n_failed": 0,
+  "n_skipped": 0,
+  "n_record_attempts": 240,
+  "n_retry_records": 0,
+  "n_historical_failure_records": 0,
+  "failure_rate": 0.0,
+  "n_agreement": 240,
+  "prf_at": {
+    "1": {
+      "p": 0.9291666666666667,
+      "r": 0.46458333333333335,
+      "f1": 0.6194444444444447
+    },
+    "2": {
+      "p": 0.74375,
+      "r": 0.74375,
+      "f1": 0.74375
+    },
+    "3": {
+      "p": 0.5347222222222229,
+      "r": 0.8020833333333334,
+      "f1": 0.6416666666666678
+    }
+  },
+  "auprc": 0.7839583333333334,
+  "ndcg_at_10": 0.8322545885873401,
+  "sufficiency": 1.146045110228756,
+  "comprehensiveness": 6.064364828524979,
+  "n_faithfulness": 240,
+  "seconds_per_sample": 0.8551883333333331,
+  "num_model_calls_mean": 0.0,
+  "peak_vram_mb": 10308.0771484375
+}

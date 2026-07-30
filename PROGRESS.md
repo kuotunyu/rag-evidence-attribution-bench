@@ -20,7 +20,7 @@
 | M10 | ContextCite adapter attempt (4h stop-loss) | ✅ SUCCEEDED (~1h) — works vs transformers 5.14; passage-level partitioner; real CPU run verified | `uv run python -m rag_evidence.cli attribute --method contextcite …` (Colab) |
 | M11 | ARC-JSD legacy env + experimental native method | ✅ done — native `arc_jsd` (FakeLM-tested, EXPERIMENTAL) + legacy/arc_jsd/ env + official-repro notebook | `uv run pytest tests/test_arc_jsd.py` |
 | M12 | docs finalization + final commit | ✅ done | read README.md / DATA_CARD.md / MODEL_CARD.md |
-| M13 | Preregistered cross-encoder reranking extension | 🟡 CPU scaffold/smoke done; GPU dev/eval pending because SafeSynth owns RTX 4090 | `python -m rag_evidence.cli reranking evaluate --config configs/reranking/smoke.yaml` |
+| M13 | Preregistered cross-encoder reranking extension | ✅ done — smoke/dev plus one formal locked eval, machine-generated report, retain/publish gates passed | `python -m rag_evidence.cli reranking report --config configs/reranking/eval.yaml` |
 
 ## Acceptance checklist (from spec)
 
@@ -287,3 +287,71 @@
   original-result integrity all passed. Docker build/probe remains unverified because
   the Docker Desktop daemon was not running; do not run locked eval until that existing
   CI gate can be repeated.
+### 2026-07-30 — reranking GPU dev complete; locked eval still sealed
+- Completed all four fair dev arms (60 questions each) with the preregistered candidate-k
+  10 and final context-k 5. The original `results/raw` and `results/derived` trees remain
+  byte-for-byte untouched; extension artifacts are isolated under `results/reranking/`.
+- Versus hybrid RRF, reranking improved nDCG@5 by `+0.129` (paired bootstrap 95% CI
+  `[+0.079, +0.183]`), complete necessary-passage coverage@5 by `+0.267`
+  (`[+0.150, +0.383]`), answer EM by `+0.117`, and answer F1 by `+0.124`
+  (`[+0.020, +0.234]`). Citation coverage rose `+0.050`, but its CI `[-0.050, +0.150]`
+  includes zero.
+- Generated leave-one-out attribution F1@2 improved on the paired correct-answer subset
+  by `+0.095` (`[+0.024, +0.190]`). Embedding attribution was unchanged; sufficiency
+  (`-0.005`, lower is better) and comprehensiveness (`-0.443`, higher is better) both had
+  CIs crossing zero. No retrieval-up/attribution-down case appeared on the eligible
+  correct-answer subset. One multi-hop question lost complete necessary-passage coverage.
+- Benefits concentrated in bridge questions (answer F1 `+0.171`, citation coverage
+  `+0.083`). Comparison questions regressed (answer F1 `-0.062`, citation coverage
+  `-0.083`) despite nDCG@5 `+0.075`; retain this negative result in any publication.
+- CUDA rerank p95 was 42.9 ms, 377.2 query-passage pairs/s, and 1,204.7 MB reranker peak
+  VRAM. The observed pipeline peak was 8,332.5 MB. The locked 250 ms cost gate is still
+  evaluated only on the untouched eval split.
+- A CUDA/CUBLAS OOM poisoned one attribution process after 31 successes. The original 21
+  failure rows remain append-only. Added `--resume --retry-failures`, last-attempt-wins
+  evaluation, and retry counters; a fresh locked-runtime process resolved 21/21, leaving
+  81 attempts, 60 unique questions, 52 successes, 8 legitimate skips, and 0 latest failures.
+- Quality checks: Ruff format/lint and strict mypy (58 files) pass; 739 JSON/JSONL files
+  (28,211 objects) parse with zero errors; credential and machine-path scans are clean;
+  both locked SHA-256 values match. The managed Windows sandbox prevented a fresh full
+  pytest run from writing/chdir into any temp root (47 non-writing tests passed; all other
+  outcomes were `PermissionError`, not assertion failures). The pre-change suite was
+  105/105 green; the new suite contains 106 tests, including the retry-key test.
+- Docker Desktop remains off, so the required Docker build/health publication gate cannot
+  be repeated. The locked reranking eval has therefore not been opened or run. GPU models
+  were unloaded, VRAM returned to the desktop baseline, and FormosaNLU was explicitly
+  notified that it could start; all remaining RAG work is CPU-only.
+
+### 2026-07-30 — reranking extension formal locked eval complete
+- Repeated the publication gates before opening eval: the canonical ASCII-path CPU
+  environment passed **106 tests** (76% coverage), Ruff format/lint and strict mypy;
+  Docker image `rag-evidence-publication-check:20260730` built successfully and its
+  one-shot container returned healthy `/health` and complete `/methods` responses.
+- Verified both locked SHA-256 values, confirmed that no reranking eval directory existed,
+  and then ran the preregistered eval exactly once on the RTX 4090. All 65 run metadata
+  files are `completed`: retrieval 240/240, four generation arms 960/960, and 60
+  attribution mode/method runs with 12,376 successful eligible records, 2,024 legitimate
+  eligibility skips, **0 failures and 0 retries**.
+- Versus hybrid RRF, reranking improved nDCG@5 by `+0.096` (paired bootstrap 95% CI
+  `[+0.072, +0.120]`) and complete evidence@5 by `+0.129`
+  (`[+0.075, +0.183]`). Answer F1 improved `+0.025`
+  (`[-0.019, +0.069]`) and citation coverage `+0.033`
+  (`[-0.008, +0.077]`), but both uncertainty intervals include zero.
+- On the paired correct-answer subset, citations attribution F1@2 improved `+0.039`
+  (`[+0.006, +0.078]`). Embedding F1@2 improved `+0.013` and leave-one-out F1@2 changed
+  `-0.006`; both intervals include zero. Leave-one-out sufficiency changed `+0.097`
+  (lower is better) and comprehensiveness `-0.211` (higher is better), so neither
+  faithfulness measure improved; both intervals include zero.
+- The negative cases are retained: five paired questions had better retrieval but worse
+  attribution, and eight multi-hop questions lost complete necessary-passage coverage
+  at K=5 (39 gained it). Bridge questions gained more retrieval coverage; comparison
+  questions showed the larger citation gain but three retrieval-up/attribution-down cases.
+- CUDA systems results: rerank p95 `67.7 ms` (the preregistered 250 ms gate passed),
+  `283.0` query-passage pairs/s, reranker peak `1,203.8 MB`; reranked
+  retrieval+generation pipeline peak `8,723.5 MB`, and the maximum observed attribution
+  process peak was `10,308.1 MB`. No monetary API fee is claimed.
+- Machine-generated decision:
+  `quality_gate=true`, `guardrail_gate=true`, `cost_gate=true`,
+  `retain_as_default=true`, and `publishable=true`. Formal artifacts are under
+  `results/reranking/derived/eval/`; the README blocks and
+  `results/reranking/derived/reranking_report.md` were regenerated from them.

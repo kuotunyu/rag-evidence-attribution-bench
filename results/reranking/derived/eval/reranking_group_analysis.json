@@ -1,0 +1,95 @@
+{
+  "type": {
+    "bridge": {
+      "n": 204,
+      "retrieval_ndcg_at_5_delta": 0.10095122613176871,
+      "complete_evidence_at_5_delta": 0.14215686274509803,
+      "answer_em_delta": 0.014705882352941176,
+      "answer_f1_delta": 0.02481815196078432,
+      "citation_coverage_delta": 0.022058823529411766,
+      "attribution_f1_at_2_delta": {
+        "citations": 0.031746031746031744,
+        "embedding": 0.007936507936507936,
+        "leave_one_out": -0.007936507936507936
+      },
+      "leave_one_out_faithfulness_delta": {
+        "sufficiency": 0.06305584523778082,
+        "comprehensiveness": -0.30061685595724463
+      },
+      "primary_transfer_taxonomy_counts": {
+        "pending": 141,
+        "retrieval_down_attribution_down": 1,
+        "retrieval_down_attribution_unchanged": 2,
+        "retrieval_unchanged_attribution_down": 4,
+        "retrieval_unchanged_attribution_unchanged": 27,
+        "retrieval_unchanged_attribution_up": 3,
+        "retrieval_up_attribution_down": 1,
+        "retrieval_up_attribution_unchanged": 23,
+        "retrieval_up_attribution_up": 2
+      },
+      "retrieval_better_attribution_worse_count": 2,
+      "consolidation_loss_count": 8,
+      "consolidation_gain_count": 37
+    },
+    "comparison": {
+      "n": 36,
+      "retrieval_ndcg_at_5_delta": 0.06656524252923807,
+      "complete_evidence_at_5_delta": 0.05555555555555555,
+      "answer_em_delta": 0.0,
+      "answer_f1_delta": 0.02820402777777777,
+      "citation_coverage_delta": 0.09722222222222222,
+      "attribution_f1_at_2_delta": {
+        "citations": 0.07142857142857142,
+        "embedding": 0.03571428571428571,
+        "leave_one_out": 0.0
+      },
+      "leave_one_out_faithfulness_delta": {
+        "sufficiency": 0.24192163941645622,
+        "comprehensiveness": 0.1652679604819078
+      },
+      "primary_transfer_taxonomy_counts": {
+        "pending": 22,
+        "retrieval_unchanged_attribution_unchanged": 3,
+        "retrieval_unchanged_attribution_up": 3,
+        "retrieval_up_attribution_down": 3,
+        "retrieval_up_attribution_unchanged": 5
+      },
+      "retrieval_better_attribution_worse_count": 3,
+      "consolidation_loss_count": 0,
+      "consolidation_gain_count": 2
+    }
+  },
+  "level": {
+    "hard": {
+      "n": 240,
+      "retrieval_ndcg_at_5_delta": 0.09579332859138914,
+      "complete_evidence_at_5_delta": 0.12916666666666668,
+      "answer_em_delta": 0.0125,
+      "answer_f1_delta": 0.025326033333333338,
+      "citation_coverage_delta": 0.03333333333333333,
+      "attribution_f1_at_2_delta": {
+        "citations": 0.03896103896103896,
+        "embedding": 0.012987012987012988,
+        "leave_one_out": -0.006493506493506494
+      },
+      "leave_one_out_faithfulness_delta": {
+        "sufficiency": 0.09749584287466861,
+        "comprehensiveness": -0.21091232608386748
+      },
+      "primary_transfer_taxonomy_counts": {
+        "pending": 163,
+        "retrieval_down_attribution_down": 1,
+        "retrieval_down_attribution_unchanged": 2,
+        "retrieval_unchanged_attribution_down": 4,
+        "retrieval_unchanged_attribution_unchanged": 30,
+        "retrieval_unchanged_attribution_up": 6,
+        "retrieval_up_attribution_down": 4,
+        "retrieval_up_attribution_unchanged": 28,
+        "retrieval_up_attribution_up": 2
+      },
+      "retrieval_better_attribution_worse_count": 5,
+      "consolidation_loss_count": 8,
+      "consolidation_gain_count": 39
+    }
+  }
+}

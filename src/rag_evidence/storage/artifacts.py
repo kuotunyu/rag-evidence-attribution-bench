@@ -71,13 +71,18 @@ def read_records(path: Path) -> Iterator[dict[str, Any]]:
 
 
 def completed_keys(
-    path: Path, key_fields: Sequence[str] = ("question_id",)
+    path: Path,
+    key_fields: Sequence[str] = ("question_id",),
+    *,
+    include_failed: bool = True,
 ) -> set[tuple[Any, ...]]:
-    """Dedup keys of all completed records; empty set if the file does not exist."""
+    """Dedup keys of completed records; optionally leave failures eligible for retry."""
     if not path.exists():
         return set()
     keys: set[tuple[Any, ...]] = set()
     for rec in read_records(path):
+        if not include_failed and rec.get("error") is not None:
+            continue
         try:
             keys.add(tuple(rec[f] for f in key_fields))
         except KeyError as exc:

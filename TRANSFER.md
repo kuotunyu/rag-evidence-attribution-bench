@@ -42,7 +42,7 @@ git fsck                      # integrity check of the transferred objects
 
 ```bash
 uv sync --extra ml --extra app
-uv run pytest -m "not gpu and not slow"     # expect: 105 passed
+uv run pytest -m "not gpu and not slow"     # expect: 106 passed
 ```
 
 On a Traditional-Chinese Windows locale, an editable install can fail if the repository
@@ -56,7 +56,7 @@ uv sync --no-editable --extra ml --extra app
 & "$env:TEMP\reab-env\Scripts\python.exe" -m pytest -m "not gpu and not slow"
 ```
 
-The current suite including the reranking extension has **105 tests**. See
+The current suite including the reranking extension has **106 tests**. See
 [FAILURES.md](FAILURES.md) for the exact observed failure.
 
 The test suite is fully offline (synthetic fixtures + a deterministic fake model), so a
@@ -112,9 +112,10 @@ Two honest caveats, neither verified on the new hardware:
 - **The `<2.7` cap is a Win10-laptop workaround, not a known Win11 problem.** It may well
   be unnecessary on Win11. Test it there before assuming you must stay on 2.6; if torch
   ≥ 2.7 imports fine, the cap can be relaxed (and FAILURES.md updated to say so).
-- **This CUDA path has never been executed by this project** — every GPU number in the
-  README came from Colab. Treat the command above as the documented starting point, not
-  as a tested procedure.
+- **The base benchmark GPU numbers came from Colab, but the isolated reranking extension
+  has now been executed locally on an RTX 4090.** Its locked runtime used
+  torch `2.13.0+cu126`, transformers `5.14.1`, and sentence-transformers `5.6.1`.
+  Keep the base and extension runtime claims distinct.
 
 Once CUDA torch works, the GPU stages run locally with the same CLI the notebooks call —
 no Colab, no bundle, no export/import round-trip:
@@ -127,6 +128,18 @@ uv run python -m rag_evidence.cli attribute --method leave_one_out --config conf
 For the isolated cross-encoder extension, use
 [docs/RERANKING_RUNBOOK.md](docs/RERANKING_RUNBOOK.md). Never start its CUDA dev/eval
 stages while SafeSynth or another declared GPU owner is active.
+The 60-question GPU dev split and the single 240-question formal locked eval are complete.
+Do not create a second formal eval run or tune the locked configuration from its results.
+Re-derivation is CPU-only:
+
+```bash
+uv run python -m rag_evidence.cli reranking evaluate --config configs/reranking/eval.yaml
+uv run python -m rag_evidence.cli reranking report   --config configs/reranking/eval.yaml
+```
+
+If an attribution process records infrastructure failures, preserve those rows and retry
+only the latest failed keys with `--resume --retry-failures`; evaluation keeps the audit
+trail and uses the final attempt per question.
 
 Note that re-running a stage that already has results will refuse to overwrite them
 (`--resume` skips completed samples; a changed config refuses to resume at all). To

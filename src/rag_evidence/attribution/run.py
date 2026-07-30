@@ -233,8 +233,17 @@ def _build_resources(
 
 
 def run_attribution_stage(
-    cfg: AppConfig, *, method: str, mode: str | None, resume: bool, limit: int | None
+    cfg: AppConfig,
+    *,
+    method: str,
+    mode: str | None,
+    resume: bool,
+    limit: int | None,
+    retry_failures: bool = False,
 ) -> None:
+    if retry_failures and not resume:
+        raise ConfigError("--retry-failures requires --resume so the failed attempt is preserved")
+
     method_obj = get_method(method)
     modes = [mode] if mode else [m for m in cfg.attribution.modes]
 
@@ -272,6 +281,7 @@ def run_attribution_stage(
             m,
             resume=resume,
             limit=limit,
+            retry_failures=retry_failures,
             resources=resources,
             scorer=scorer,
             faith_unavailable=faith_unavailable,
@@ -287,6 +297,7 @@ def _run_one_mode(
     *,
     resume: bool,
     limit: int | None,
+    retry_failures: bool,
     resources: ModelResources,
     scorer: LogprobScorer | None,
     faith_unavailable: dict[str, Any] | None,
@@ -333,7 +344,9 @@ def _run_one_mode(
         update_model_info(run_dir, meta, resources.generator.info())
 
     records_path = run_dir / RECORDS_FILE
-    done = completed_keys(records_path) if resume else set()
+    records_before_retry = list(read_records(records_path)) if retry_failures else []
+    failures_before_retry = sum(rec.get("error") is not None for rec in records_before_retry)
+    done = completed_keys(records_path, include_failed=not retry_failures) if resume else set()
 
     reset_peak_vram()
     wall_start = time.perf_counter()
@@ -462,16 +475,49 @@ def _run_one_mode(
             n_failed += 1
         append_record(records_path, base_record)
 
+    run_peak = peak_vram_mb()
+    total_wall_s = round(time.perf_counter() - wall_start, 3)
+    final_status = "completed" if n_failed == 0 else "completed_with_failures"
+    final_attempted = n_success + n_failed
+    final_success = n_success
+    final_failed = n_failed
+    final_skipped = n_skipped_resume + n_skipped_sample
+    if retry_failures:
+        all_attempts = list(read_records(records_path))
+        latest = {str(rec["question_id"]): rec for rec in all_attempts}
+        latest_records = list(latest.values())
+        final_failed = sum(rec.get("error") is not None for rec in latest_records)
+        final_skipped = sum(bool(rec.get("skipped")) for rec in latest_records)
+        final_success = sum(
+            not rec.get("skipped") and rec.get("error") is None for rec in latest_records
+        )
+        final_attempted = final_success + final_failed
+        final_status = "completed" if final_failed == 0 else "completed_with_failures"
+        previous_peak = meta.get("run_peak_vram_mb")
+        if previous_peak is not None:
+            run_peak = max(float(previous_peak), float(run_peak or 0.0))
+        total_wall_s = round(float(meta.get("total_wall_s") or 0.0) + total_wall_s, 3)
+        meta["failure_retry"] = {
+            "enabled": True,
+            "failures_before_retry": failures_before_retry,
+            "attempted_this_session": n_success + n_failed,
+            "resolved_this_session": n_success,
+            "failed_this_session": n_failed,
+            "remaining_latest_failures": final_failed,
+            "record_attempts_total": len(all_attempts),
+            "latest_unique_records": len(latest_records),
+        }
+
     finalize_run(
         run_dir,
         meta,
-        status="completed" if n_failed == 0 else "completed_with_failures",
-        n_attempted=n_success + n_failed,
-        n_success=n_success,
-        n_failed=n_failed,
-        n_skipped=n_skipped_resume + n_skipped_sample,
-        run_peak_vram_mb=peak_vram_mb(),
-        total_wall_s=round(time.perf_counter() - wall_start, 3),
+        status=final_status,
+        n_attempted=final_attempted,
+        n_success=final_success,
+        n_failed=final_failed,
+        n_skipped=final_skipped,
+        run_peak_vram_mb=run_peak,
+        total_wall_s=total_wall_s,
     )
     logger.info(
         "attribute[%s/%s] %s: %d ok, %d failed, %d skipped-sample, %d resumed-skip -> %s",

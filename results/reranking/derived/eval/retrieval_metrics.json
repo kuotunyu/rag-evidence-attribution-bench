@@ -1,0 +1,68 @@
+{
+  "hybrid_rrf_rerank": {
+    "run": "results/reranking/raw/eval/retrieve/hybrid_rrf_rerank",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "NVIDIA GeForce RTX 4090",
+    "n_evaluated": 240,
+    "n_failed": 0,
+    "failure_rate": 0.0,
+    "recall_at": {
+      "2": 0.85625,
+      "5": 0.9583333333333334,
+      "10": 1.0
+    },
+    "evidence_coverage_at": {
+      "2": 0.85625,
+      "5": 0.9583333333333334,
+      "10": 1.0
+    },
+    "multi_hop_necessary_passage_coverage_at": {
+      "2": 0.7333333333333333,
+      "5": 0.9166666666666666,
+      "10": 1.0
+    },
+    "mrr": 0.9774305555555555,
+    "ndcg_at_10": 0.954369903534911,
+    "ndcg_at": {
+      "2": 0.8802937784626602,
+      "5": 0.9380287261980662,
+      "10": 0.954369903534911
+    },
+    "latency_ms": {
+      "mean": 46.80237500000001,
+      "p50": 42.659,
+      "p95": 67.744
+    },
+    "rerank_latency_ms": {
+      "mean": 46.80237500000001,
+      "p50": 42.659,
+      "p95": 67.744
+    },
+    "estimated_end_to_end_latency_ms": {
+      "mean": 1167.788804166667,
+      "p50": 1161.234,
+      "p95": 2054.373
+    },
+    "peak_vram_mb": 1203.82568359375,
+    "cache": {
+      "hits": 0,
+      "misses": 2400,
+      "hit_rate": 0.0
+    },
+    "throughput_pairs_per_s": 283.0092562894092,
+    "reranker_systems": {
+      "model_load_s": 3.464391,
+      "model_load_s_sessions": [
+        3.464391
+      ],
+      "cache_hits": 0,
+      "cache_misses": 2400,
+      "cache_hit_rate": 0.0,
+      "pairs_seen": 2400,
+      "pairs_scored": 2400,
+      "scoring_s": 8.480286699994394,
+      "scored_pairs_per_s": 283.0092996739823
+    }
+  }
+}

@@ -8,16 +8,21 @@
       "answer_f1_delta": 0.17059416666666669,
       "citation_coverage_delta": 0.08333333333333333,
       "attribution_f1_at_2_delta": {
-        "citations": null,
-        "embedding": null,
-        "leave_one_out": null
+        "citations": 0.05,
+        "embedding": 0.0,
+        "leave_one_out": 0.1
       },
       "leave_one_out_faithfulness_delta": {
-        "sufficiency": null,
-        "comprehensiveness": null
+        "sufficiency": -0.05671248456424152,
+        "comprehensiveness": -0.4472503957100266
       },
       "primary_transfer_taxonomy_counts": {
-        "pending": 48
+        "pending": 28,
+        "retrieval_down_attribution_unchanged": 2,
+        "retrieval_unchanged_attribution_unchanged": 8,
+        "retrieval_unchanged_attribution_up": 1,
+        "retrieval_up_attribution_unchanged": 6,
+        "retrieval_up_attribution_up": 3
       },
       "retrieval_better_attribution_worse_count": 0,
       "consolidation_loss_count": 1,
@@ -31,16 +36,17 @@
       "answer_f1_delta": -0.0623195,
       "citation_coverage_delta": -0.08333333333333333,
       "attribution_f1_at_2_delta": {
-        "citations": null,
-        "embedding": null,
-        "leave_one_out": null
+        "citations": 0.0,
+        "embedding": 0.0,
+        "leave_one_out": 0.0
       },
       "leave_one_out_faithfulness_delta": {
-        "sufficiency": null,
-        "comprehensiveness": null
+        "sufficiency": 0.16674609639679652,
+        "comprehensiveness": -0.4276935824039789
       },
       "primary_transfer_taxonomy_counts": {
-        "pending": 12
+        "pending": 11,
+        "retrieval_unchanged_attribution_unchanged": 1
       },
       "retrieval_better_attribution_worse_count": 0,
       "consolidation_loss_count": 0,
@@ -56,16 +62,21 @@
       "answer_f1_delta": 0.12401143333333334,
       "citation_coverage_delta": 0.05,
       "attribution_f1_at_2_delta": {
-        "citations": null,
-        "embedding": null,
-        "leave_one_out": null
+        "citations": 0.047619047619047616,
+        "embedding": 0.0,
+        "leave_one_out": 0.09523809523809523
       },
       "leave_one_out_faithfulness_delta": {
-        "sufficiency": null,
-        "comprehensiveness": null
+        "sufficiency": -0.004745372712837331,
+        "comprehensiveness": -0.44270229959234125
       },
       "primary_transfer_taxonomy_counts": {
-        "pending": 60
+        "pending": 39,
+        "retrieval_down_attribution_unchanged": 2,
+        "retrieval_unchanged_attribution_unchanged": 9,
+        "retrieval_unchanged_attribution_up": 1,
+        "retrieval_up_attribution_unchanged": 6,
+        "retrieval_up_attribution_up": 3
       },
       "retrieval_better_attribution_worse_count": 0,
       "consolidation_loss_count": 1,

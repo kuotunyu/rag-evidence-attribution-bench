@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "run_id": "dev_attribute_gold/hybrid_rrf__embedding_20260730T071953Z",
+  "stage": "attribute",
+  "name": "gold/hybrid_rrf__embedding",
+  "split": "dev",
+  "run_name": "reranking_dev",
+  "execution_kind": "real",
+  "config_hash": "sha256:eecae6536e464359c4ffd3b38eeaa134d93f6229409de4f1099ef4390c0d9891",
+  "config_scientific": {
+    "stage": "attribute",
+    "split": "dev",
+    "seed": 42,
+    "data": {
+      "hf_path": "hotpotqa/hotpot_qa",
+      "hf_config": "distractor",
+      "hf_split": "validation",
+      "hf_revision": null,
+      "split_seed": 20260718,
+      "split_sizes": {
+        "smoke": 20,
+        "dev": 60,
+        "eval": 240
+      }
+    },
+    "generation_model": {
+      "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+      "backend": "qwen",
+      "dtype": "auto",
+      "quantization": "none",
+      "prompt_version": "v1"
+    },
+    "attribution": {
+      "faithfulness_enabled": true,
+      "faithfulness_k": 2,
+      "embedding_model_id": "Qwen/Qwen3-Embedding-0.6B",
+      "controls_retrieval_run": "bm25",
+      "controls_retrieval_results_raw": "results/raw",
+      "controls_shuffled_source": "leave_one_out",
+      "run_namespace": "hybrid_rrf",
+      "gold_context_source": "generation"
+    },
+    "method": "embedding",
+    "mode": "gold",
+    "run_namespace": "hybrid_rrf",
+    "generation_run": "qwen3-4b-reranking-v1-2026-07-29-hybrid_rrf-k5",
+    "prompt_hash": "sha256:2a65bb7f97966405"
+  },
+  "package_version": "0.1.0",
+  "started_utc": "2026-07-30T07:19:53Z",
+  "finished_utc": "2026-07-30T07:20:04Z",
+  "status": "completed",
+  "expected_count": 60,
+  "limit": null,
+  "n_attempted": 60,
+  "n_success": 60,
+  "n_failed": 0,
+  "n_skipped": 0,
+  "env": {
+    "python": "3.12.13",
+    "platform": "win32",
+    "machine": "AMD64",
+    "torch": "2.13.0+cu126",
+    "cuda": "12.6",
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "gpu_total_vram_mb": 24563.5
+  },
+  "libs": {
+    "torch": "2.13.0+cu126",
+    "transformers": "5.14.1",
+    "tokenizers": "0.22.2",
+    "accelerate": "1.14.0",
+    "bitsandbytes": "0.50.0",
+    "datasets": "5.0.0"
+  },
+  "model": {
+    "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+    "device": "cuda",
+    "dtype_requested": "bfloat16",
+    "dtype_effective": "bfloat16",
+    "quantization_requested": "none",
+    "quantization_effective": "none"
+  },
+  "run_peak_vram_mb": 9447.93505859375,
+  "total_wall_s": 8.052,
+  "resume_events": [],
+  "notes": ""
+}

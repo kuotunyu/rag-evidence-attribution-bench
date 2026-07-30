@@ -29,11 +29,24 @@ def run_generate(cfg: AppConfig, *, resume: bool, limit: int | None) -> None:
 
 
 def run_attribute(
-    cfg: AppConfig, *, method: str, mode: str | None, resume: bool, limit: int | None
+    cfg: AppConfig,
+    *,
+    method: str,
+    mode: str | None,
+    resume: bool,
+    limit: int | None,
+    retry_failures: bool = False,
 ) -> None:
     from rag_evidence.attribution.run import run_attribution_stage
 
-    run_attribution_stage(cfg, method=method, mode=mode, resume=resume, limit=limit)
+    run_attribution_stage(
+        cfg,
+        method=method,
+        mode=mode,
+        resume=resume,
+        limit=limit,
+        retry_failures=retry_failures,
+    )
 
 
 def run_evaluate(cfg: AppConfig, *, allow_partial: bool = False) -> None:
