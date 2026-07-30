@@ -31,6 +31,7 @@ data/manifests/*
 # heavy raw artifacts — committed raw results are JSONL/JSON only
 results/raw/**/embeddings/
 results/raw/cache/
+results/reranking/raw/cache/
 results/**/*.pt
 results/**/*.npy
 results/**/*.npz

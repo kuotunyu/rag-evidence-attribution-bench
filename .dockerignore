@@ -15,5 +15,6 @@ __pycache__
 .env
 .env.*
 results/raw/cache
+results/reranking/raw/cache
 results/export
 assets
