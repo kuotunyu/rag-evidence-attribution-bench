@@ -60,7 +60,12 @@ def _load_generation_records(cfg: AppConfig) -> dict[str, dict[str, Any]]:
 
 
 def _load_retrieval_ranks(cfg: AppConfig, method: str) -> dict[str, dict[str, int]]:
-    path = stage_dir(cfg.results_raw_dir, cfg.split, "retrieve", method) / RECORDS_FILE
+    root = (
+        Path(cfg.attribution.controls.retrieval_results_raw)
+        if cfg.attribution.controls.retrieval_results_raw
+        else cfg.results_raw_dir
+    )
+    path = stage_dir(root, cfg.split, "retrieve", method) / RECORDS_FILE
     if not path.exists():
         raise UpstreamMissingError(
             f"control_retrieval needs `retrieve --method {method}` first ({path} missing)"
@@ -73,7 +78,7 @@ def _load_retrieval_ranks(cfg: AppConfig, method: str) -> dict[str, dict[str, in
 
 
 def _load_source_scores(cfg: AppConfig, mode: str, source: str) -> dict[str, dict[str, float]]:
-    path = stage_dir(cfg.results_raw_dir, cfg.split, "attribute", mode) / source / RECORDS_FILE
+    path = _mode_dir(cfg, mode, source) / RECORDS_FILE
     if not path.exists():
         raise UpstreamMissingError(
             f"control_shuffled needs a completed `attribute --method {source}` run for "
@@ -87,7 +92,14 @@ def _load_source_scores(cfg: AppConfig, mode: str, source: str) -> dict[str, dic
 
 
 def _mode_dir(cfg: AppConfig, mode: str, method: str) -> Path:
-    return stage_dir(cfg.results_raw_dir, cfg.split, "attribute", mode) / method
+    return stage_dir(cfg.results_raw_dir, cfg.split, "attribute", mode) / attribution_run_name(
+        cfg, method
+    )
+
+
+def attribution_run_name(cfg: AppConfig, method: str) -> str:
+    namespace = cfg.attribution.run_namespace
+    return f"{namespace}__{method}" if namespace else method
 
 
 class _SampleContext:
@@ -116,14 +128,24 @@ def _sample_context(
 ) -> tuple[_SampleContext | None, str | None]:
     """Returns (context, skip_reason). Exactly one is non-None."""
     if mode == "gold":
-        passages = list(example.passages)
+        if cfg.attribution.gold_context_source == "generation":
+            rec = gen_records.get(example.question_id)
+            if rec is None:
+                return None, "generation_context_missing"
+            passages = [example.passage_by_id(pid) for pid in rec["context_passage_ids"]]
+            alias_map = dict(rec["alias_map"])
+            source = f"gold:context:{generation_run_name(cfg)}"
+        else:
+            passages = list(example.passages)
+            alias_map = ids_mod.make_alias_map([p.passage_id for p in passages])
+            source = "gold"
         return (
             _SampleContext(
                 example,
                 target_answer=example.answer,
-                target_source="gold",
+                target_source=source,
                 passages=passages,
-                alias_map=ids_mod.make_alias_map([p.passage_id for p in passages]),
+                alias_map=alias_map,
                 generation_record=None,
             ),
             None,
@@ -275,7 +297,7 @@ def _run_one_mode(
         examples = examples[:limit]
 
     gen_records: dict[str, dict[str, Any]] = {}
-    if mode == "generated":
+    if mode == "generated" or cfg.attribution.gold_context_source == "generation":
         gen_records = _load_generation_records(cfg)
 
     retrieval_ranks: dict[str, dict[str, int]] = {}
@@ -287,12 +309,13 @@ def _run_one_mode(
 
     need_faith = cfg.attribution.faithfulness.enabled
 
+    output_name = attribution_run_name(cfg, method)
     run_dir = _mode_dir(cfg, mode, method)
     meta = start_or_resume_run(
         run_dir,
         cfg,
         stage="attribute",
-        name=f"{mode}/{method}",
+        name=f"{mode}/{output_name}",
         resume=resume,
         execution_kind=execution_kind,
         expected_count=len(examples),
@@ -300,6 +323,8 @@ def _run_one_mode(
         sci_extra={
             "method": method,
             "mode": mode,
+            "run_namespace": cfg.attribution.run_namespace,
+            "generation_run": generation_run_name(cfg),
             "prompt_hash": prompt_hash(cfg.generation.prompt_version),
         },
     )
@@ -322,6 +347,8 @@ def _run_one_mode(
             "question_id": example.question_id,
             "method": method,
             "mode": mode,
+            "run_namespace": cfg.attribution.run_namespace,
+            "generation_run": generation_run_name(cfg),
         }
         if sample is None:
             base_record.update(

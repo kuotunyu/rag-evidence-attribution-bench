@@ -68,6 +68,26 @@ def scientific_config(cfg: AppConfig, stage: str, **extra: Any) -> dict[str, Any
             }
         elif method == "hybrid_rrf":
             sci["retrieval"]["rrf_k"] = cfg.retrieval.rrf_k
+        elif method == "hybrid_rrf_rerank":
+            r = cfg.reranking
+            rr = r.reranker
+            sci["retrieval"].update(
+                {
+                    "source_method": "hybrid_rrf",
+                    "source_rrf_k": cfg.retrieval.rrf_k,
+                    "experiment_id": r.experiment_id,
+                    "preregistration_sha256": r.preregistration_sha256,
+                    "candidate_k": rr.candidate_k,
+                    "adapter": rr.adapter,
+                    "model_id": rr.model_id,
+                    "model_revision": rr.model_revision,
+                    "tokenizer_id": rr.tokenizer_id,
+                    "tokenizer_revision": rr.tokenizer_revision,
+                    "max_length": rr.max_length,
+                    "device": rr.device,
+                    "dtype": rr.dtype,
+                }
+            )
     elif stage == "generate":
         g = cfg.generation
         sci["generation"] = {
@@ -78,6 +98,7 @@ def scientific_config(cfg: AppConfig, stage: str, **extra: Any) -> dict[str, Any
             "max_new_tokens": g.max_new_tokens,
             "context_source": g.context_source,
             "retrieval_run": g.retrieval_run,
+            "retrieval_results_raw": g.retrieval_results_raw,
             "top_k_context": g.top_k_context,
             "prompt_version": g.prompt_version,
         }
@@ -95,7 +116,10 @@ def scientific_config(cfg: AppConfig, stage: str, **extra: Any) -> dict[str, Any
             "faithfulness_k": cfg.attribution.faithfulness.k,
             "embedding_model_id": cfg.attribution.embedding.model_id,
             "controls_retrieval_run": cfg.attribution.controls.retrieval_run,
+            "controls_retrieval_results_raw": (cfg.attribution.controls.retrieval_results_raw),
             "controls_shuffled_source": cfg.attribution.controls.shuffled_source,
+            "run_namespace": cfg.attribution.run_namespace,
+            "gold_context_source": cfg.attribution.gold_context_source,
         }
     sci.update(extra)
     return sci

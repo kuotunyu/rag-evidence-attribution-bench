@@ -3,7 +3,8 @@
 Fixed surface (do not change without updating README + tests):
 
     python -m rag_evidence.cli data prepare        --config configs/smoke.yaml
-    python -m rag_evidence.cli retrieve            --method bm25|dense|hybrid_rrf --config …
+    python -m rag_evidence.cli retrieve
+        --method bm25|dense|hybrid_rrf|hybrid_rrf_rerank --config …
     python -m rag_evidence.cli generate            --config …
     python -m rag_evidence.cli attribute  --method citations|embedding|leave_one_out|…
     python -m rag_evidence.cli evaluate            --config …
@@ -35,6 +36,11 @@ app = typer.Typer(
 )
 data_app = typer.Typer(no_args_is_help=True, help="Dataset preparation commands.")
 app.add_typer(data_app, name="data")
+reranking_app = typer.Typer(
+    no_args_is_help=True,
+    help="Controlled cross-encoder reranking extension commands.",
+)
+app.add_typer(reranking_app, name="reranking")
 
 ConfigOpt = Annotated[
     Path,
@@ -53,6 +59,14 @@ class RetrievalMethod(StrEnum):
     bm25 = "bm25"
     dense = "dense"
     hybrid_rrf = "hybrid_rrf"
+    hybrid_rrf_rerank = "hybrid_rrf_rerank"
+
+
+class RerankingArm(StrEnum):
+    bm25 = "bm25"
+    dense = "dense"
+    hybrid_rrf = "hybrid_rrf"
+    hybrid_rrf_rerank = "hybrid_rrf_rerank"
 
 
 def _version_callback(value: bool) -> None:
@@ -202,6 +216,78 @@ def import_results(
     from rag_evidence.pipeline import run_import_results
 
     _run(run_import_results, config, zip_path=zip_path)
+
+
+@reranking_app.command("generate")
+def reranking_generate(
+    config: ConfigOpt,
+    arm: Annotated[RerankingArm, typer.Option("--arm")],
+    resume: ResumeOpt = False,
+    limit: LimitOpt = None,
+) -> None:
+    """Generate one preregistered top-k context arm."""
+    from rag_evidence.generation.run import run_generation_stage
+    from rag_evidence.reranking.experiment import arm_config
+
+    _run(
+        lambda cfg, **kwargs: run_generation_stage(arm_config(cfg, arm.value), **kwargs),
+        config,
+        resume=resume,
+        limit=limit,
+    )
+
+
+@reranking_app.command("attribute")
+def reranking_attribute(
+    config: ConfigOpt,
+    arm: Annotated[RerankingArm, typer.Option("--arm")],
+    method: Annotated[str, typer.Option("--method")],
+    mode: Annotated[
+        str | None,
+        typer.Option("--mode", help="gold | generated (default: both modes from config)"),
+    ] = None,
+    resume: ResumeOpt = False,
+    limit: LimitOpt = None,
+) -> None:
+    """Run an attribution method in one namespaced reranking arm."""
+    from rag_evidence.attribution.run import run_attribution_stage
+    from rag_evidence.reranking.experiment import arm_config
+
+    _run(
+        lambda cfg, **kwargs: run_attribution_stage(arm_config(cfg, arm.value), **kwargs),
+        config,
+        method=method,
+        mode=mode,
+        resume=resume,
+        limit=limit,
+    )
+
+
+@reranking_app.command("evaluate")
+def reranking_evaluate(
+    config: ConfigOpt,
+    allow_partial: Annotated[
+        bool,
+        typer.Option("--allow-partial", help="Include visibly marked partial extension runs."),
+    ] = False,
+) -> None:
+    """Aggregate extension raw records and build comparison/error artifacts."""
+    from rag_evidence.evaluation.evaluate import evaluate_all
+    from rag_evidence.reranking.report import build_reranking_comparison
+
+    def stage(cfg: Any, **kwargs: Any) -> None:
+        evaluate_all(cfg, **kwargs)
+        build_reranking_comparison(cfg)
+
+    _run(stage, config, allow_partial=allow_partial)
+
+
+@reranking_app.command("report")
+def reranking_report(config: ConfigOpt) -> None:
+    """Render machine-readable extension comparisons into Markdown/README."""
+    from rag_evidence.reranking.report import build_reranking_report
+
+    _run(build_reranking_report, config)
 
 
 if __name__ == "__main__":

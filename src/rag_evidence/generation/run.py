@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
+from pathlib import Path
 from typing import Literal
 
 from rag_evidence.config import AppConfig, resolve_device, resolve_dtype
@@ -37,7 +38,7 @@ _MAX_CONSECUTIVE_OOM = 3
 
 def generation_run_name(cfg: AppConfig) -> str:
     if cfg.generation.backend == "fake":
-        return "fake"
+        return cfg.generation.name
     quant = f"_{cfg.generation.quantization}" if cfg.generation.quantization != "none" else ""
     return f"{cfg.generation.name}{quant}"
 
@@ -51,7 +52,12 @@ def select_context(cfg: AppConfig, example: Example) -> list[Passage]:
         raise UpstreamMissingError(
             "generation.context_source=retrieval requires generation.retrieval_run"
         )
-    path = stage_dir(cfg.results_raw_dir, cfg.split, "retrieve", method) / RECORDS_FILE
+    retrieval_root = (
+        Path(cfg.generation.retrieval_results_raw)
+        if cfg.generation.retrieval_results_raw
+        else cfg.results_raw_dir
+    )
+    path = stage_dir(retrieval_root, cfg.split, "retrieve", method) / RECORDS_FILE
     if not path.exists():
         raise UpstreamMissingError(f"retrieval run {method} not found at {path}")
     ranking: list[str] | None = None

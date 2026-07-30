@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -21,11 +22,71 @@ def _write(tmp_path: Path, text: str) -> Path:
     return p
 
 
-@pytest.mark.parametrize("name", ["smoke.yaml", "dev.yaml", "full.yaml"])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "smoke.yaml",
+        "dev.yaml",
+        "full.yaml",
+        "reranking/smoke.yaml",
+        "reranking/dev.yaml",
+        "reranking/eval.yaml",
+    ],
+)
 def test_repo_configs_are_valid(repo_root: Path, name: str) -> None:
     cfg = load_config(repo_root / "configs" / name)
     assert isinstance(cfg, AppConfig)
     assert cfg.data.split_sizes == {"smoke": 20, "dev": 60, "eval": 240}
+
+
+def test_reranking_configs_are_separate_and_locked(repo_root: Path) -> None:
+    smoke = load_config(repo_root / "configs/reranking/smoke.yaml")
+    dev = load_config(repo_root / "configs/reranking/dev.yaml")
+    locked = load_config(repo_root / "configs/reranking/eval.yaml")
+    assert smoke.paths.results_raw == dev.paths.results_raw == locked.paths.results_raw
+    assert smoke.paths.results_raw == "results/reranking/raw"
+    assert smoke.reranking.reranker.device == "cpu"
+    assert dev.reranking.reranker.device == locked.reranking.reranker.device == "cuda"
+    assert smoke.reranking.reranker.candidate_k == 10
+    assert smoke.reranking.final_context_k == 5
+    assert smoke.reranking.bootstrap_resamples == 10_000
+    assert smoke.reranking.bootstrap_confidence == 0.95
+    secondary = repo_root / smoke.reranking.secondary_analysis_path
+    assert hashlib.sha256(secondary.read_bytes()).hexdigest() == (
+        smoke.reranking.secondary_analysis_sha256
+    )
+    assert locked.split == "eval"
+
+
+@pytest.mark.parametrize(
+    ("original_name", "extension_name"),
+    [
+        ("smoke.yaml", "reranking/smoke.yaml"),
+        ("dev.yaml", "reranking/dev.yaml"),
+        ("full.yaml", "reranking/eval.yaml"),
+    ],
+)
+def test_reranking_configs_preserve_original_scientific_settings(
+    repo_root: Path, original_name: str, extension_name: str
+) -> None:
+    original = load_config(repo_root / "configs" / original_name)
+    extension = load_config(repo_root / "configs" / extension_name)
+    assert extension.seed == original.seed
+    assert extension.data == original.data
+    assert extension.retrieval == original.retrieval
+    assert extension.generation == original.generation
+    assert extension.evaluation == original.evaluation
+    assert extension.runtime == original.runtime
+    assert extension.attribution.modes == original.attribution.modes
+    assert extension.attribution.faithfulness == original.attribution.faithfulness
+    assert extension.attribution.embedding == original.attribution.embedding
+    assert (
+        extension.attribution.controls.retrieval_run == original.attribution.controls.retrieval_run
+    )
+    assert (
+        extension.attribution.controls.shuffled_source
+        == original.attribution.controls.shuffled_source
+    )
 
 
 def test_minimal_config_defaults(tmp_path: Path) -> None:

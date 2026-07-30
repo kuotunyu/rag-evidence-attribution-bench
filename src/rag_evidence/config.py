@@ -12,11 +12,12 @@ Rules enforced here:
 from __future__ import annotations
 
 import os
+import re
 from pathlib import Path, PureWindowsPath
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from rag_evidence.errors import ConfigError
 
@@ -78,6 +79,72 @@ class DenseConfig(_StrictModel):
     normalize: bool = True
 
 
+class RerankerConfig(_StrictModel):
+    adapter: Literal["hf_sequence_classification"] = "hf_sequence_classification"
+    model_id: str = "BAAI/bge-reranker-v2-m3"
+    model_revision: str = "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e"
+    tokenizer_id: str = "BAAI/bge-reranker-v2-m3"
+    tokenizer_revision: str = "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e"
+    max_length: int = Field(default=512, gt=0)
+    device: Literal["cpu", "cuda"] = "cpu"
+    dtype: Literal["float32", "float16", "bfloat16"] = "float32"
+    batch_size: int = Field(default=16, gt=0)
+    candidate_k: int = Field(default=10, gt=0)
+    cache_enabled: bool = True
+
+    @field_validator("model_revision", "tokenizer_revision")
+    @classmethod
+    def _pinned_revision(cls, value: str) -> str:
+        if not re.fullmatch(r"[0-9a-f]{40}", value):
+            raise ValueError("reranker revisions must be exact 40-character git commit hashes")
+        return value
+
+
+class RerankingExperimentConfig(_StrictModel):
+    enabled: bool = False
+    experiment_id: str = "reranking-v1-2026-07-29"
+    preregistration_path: str = "PREREGISTRATION_RERANKING.md"
+    preregistration_sha256: str = "fdef3b33d5a78ac939f0cab1a7523a1a29ed3ef1ee4d8b9705447045fbc2e42f"
+    secondary_analysis_path: str = "SECONDARY_ANALYSIS_RERANKING.md"
+    secondary_analysis_sha256: str = (
+        "4b60cc6f0029b0930701e97581e30007d49260e5948c39f67500b6b6f0846f48"
+    )
+    bootstrap_resamples: int = Field(default=10_000, ge=1_000)
+    bootstrap_confidence: float = Field(default=0.95, gt=0.0, lt=1.0)
+    transfer_tolerance: float = Field(default=1e-12, ge=0.0)
+    baseline_results_raw: str = "results/raw"
+    final_context_k: int = Field(default=5, gt=0)
+    arms: tuple[Literal["bm25", "dense", "hybrid_rrf", "hybrid_rrf_rerank"], ...] = (
+        "bm25",
+        "dense",
+        "hybrid_rrf",
+        "hybrid_rrf_rerank",
+    )
+    reranker: RerankerConfig = RerankerConfig()
+
+    @field_validator("experiment_id")
+    @classmethod
+    def _experiment_slug(cls, value: str) -> str:
+        if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", value):
+            raise ValueError("reranking.experiment_id must be a filesystem-safe lowercase slug")
+        return value
+
+    @field_validator("preregistration_sha256", "secondary_analysis_sha256")
+    @classmethod
+    def _prereg_hash(cls, value: str) -> str:
+        if not re.fullmatch(r"[0-9a-f]{64}", value):
+            raise ValueError("reranking analysis hashes must be 64 lowercase hex chars")
+        return value
+
+    @field_validator("arms")
+    @classmethod
+    def _arms_unique_and_complete(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        required = {"bm25", "dense", "hybrid_rrf", "hybrid_rrf_rerank"}
+        if set(value) != required or len(value) != len(required):
+            raise ValueError(f"reranking.arms must contain exactly {sorted(required)}")
+        return value
+
+
 class RetrievalConfig(_StrictModel):
     ks: tuple[int, ...] = (2, 5, 10)
     rrf_k: int = 60
@@ -95,6 +162,7 @@ class GenerationConfig(_StrictModel):
     max_new_tokens: int = 256
     context_source: Literal["dataset", "retrieval"] = "dataset"
     retrieval_run: str | None = None
+    retrieval_results_raw: str | None = None
     top_k_context: int = 10
     prompt_version: str = "v1"
 
@@ -110,6 +178,7 @@ class AttributionEmbeddingConfig(_StrictModel):
 
 class ControlsConfig(_StrictModel):
     retrieval_run: str = "bm25"
+    retrieval_results_raw: str | None = None
     shuffled_source: str = "leave_one_out"
 
 
@@ -118,6 +187,8 @@ class AttributionConfig(_StrictModel):
     faithfulness: FaithfulnessConfig = FaithfulnessConfig()
     embedding: AttributionEmbeddingConfig = AttributionEmbeddingConfig()
     controls: ControlsConfig = ControlsConfig()
+    run_namespace: str | None = None
+    gold_context_source: Literal["dataset", "generation"] = "dataset"
 
     @field_validator("modes")
     @classmethod
@@ -127,6 +198,13 @@ class AttributionConfig(_StrictModel):
         if len(set(v)) != len(v):
             raise ValueError("attribution.modes contains duplicates")
         return v
+
+    @field_validator("run_namespace")
+    @classmethod
+    def _namespace_slug(cls, value: str | None) -> str | None:
+        if value is not None and not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", value):
+            raise ValueError("attribution.run_namespace must be a filesystem-safe lowercase slug")
+        return value
 
 
 class EvaluationConfig(_StrictModel):
@@ -155,9 +233,48 @@ class AppConfig(_StrictModel):
     retrieval: RetrievalConfig = RetrievalConfig()
     generation: GenerationConfig = GenerationConfig()
     attribution: AttributionConfig = AttributionConfig()
+    reranking: RerankingExperimentConfig = RerankingExperimentConfig()
     evaluation: EvaluationConfig = EvaluationConfig()
     runtime: RuntimeConfig = RuntimeConfig()
     serve: ServeConfig = ServeConfig()
+
+    @model_validator(mode="after")
+    def _locked_reranking_design(self) -> AppConfig:
+        if not self.reranking.enabled:
+            return self
+        rr = self.reranking.reranker
+        expected = {
+            "model_id": "BAAI/bge-reranker-v2-m3",
+            "model_revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+            "tokenizer_id": "BAAI/bge-reranker-v2-m3",
+            "tokenizer_revision": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+            "max_length": 512,
+            "batch_size": 16,
+            "candidate_k": 10,
+        }
+        actual = {key: getattr(rr, key) for key in expected}
+        if actual != expected:
+            raise ValueError(
+                f"reranking config violates locked preregistration: {actual} != {expected}"
+            )
+        if self.reranking.final_context_k != 5:
+            raise ValueError("reranking.final_context_k is preregistered at 5")
+        if (
+            self.reranking.bootstrap_resamples != 10_000
+            or self.reranking.bootstrap_confidence != 0.95
+            or self.reranking.transfer_tolerance != 1e-12
+        ):
+            raise ValueError(
+                "secondary analysis is locked at 10000 resamples, 95% confidence, "
+                "and transfer tolerance 1e-12"
+            )
+        expected_device_dtype = ("cpu", "float32") if self.split == "smoke" else ("cuda", "float16")
+        if (rr.device, rr.dtype) != expected_device_dtype:
+            raise ValueError(
+                f"reranker {self.split} device/dtype must be {expected_device_dtype}, "
+                f"got {(rr.device, rr.dtype)}"
+            )
+        return self
 
     # --- resolved path helpers (all relative to CWD = repo root) -------------
     @property
@@ -200,6 +317,11 @@ _YAML_PATH_FIELDS: tuple[tuple[str, str], ...] = (
     ("paths", "results_raw"),
     ("paths", "results_derived"),
     ("paths", "assets_dir"),
+    ("generation", "retrieval_results_raw"),
+    ("attribution", "controls.retrieval_results_raw"),
+    ("reranking", "preregistration_path"),
+    ("reranking", "secondary_analysis_path"),
+    ("reranking", "baseline_results_raw"),
 )
 
 
@@ -208,7 +330,12 @@ def _check_yaml_paths_relative(raw: dict[str, Any], source: Path) -> None:
     absolute paths in committed files). Env overrides (RAG_EVIDENCE_*) may be absolute —
     that is exactly how Colab points checkpoints at a Drive mount."""
     for section, key in _YAML_PATH_FIELDS:
-        value = (raw.get(section) or {}).get(key)
+        section_value = raw.get(section) or {}
+        if "." in key:
+            first, second = key.split(".", 1)
+            value = (section_value.get(first) or {}).get(second)
+        else:
+            value = section_value.get(key)
         if isinstance(value, str):
             try:
                 _require_relative(value, f"{section}.{key}")

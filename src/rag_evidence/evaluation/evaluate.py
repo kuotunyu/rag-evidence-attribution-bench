@@ -94,9 +94,15 @@ def evaluate_retrieval(
         ok = [r for r in records if r.get("error") is None]
         failed = [r for r in records if r.get("error") is not None]
         recalls: dict[int, list[float]] = {k: [] for k in cfg.retrieval.ks}
+        complete_coverages: dict[int, list[float]] = {k: [] for k in cfg.retrieval.ks}
+        ndcgs_at: dict[int, list[float]] = {k: [] for k in cfg.retrieval.ks}
         mrrs: list[float] = []
         ndcgs: list[float] = []
         latencies: list[float] = []
+        rerank_latencies: list[float] = []
+        end_to_end_estimates: list[float] = []
+        cache_hits = cache_misses = scored_pairs = 0
+        scoring_s = 0.0
         for rec in ok:
             example = examples.get(rec["question_id"])
             if example is None:
@@ -105,9 +111,19 @@ def evaluate_retrieval(
             gold = set(example.gold_passage_ids)
             for k in cfg.retrieval.ks:
                 recalls[k].append(recall_at_k(ranking, gold, k))
+                complete_coverages[k].append(float(gold.issubset(set(ranking[:k]))))
+                ndcgs_at[k].append(ndcg_at_k(ranking, gold, k))
             mrrs.append(mrr(ranking, gold))
             ndcgs.append(ndcg_at_k(ranking, gold, 10))
             latencies.append(rec["latency_ms"])
+            if rec.get("rerank_latency_ms") is not None:
+                rerank_latencies.append(float(rec["rerank_latency_ms"]))
+            if rec.get("estimated_end_to_end_latency_ms") is not None:
+                end_to_end_estimates.append(float(rec["estimated_end_to_end_latency_ms"]))
+            cache_hits += int(rec.get("cache_hits", 0))
+            cache_misses += int(rec.get("cache_misses", 0))
+            scored_pairs += int(rec.get("scored_pair_count", 0))
+            scoring_s += float(rec.get("scoring_latency_ms", 0.0)) / 1000.0
         out[method] = {
             "run": str(run_dir).replace("\\", "/"),
             "execution_kind": meta.get("execution_kind", "real"),
@@ -117,9 +133,36 @@ def evaluate_retrieval(
             "n_failed": len(failed),
             "failure_rate": len(failed) / max(1, len(records)),
             "recall_at": {str(k): _mean(v) for k, v in recalls.items()},
+            "evidence_coverage_at": {str(k): _mean(v) for k, v in recalls.items()},
+            "multi_hop_necessary_passage_coverage_at": {
+                str(k): _mean(v) for k, v in complete_coverages.items()
+            },
             "mrr": _mean(mrrs),
             "ndcg_at_10": _mean(ndcgs),
+            "ndcg_at": {str(k): _mean(v) for k, v in ndcgs_at.items()},
             "latency_ms": percentiles(latencies),
+            "rerank_latency_ms": percentiles(rerank_latencies) if rerank_latencies else None,
+            "estimated_end_to_end_latency_ms": (
+                percentiles(end_to_end_estimates) if end_to_end_estimates else None
+            ),
+            "peak_vram_mb": meta.get("run_peak_vram_mb"),
+            "cache": (
+                {
+                    "hits": cache_hits,
+                    "misses": cache_misses,
+                    "hit_rate": (
+                        cache_hits / (cache_hits + cache_misses)
+                        if cache_hits + cache_misses
+                        else None
+                    ),
+                }
+                if cache_hits + cache_misses
+                else None
+            ),
+            "throughput_pairs_per_s": (
+                scored_pairs / scoring_s if scored_pairs and scoring_s > 0 else None
+            ),
+            "reranker_systems": meta.get("reranker_systems"),
         }
     return out
 
@@ -168,7 +211,15 @@ def evaluate_generation(
         cit_p: list[float] = []
         cit_r: list[float] = []
         cit_f1: list[float] = []
+        citation_coverage_all: list[float] = []
+        complete_citation_coverage_all: list[float] = []
         n_no_citation = 0
+        for rec in ok:
+            example = examples[rec["question_id"]]
+            gold = set(example.gold_passage_ids)
+            valid = set(rec.get("cited_passage_ids") or []) if not rec["abstained"] else set()
+            citation_coverage_all.append(len(valid & gold) / len(gold))
+            complete_citation_coverage_all.append(float(gold.issubset(valid)))
         for rec in answered:
             example = examples[rec["question_id"]]
             gold = set(example.gold_passage_ids)
@@ -208,6 +259,8 @@ def evaluate_generation(
                 "f1": _mean(cit_f1),
                 "no_citation_rate": n_no_citation / max(1, len(answered)),
                 "n_scored": len(answered),
+                "coverage_all": _mean(citation_coverage_all),
+                "complete_coverage_all": _mean(complete_citation_coverage_all),
             },
             "latency_ms": percentiles(latencies),
             "throughput_tokens_per_s": (
@@ -234,44 +287,54 @@ def evaluate_attribution(
     *,
     allow_partial: bool,
 ) -> dict[str, Any]:
-    from rag_evidence.generation.run import generation_run_name
-
     out: dict[str, Any] = {}
-    gen_name = generation_run_name(cfg)
     for mode in ("gold", "generated"):
         mode_dir = cfg.results_raw_dir / cfg.split / "attribute" / mode
         methods = _run_dirs(mode_dir)
         if not methods:
             continue
         mode_out: dict[str, Any] = {}
-
-        gen_records = gen_records_by_run.get(gen_name, {})
-        if mode == "generated":
-            if not gen_records:
-                raise UpstreamMissingError(
-                    f"attribution mode 'generated' exists but generation run {gen_name!r} "
-                    "records are missing — evaluate needs them for subset filtering"
-                )
-            n_total = len(examples)
-            gen_ok = [r for r in gen_records.values() if r.get("error") is None]
-            n_abstained = sum(1 for r in gen_ok if r["abstained"])
-            correct_qids = {
-                r["question_id"] for r in gen_ok if not r["abstained"] and _is_correct(cfg, r)
-            }
-            mode_out["generation_run"] = gen_name
-            mode_out["subset"] = {
-                "criterion": cfg.evaluation.correctness_criterion,
-                "n_total": n_total,
-                "n_generated_ok": len(gen_ok),
-                "n_abstained": n_abstained,
-                "n_correct": len(correct_qids),
-            }
-        else:
-            correct_qids = set(examples)  # mode A: every sample qualifies
+        generated_subsets: dict[str, dict[str, Any]] = {}
 
         for run_dir in methods:
-            method = run_dir.name
+            run_key = run_dir.name
             meta, records = _load_run(run_dir)
+            scientific = meta.get("config_scientific") or {}
+            record_method = records[0].get("method") if records else None
+            actual_method = str(scientific.get("method") or record_method or run_key)
+            namespace = scientific.get("run_namespace")
+            generation_run = scientific.get("generation_run")
+            if generation_run is None and records:
+                generation_run = records[0].get("generation_run")
+
+            subset: dict[str, Any] | None = None
+            if mode == "generated":
+                if not generation_run:
+                    # Backward compatibility for v0.1 artifacts, which predate explicit
+                    # generation-run linkage and only ever had one generation run.
+                    generation_run = next(iter(gen_records_by_run), None)
+                gen_records = gen_records_by_run.get(str(generation_run), {})
+                if not gen_records:
+                    raise UpstreamMissingError(
+                        f"attribution run {run_key!r} references generation run "
+                        f"{generation_run!r}, but its records are missing"
+                    )
+                gen_ok = [r for r in gen_records.values() if r.get("error") is None]
+                n_abstained = sum(1 for r in gen_ok if r["abstained"])
+                correct_qids = {
+                    r["question_id"] for r in gen_ok if not r["abstained"] and _is_correct(cfg, r)
+                }
+                subset = {
+                    "criterion": cfg.evaluation.correctness_criterion,
+                    "n_total": len(examples),
+                    "n_generated_ok": len(gen_ok),
+                    "n_abstained": n_abstained,
+                    "n_correct": len(correct_qids),
+                }
+                generated_subsets[str(generation_run)] = subset
+            else:
+                correct_qids = set(examples)
+
             partial = _is_partial(meta, records)
             if partial and not allow_partial:
                 logger.warning(
@@ -287,7 +350,7 @@ def evaluate_attribution(
                 / cfg.split
                 / "attribution"
                 / mode
-                / f"{method}_per_sample.jsonl"
+                / f"{run_key}_per_sample.jsonl"
             )
             per_sample_path.parent.mkdir(parents=True, exist_ok=True)
             per_sample_path.unlink(missing_ok=True)
@@ -348,12 +411,16 @@ def evaluate_attribution(
                     secs.append(rec["latency_s"])
                 calls.append(rec.get("num_model_calls", 0))
 
-            mode_out[method] = {
+            mode_out[run_key] = {
                 "run": str(run_dir).replace("\\", "/"),
                 "execution_kind": meta.get("execution_kind", "real"),
                 "partial": partial,
                 "device": (meta.get("env") or {}).get("gpu_name") or "cpu",
-                "is_control": method.startswith("control_"),
+                "method": actual_method,
+                "run_namespace": namespace,
+                "generation_run": generation_run,
+                "subset": subset,
+                "is_control": actual_method.startswith("control_"),
                 "n_attempted": len(ok) + len(failed),
                 "n_success": len(ok),
                 "n_failed": len(failed),
@@ -373,6 +440,14 @@ def evaluate_attribution(
                 "num_model_calls_mean": _mean(calls),
                 "peak_vram_mb": meta.get("run_peak_vram_mb"),
             }
+        # Preserve the original summary shape bit-for-bit in meaning (and keep the
+        # existing report renderer working) when every run shares one generation.
+        if mode == "generated" and len(generated_subsets) == 1:
+            generation_run, subset = next(iter(generated_subsets.items()))
+            mode_out["generation_run"] = generation_run
+            mode_out["subset"] = subset
+        elif mode == "generated" and generated_subsets:
+            mode_out["subsets"] = generated_subsets
         out[mode] = mode_out
     return out
 
