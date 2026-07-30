@@ -129,7 +129,7 @@
   confirming the benchmark discriminates real signal from noise. Mode B (n_correct=10/20):
   leave_one_out F1@2=0.800 (highest), contextcite 0.750.
 - **Acceptance: all 8 checklist items now ✅ VERIFIED REAL** — no more pending-Colab items
-  for the smoke split. README/README_zh-TW/report.md/summary.json/assets all regenerated
+  for the smoke split. README.md/README_en.md/report.md/summary.json/assets all regenerated
   and committed.
 - **Remaining optional work (not blocking, not started this session):** `01_colab_run.ipynb`
   (dev60 + locked eval240 — needs the rebuilt bundle re-uploaded to pick up the perf fix);
@@ -220,7 +220,7 @@
 - **`TRANSFER.md` added**: what to copy (git bundle, not the folder — `.venv`/dataset/
   caches must not travel), setup + verification on the new machine, the CUDA opt-in, and
   the GitHub publish steps incl. the MIT-code / CC-BY-SA-results licensing split.
-- **README/README_zh-TW freshness pass**: the results preamble no longer says GPU numbers
+- **README.md/README_en.md freshness pass**: the results preamble no longer says GPU numbers
   are "pending Colab" (they landed); the Colab section documents the file-picker flow with
   measured times (T4 ~1.5 h smoke, A100 ~4.5 h dev+eval) instead of the stale
   "upload to Drive MyDrive/reab/" instructions.

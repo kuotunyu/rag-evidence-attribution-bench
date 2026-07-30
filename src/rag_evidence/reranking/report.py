@@ -1045,8 +1045,13 @@ def _fmt(value: Any, digits: int = 3) -> str:
     return str(value)
 
 
-def render_extension_block(comparisons: dict[str, dict[str, Any]]) -> str:
+def render_extension_block(comparisons: dict[str, dict[str, Any]], *, locale: str = "en") -> str:
     if not comparisons:
+        if locale == "zh-TW":
+            return (
+                "_Reranking extension: **待產生** — preregistration 與 CPU scaffolding "
+                "已存在, 但尚無 machine-generated comparison artifact。_"
+            )
         return (
             "_Reranking extension: **PENDING** — preregistration and CPU scaffolding are "
             "present, but no machine-generated comparison artifact exists yet._"
@@ -1080,6 +1085,17 @@ def render_extension_block(comparisons: dict[str, dict[str, Any]]) -> str:
         "rerank p95 ms | retrieval e2e p95 ms | retrieval+generation p95 ms (est.) | "
         "pipeline peak VRAM MB |\n|---|---|---|---|---|---|---|---|---|---|---|"
     )
+    if locale == "zh-TW":
+        return (
+            "**受控 reranking extension**\n\n"
+            "Confirmatory configuration: candidate-k 10 (完整且固定的 Hotpot "
+            "distractor candidate set), final context-k 5。Smoke/dev 不是正式 eval。\n\n"
+            + header
+            + "\n"
+            + "\n".join(rows)
+            + "\n\n_所有數值皆由 `results/reranking/derived/*/"
+            "reranking_comparison.json` 自動產生; 缺少的 downstream run 維持 `—`。_"
+        )
     return (
         "**Controlled reranking extension**\n\n"
         "Confirmatory configuration: candidate-k 10 (the full fixed Hotpot distractor "
@@ -1180,6 +1196,6 @@ def build_reranking_report(cfg: AppConfig) -> None:
         lines += ["", "### Decision", "", f"```json\n{decision_json}\n```", ""]
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text("\n".join(lines), encoding="utf-8", newline="\n")
-    for readme in (Path("README.md"), Path("README_zh-TW.md")):
-        _inject_extension(readme, block)
+    _inject_extension(Path("README.md"), render_extension_block(comparisons, locale="zh-TW"))
+    _inject_extension(Path("README_en.md"), block)
     logger.info("wrote %s and updated reranking README blocks", report_path)
