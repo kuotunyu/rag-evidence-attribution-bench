@@ -24,8 +24,9 @@ from rag_evidence.data.hotpot import load_prepared_verified
 from rag_evidence.data.schema import Example
 from rag_evidence.data.splits import load_manifest
 from rag_evidence.errors import DataError, UpstreamMissingError
-from rag_evidence.evaluation.comparisons import compare_attribution_methods
+from rag_evidence.evaluation.comparisons import AnalysisTier, compare_attribution_methods
 from rag_evidence.evaluation.construct import evaluate_construct_validation
+from rag_evidence.evaluation.protocol import build_experiment_matrix
 from rag_evidence.evaluation.schema import upgrade_attribution_metrics
 from rag_evidence.metrics.attribution import (
     attribution_ndcg,
@@ -473,9 +474,9 @@ def evaluate_attribution(
             split=cfg.split,
             mode=mode,
             global_seed=cfg.seed,
-            resamples=10_000,
-            confidence=0.95,
-            tolerance=0.0,
+            resamples=cfg.evaluation.bootstrap_resamples,
+            confidence=cfg.evaluation.bootstrap_confidence,
+            tolerance=cfg.evaluation.bootstrap_tolerance,
         )
         agreement_subset = (
             "all_successful_attributions"
@@ -494,24 +495,41 @@ def evaluate_attribution(
             )
 
         paired_comparisons: dict[str, Any] = {}
-        primary_candidate = unique_run_by_method.get("leave_one_out")
-        primary_comparator = unique_run_by_method.get("control_lexical")
-        if primary_candidate is not None and primary_comparator is not None:
-            comparison_key = "leave_one_out__vs__control_lexical"
-            paired_comparisons[comparison_key] = compare_attribution_methods(
-                per_sample_by_run[primary_candidate],
-                per_sample_by_run[primary_comparator],
-                split=cfg.split,
-                mode=mode,
-                candidate_method="leave_one_out",
-                comparator_method="control_lexical",
-                analysis_tier="confirmatory",
-                primary_k=cfg.evaluation.primary_k,
-                global_seed=cfg.seed,
-                resamples=10_000,
-                confidence=0.95,
-                tolerance=0.0,
-            )
+        candidate_method = cfg.evaluation.confirmatory_method
+        comparator_method = cfg.evaluation.primary_comparator
+        control_methods = {
+            method
+            for method, run_key in unique_run_by_method.items()
+            if bool(legacy_by_run[run_key]["is_control"])
+        }
+        real_methods = sorted(set(unique_run_by_method) - control_methods)
+        comparator_methods = sorted(
+            control_methods | ({"leave_one_out", "embedding"} & set(unique_run_by_method))
+        )
+        for candidate in real_methods:
+            for comparator in comparator_methods:
+                if candidate == comparator:
+                    continue
+                analysis_tier: AnalysisTier = (
+                    "confirmatory"
+                    if candidate == candidate_method and comparator == comparator_method
+                    else ("exploratory" if candidate in {"arc_jsd", "contextcite"} else "secondary")
+                )
+                comparison_key = f"{candidate}__vs__{comparator}"
+                paired_comparisons[comparison_key] = compare_attribution_methods(
+                    per_sample_by_method[candidate],
+                    per_sample_by_method[comparator],
+                    split=cfg.split,
+                    mode=mode,
+                    candidate_method=candidate,
+                    comparator_method=comparator,
+                    analysis_tier=analysis_tier,
+                    primary_k=cfg.evaluation.primary_k,
+                    global_seed=cfg.seed,
+                    resamples=cfg.evaluation.bootstrap_resamples,
+                    confidence=cfg.evaluation.bootstrap_confidence,
+                    tolerance=cfg.evaluation.bootstrap_tolerance,
+                )
         mode_out["paired_comparisons"] = paired_comparisons
         mode_out["causal_validation"] = causal_validation
         # Preserve the original summary shape bit-for-bit in meaning (and keep the
@@ -550,11 +568,20 @@ def evaluate_all(cfg: AppConfig, *, allow_partial: bool = False) -> None:
                     derived_split / "attribution" / mode / f"{method}_metrics.json", metrics
                 )
 
+    discovered_methods = {
+        mode: {
+            str(entry["method"])
+            for entry in methods.values()
+            if isinstance(entry, dict) and entry.get("schema_version") == 2
+        }
+        for mode, methods in attribution.items()
+    }
     split_payload = {
         "n_questions": len(examples),
         "retrieval": retrieval,
         "generation": generation,
         "attribution": attribution,
+        "experiment_matrix": build_experiment_matrix(discovered_methods),
     }
     summary_path = cfg.results_derived_dir / "summary.json"
     summary: dict[str, Any] = (

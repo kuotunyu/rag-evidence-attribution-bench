@@ -33,6 +33,8 @@ def scripted_env(tiny_env: AppConfig, monkeypatch: pytest.MonkeyPatch) -> AppCon
     run_generation_stage(cfg, resume=False, limit=None)
     run_attribution_stage(cfg, method="leave_one_out", mode=None, resume=False, limit=None)
     run_attribution_stage(cfg, method="control_lexical", mode=None, resume=False, limit=None)
+    run_attribution_stage(cfg, method="control_random", mode=None, resume=False, limit=None)
+    run_attribution_stage(cfg, method="citations", mode=None, resume=False, limit=None)
     evaluate_all(cfg)
     return cfg
 
@@ -98,6 +100,24 @@ def test_primary_comparison_uses_estimand_specific_pairs(scripted_env: AppConfig
     assert mode["causal_validation"]["status"] == "not_run"
     assert mode["causal_validation"]["missing_methods"] == [
         "control_answer_string",
-        "control_random",
         "oracle_gold",
     ]
+
+
+def test_split_summary_declares_missing_experiment_rows(scripted_env: AppConfig) -> None:
+    summary = read_json(Path(scripted_env.paths.results_derived) / "summary.json")
+    matrix = summary["splits"]["smoke"]["experiment_matrix"]
+
+    assert matrix["gold"]["leave_one_out"]["status"] == "complete"
+    assert matrix["gold"]["control_lexical"]["status"] == "complete"
+    assert matrix["gold"]["embedding_question"]["status"] == "not_run"
+    assert matrix["generated"]["citations"]["status"] == "complete"
+
+
+def test_secondary_comparisons_use_prespecified_controls(scripted_env: AppConfig) -> None:
+    summary = read_json(Path(scripted_env.paths.results_derived) / "summary.json")
+    comparisons = summary["splits"]["smoke"]["attribution"]["generated"]["paired_comparisons"]
+
+    assert comparisons["leave_one_out__vs__control_random"]["analysis_tier"] == "secondary"
+    assert comparisons["citations__vs__control_lexical"]["analysis_tier"] == "secondary"
+    assert comparisons["citations__vs__control_random"]["metrics"]["f1_at_2"]["n_pairs"] == 1

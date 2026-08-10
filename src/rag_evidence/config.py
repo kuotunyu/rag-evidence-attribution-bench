@@ -211,6 +211,11 @@ class EvaluationConfig(_StrictModel):
     attribution_ks: tuple[int, ...] = (1, 2, 3)
     primary_k: int = 2
     correctness_criterion: Literal["em", "f1_05"] = "em"
+    bootstrap_resamples: int = Field(default=10_000, ge=1_000)
+    bootstrap_confidence: float = Field(default=0.95, gt=0.0, lt=1.0)
+    bootstrap_tolerance: float = Field(default=0.0, ge=0.0)
+    confirmatory_method: Literal["leave_one_out"] = "leave_one_out"
+    primary_comparator: Literal["control_lexical"] = "control_lexical"
 
 
 class RuntimeConfig(_StrictModel):

@@ -93,6 +93,71 @@ def test_minimal_config_defaults(tmp_path: Path) -> None:
     cfg = load_config(_write(tmp_path, MINIMAL))
     assert cfg.generation.model_id == "Qwen/Qwen3-4B-Instruct-2507"
     assert cfg.attribution.modes == ("gold", "generated")
+    assert cfg.evaluation.bootstrap_resamples == 10_000
+    assert cfg.evaluation.bootstrap_confidence == 0.95
+    assert cfg.evaluation.bootstrap_tolerance == 0.0
+    assert cfg.evaluation.confirmatory_method == "leave_one_out"
+    assert cfg.evaluation.primary_comparator == "control_lexical"
+
+
+@pytest.mark.parametrize("name", ["smoke.yaml", "dev.yaml", "eval.yaml"])
+def test_v1_configs_read_historical_raw_and_write_versioned_derived(
+    repo_root: Path, name: str
+) -> None:
+    cfg = load_config(repo_root / "configs" / "v1" / name)
+
+    assert cfg.paths.results_raw == "results/raw"
+    assert cfg.paths.results_derived == "results/v1/derived"
+    assert cfg.evaluation.bootstrap_resamples == 10_000
+    assert cfg.evaluation.bootstrap_confidence == 0.95
+    assert cfg.evaluation.bootstrap_tolerance == 0.0
+    assert cfg.evaluation.confirmatory_method == "leave_one_out"
+    assert cfg.evaluation.primary_comparator == "control_lexical"
+
+
+@pytest.mark.parametrize(
+    ("historical_name", "v1_name"),
+    [("smoke.yaml", "smoke.yaml"), ("dev.yaml", "dev.yaml"), ("full.yaml", "eval.yaml")],
+)
+def test_v1_configs_preserve_historical_scientific_inputs(
+    repo_root: Path, historical_name: str, v1_name: str
+) -> None:
+    historical = load_config(repo_root / "configs" / historical_name)
+    versioned = load_config(repo_root / "configs" / "v1" / v1_name)
+
+    assert versioned.run_name == historical.run_name
+    assert versioned.split == historical.split
+    assert versioned.seed == historical.seed
+    assert versioned.data == historical.data
+    assert versioned.retrieval == historical.retrieval
+    assert versioned.generation == historical.generation
+    assert versioned.attribution == historical.attribution
+    assert versioned.runtime == historical.runtime
+    assert versioned.serve == historical.serve
+    assert versioned.evaluation.attribution_ks == historical.evaluation.attribution_ks
+    assert versioned.evaluation.primary_k == historical.evaluation.primary_k
+    assert (
+        versioned.evaluation.correctness_criterion
+        == historical.evaluation.correctness_criterion
+    )
+
+
+@pytest.mark.parametrize(
+    "evaluation",
+    [
+        "bootstrap_resamples: 999",
+        "bootstrap_confidence: 0.0",
+        "bootstrap_confidence: 1.0",
+        "bootstrap_tolerance: -0.1",
+        "confirmatory_method: embedding",
+        "primary_comparator: control_random",
+    ],
+)
+def test_gate_a_evaluation_protocol_is_locked(tmp_path: Path, evaluation: str) -> None:
+    text = MINIMAL + f"\nevaluation:\n  {evaluation}\n"
+
+    with pytest.raises(ConfigError, match=r"evaluation|bootstrap|confirmatory|comparator"):
+        load_config(_write(tmp_path, text))
 
 
 def test_unknown_key_rejected(tmp_path: Path) -> None:
