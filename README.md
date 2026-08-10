@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/kuotunyu/rag-evidence-attribution-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/kuotunyu/rag-evidence-attribution-bench/actions/workflows/ci.yml)
 ![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Code license: MIT](https://img.shields.io/badge/Code%20license-MIT-yellow.svg)](LICENSE)
 
 本專案是 **HotpotQA (distractor) 封閉候選脈絡歸因**的可重現 benchmark，比較 **Qwen3-4B-Instruct** 回答的 supporting-passage agreement、teacher-forced 依賴性診斷、Latency 與 Peak VRAM。目前證據不足以聲稱已測得 open-corpus evidence faithfulness 或因果歸因；SHA-256 用於變更偵測與可追溯重建，不會阻止具寫入權限者修改 repository。
 
@@ -17,6 +17,12 @@
 - **生成與歸因 (Generation & Attribution)**：v0.1 以 dataset order 輸入全部 10 段候選 passage，生成器不使用 retrieval ranking；`leave_one_out` 是 teacher-forced 脈絡依賴性診斷，不是已驗證的因果 ground truth。
 - **雙重評測模式 (Dual Evaluation Modes)**：Mode A (Teacher-forced Gold Answers 全樣本) 與 Mode B (Generated Answers 僅針對答對子集計算)。
 - **可追溯重建 (Traceable Regeneration)**：真實 run 與 SHA-256 驗證匯入均保留 provenance；mock run 不進入 README，partial run 預設不進入 evaluate。
+
+目前的 validity extension 已加入 passage/title group 互斥且版本固定的
+[Dataset v2](docs/DATASET_V2.md)，以及 960 筆、可逐 byte 重建的
+[Answerability Challenge v1](docs/CHALLENGE_V1.md)。Challenge v1 目前仍是 candidate
+set，不是已完成的 confirmatory benchmark：其中 640 筆 missing-hop／evidence-swap
+樣本，在兩位獨立標註者審查與第三人 adjudication 完成前，禁止用於確認性結論。
 
 ---
 

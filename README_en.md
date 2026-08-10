@@ -34,6 +34,12 @@ VRAM. It does **not** yet establish open-corpus evidence faithfulness or causal 
   `--allow-partial` (and then visibly labeled). Fingerprints detect changes; they do not
   prevent writes or establish repository access control.
 
+The current validity extension adds a pinned, passage/title-group-disjoint
+[Dataset v2](docs/DATASET_V2.md) and a 960-record deterministic
+[Answerability Challenge v1](docs/CHALLENGE_V1.md). The challenge is a candidate set, not
+a completed confirmatory benchmark: 640 missing-hop/evidence-swap records remain blocked
+pending two independent annotations and adjudication.
+
 ## Results
 
 The historical v0.1 run is complete, but flagship construct validation is not. Gate A
