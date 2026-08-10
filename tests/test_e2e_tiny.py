@@ -104,6 +104,4 @@ def test_evaluate_is_idempotent(e2e_env: AppConfig) -> None:
     first = read_json(Path(e2e_env.paths.results_derived) / "summary.json")
     evaluate_all(e2e_env)
     second = read_json(Path(e2e_env.paths.results_derived) / "summary.json")
-    first.pop("generated_utc")
-    second.pop("generated_utc")
     assert first == second

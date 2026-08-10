@@ -1,0 +1,128 @@
+{
+  "bm25": {
+    "run": "results/raw/dev/retrieve/bm25",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "cpu",
+    "n_evaluated": 60,
+    "n_failed": 0,
+    "failure_rate": 0.0,
+    "recall_at": {
+      "2": 0.6,
+      "5": 0.7416666666666667,
+      "10": 1.0
+    },
+    "evidence_coverage_at": {
+      "2": 0.6,
+      "5": 0.7416666666666667,
+      "10": 1.0
+    },
+    "multi_hop_necessary_passage_coverage_at": {
+      "2": 0.3333333333333333,
+      "5": 0.5166666666666667,
+      "10": 1.0
+    },
+    "mrr": 0.8605753968253969,
+    "ndcg_at_10": 0.8206018451668017,
+    "ndcg_at": {
+      "2": 0.6414873040140017,
+      "5": 0.7239120198448202,
+      "10": 0.8206018451668017
+    },
+    "latency_ms": {
+      "mean": 1.0904500000000004,
+      "p50": 1.074,
+      "p95": 1.448
+    },
+    "rerank_latency_ms": null,
+    "estimated_end_to_end_latency_ms": null,
+    "peak_vram_mb": null,
+    "cache": null,
+    "throughput_pairs_per_s": null,
+    "reranker_systems": null
+  },
+  "dense": {
+    "run": "results/raw/dev/retrieve/dense",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "NVIDIA A100-SXM4-40GB",
+    "n_evaluated": 60,
+    "n_failed": 0,
+    "failure_rate": 0.0,
+    "recall_at": {
+      "2": 0.6833333333333333,
+      "5": 0.8416666666666667,
+      "10": 1.0
+    },
+    "evidence_coverage_at": {
+      "2": 0.6833333333333333,
+      "5": 0.8416666666666667,
+      "10": 1.0
+    },
+    "multi_hop_necessary_passage_coverage_at": {
+      "2": 0.4166666666666667,
+      "5": 0.7,
+      "10": 1.0
+    },
+    "mrr": 0.9284722222222221,
+    "ndcg_at_10": 0.8802944332130357,
+    "ndcg_at": {
+      "2": 0.7285922104395172,
+      "5": 0.8200797814228693,
+      "10": 0.8802944332130357
+    },
+    "latency_ms": {
+      "mean": 391.56408333333343,
+      "p50": 377.52,
+      "p95": 605.068
+    },
+    "rerank_latency_ms": null,
+    "estimated_end_to_end_latency_ms": null,
+    "peak_vram_mb": null,
+    "cache": null,
+    "throughput_pairs_per_s": null,
+    "reranker_systems": null
+  },
+  "hybrid_rrf": {
+    "run": "results/raw/dev/retrieve/hybrid_rrf",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "NVIDIA A100-SXM4-40GB",
+    "n_evaluated": 60,
+    "n_failed": 0,
+    "failure_rate": 0.0,
+    "recall_at": {
+      "2": 0.675,
+      "5": 0.8416666666666667,
+      "10": 1.0
+    },
+    "evidence_coverage_at": {
+      "2": 0.675,
+      "5": 0.8416666666666667,
+      "10": 1.0
+    },
+    "multi_hop_necessary_passage_coverage_at": {
+      "2": 0.38333333333333336,
+      "5": 0.7,
+      "10": 1.0
+    },
+    "mrr": 0.9574074074074074,
+    "ndcg_at_10": 0.8847535724177992,
+    "ndcg_at": {
+      "2": 0.7334593829288207,
+      "5": 0.8253581263074828,
+      "10": 0.8847535724177992
+    },
+    "latency_ms": {
+      "mean": 0.10438333333333336,
+      "p50": 0.083,
+      "p95": 0.134
+    },
+    "rerank_latency_ms": null,
+    "estimated_end_to_end_latency_ms": null,
+    "peak_vram_mb": null,
+    "cache": null,
+    "throughput_pairs_per_s": null,
+    "reranker_systems": null
+  }
+}

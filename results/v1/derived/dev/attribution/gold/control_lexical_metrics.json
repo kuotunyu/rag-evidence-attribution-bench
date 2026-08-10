@@ -1,0 +1,99 @@
+{
+  "schema_version": 2,
+  "run": "results/raw/dev/attribute/gold/control_lexical",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "NVIDIA A100-SXM4-40GB",
+  "method": "control_lexical",
+  "run_namespace": null,
+  "generation_run": null,
+  "is_control": true,
+  "agreement": {
+    "n": 60,
+    "subset": "all_successful_attributions",
+    "prf_at": {
+      "1": {
+        "p": 0.7166666666666667,
+        "r": 0.35833333333333334,
+        "f1": 0.477777777777778
+      },
+      "2": {
+        "p": 0.6583333333333333,
+        "r": 0.6583333333333333,
+        "f1": 0.6583333333333333
+      },
+      "3": {
+        "p": 0.4944444444444446,
+        "r": 0.7416666666666667,
+        "f1": 0.5933333333333333
+      }
+    },
+    "mean_average_precision": 0.7370171957671959,
+    "ndcg_at_10": 0.8309613813059793
+  },
+  "causal_dependence": {
+    "n": 60,
+    "subset": "all_successful_non_abstained",
+    "sufficiency_mean": 1.6715734426919746,
+    "comprehensiveness_mean": 4.971653590091228,
+    "validation_status": "not_run"
+  },
+  "execution": {
+    "n_attempted": 60,
+    "n_success": 60,
+    "n_failed": 0,
+    "n_skipped": 0,
+    "n_record_attempts": 60,
+    "n_retry_records": 0,
+    "n_historical_failure_records": 0,
+    "failure_rate": 0.0,
+    "seconds_per_sample": 0.06791166666666666,
+    "num_model_calls_mean": 0.0,
+    "peak_vram_mb": 8514.82275390625
+  },
+  "legacy_v1": {
+    "run": "results/raw/dev/attribute/gold/control_lexical",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "NVIDIA A100-SXM4-40GB",
+    "method": "control_lexical",
+    "run_namespace": null,
+    "generation_run": null,
+    "subset": null,
+    "is_control": true,
+    "n_attempted": 60,
+    "n_success": 60,
+    "n_failed": 0,
+    "n_skipped": 0,
+    "n_record_attempts": 60,
+    "n_retry_records": 0,
+    "n_historical_failure_records": 0,
+    "failure_rate": 0.0,
+    "n_agreement": 60,
+    "prf_at": {
+      "1": {
+        "p": 0.7166666666666667,
+        "r": 0.35833333333333334,
+        "f1": 0.477777777777778
+      },
+      "2": {
+        "p": 0.6583333333333333,
+        "r": 0.6583333333333333,
+        "f1": 0.6583333333333333
+      },
+      "3": {
+        "p": 0.4944444444444446,
+        "r": 0.7416666666666667,
+        "f1": 0.5933333333333333
+      }
+    },
+    "auprc": 0.7370171957671959,
+    "ndcg_at_10": 0.8309613813059793,
+    "sufficiency": 1.6715734426919746,
+    "comprehensiveness": 4.971653590091228,
+    "n_faithfulness": 60,
+    "seconds_per_sample": 0.06791166666666666,
+    "num_model_calls_mean": 0.0,
+    "peak_vram_mb": 8514.82275390625
+  }
+}

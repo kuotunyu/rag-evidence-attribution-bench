@@ -151,8 +151,13 @@ def build_demo(store: ResultsStore) -> Any:
 
         with gr.Tab("Benchmark summary"):
             if store.summary and store.summary.get("splits"):
+                snapshot = store.summary.get("source_snapshot_utc") or store.summary.get(
+                    "generated_utc"
+                )
                 gr.Markdown(
-                    f"Generated {store.summary.get('generated_utc')} · dataset "
+                    f"Source snapshot "
+                    f"{snapshot}"
+                    " · dataset "
                     f"`sha256:{str(store.summary.get('dataset_hash'))[:12]}…` — "
                     "see README for the full tables."
                 )

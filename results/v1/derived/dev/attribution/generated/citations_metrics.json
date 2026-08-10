@@ -1,0 +1,105 @@
+{
+  "schema_version": 2,
+  "run": "results/raw/dev/attribute/generated/citations",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "NVIDIA A100-SXM4-40GB",
+  "method": "citations",
+  "run_namespace": null,
+  "generation_run": "qwen3-4b",
+  "is_control": false,
+  "agreement": {
+    "n": 26,
+    "subset": "generated_exact_match",
+    "prf_at": {
+      "1": {
+        "p": 0.9230769230769231,
+        "r": 0.46153846153846156,
+        "f1": 0.6153846153846151
+      },
+      "2": {
+        "p": 0.7884615384615384,
+        "r": 0.7884615384615384,
+        "f1": 0.7884615384615384
+      },
+      "3": {
+        "p": 0.5897435897435896,
+        "r": 0.8846153846153846,
+        "f1": 0.7076923076923081
+      }
+    },
+    "mean_average_precision": 0.8677808302808303,
+    "ndcg_at_10": 0.9256537567473839
+  },
+  "causal_dependence": {
+    "n": 53,
+    "subset": "all_successful_non_abstained",
+    "sufficiency_mean": 1.854110249568752,
+    "comprehensiveness_mean": 6.742306689856425,
+    "validation_status": "not_run"
+  },
+  "execution": {
+    "n_attempted": 53,
+    "n_success": 53,
+    "n_failed": 0,
+    "n_skipped": 7,
+    "n_record_attempts": 60,
+    "n_retry_records": 0,
+    "n_historical_failure_records": 0,
+    "failure_rate": 0.0,
+    "seconds_per_sample": 0.26182641509433957,
+    "num_model_calls_mean": 0.0,
+    "peak_vram_mb": 8659.28369140625
+  },
+  "legacy_v1": {
+    "run": "results/raw/dev/attribute/generated/citations",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "NVIDIA A100-SXM4-40GB",
+    "method": "citations",
+    "run_namespace": null,
+    "generation_run": "qwen3-4b",
+    "subset": {
+      "criterion": "em",
+      "n_total": 60,
+      "n_generated_ok": 60,
+      "n_abstained": 7,
+      "n_correct": 26
+    },
+    "is_control": false,
+    "n_attempted": 53,
+    "n_success": 53,
+    "n_failed": 0,
+    "n_skipped": 7,
+    "n_record_attempts": 60,
+    "n_retry_records": 0,
+    "n_historical_failure_records": 0,
+    "failure_rate": 0.0,
+    "n_agreement": 26,
+    "prf_at": {
+      "1": {
+        "p": 0.9230769230769231,
+        "r": 0.46153846153846156,
+        "f1": 0.6153846153846151
+      },
+      "2": {
+        "p": 0.7884615384615384,
+        "r": 0.7884615384615384,
+        "f1": 0.7884615384615384
+      },
+      "3": {
+        "p": 0.5897435897435896,
+        "r": 0.8846153846153846,
+        "f1": 0.7076923076923081
+      }
+    },
+    "auprc": 0.8677808302808303,
+    "ndcg_at_10": 0.9256537567473839,
+    "sufficiency": 1.854110249568752,
+    "comprehensiveness": 6.742306689856425,
+    "n_faithfulness": 53,
+    "seconds_per_sample": 0.26182641509433957,
+    "num_model_calls_mean": 0.0,
+    "peak_vram_mb": 8659.28369140625
+  }
+}

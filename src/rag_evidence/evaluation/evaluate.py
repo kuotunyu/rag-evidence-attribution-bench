@@ -12,7 +12,6 @@ is a hard error — imported records must be self-consistent.
 
 from __future__ import annotations
 
-import datetime as _dt
 import logging
 from collections.abc import Iterable
 from pathlib import Path
@@ -72,6 +71,41 @@ def _is_partial(meta: dict[str, Any], records: list[dict[str, Any]]) -> bool:
 def _load_run(run_dir: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     meta = read_json(run_dir / RUN_META_FILE) if (run_dir / RUN_META_FILE).exists() else {}
     return meta, list(read_records(run_dir / RECORDS_FILE))
+
+
+def _referenced_run_dirs(*sections: dict[str, Any]) -> set[Path]:
+    """Return only run directories actually consumed into this evaluation."""
+    found: set[Path] = set()
+
+    def visit(value: Any) -> None:
+        if isinstance(value, dict):
+            run = value.get("run")
+            if isinstance(run, str):
+                found.add(Path(run))
+            for child in value.values():
+                visit(child)
+        elif isinstance(value, list):
+            for child in value:
+                visit(child)
+
+    for section in sections:
+        visit(section)
+    return found
+
+
+def _source_snapshot_utc(*sections: dict[str, Any]) -> str | None:
+    """Use immutable run metadata, never the evaluator's wall clock, as provenance."""
+    timestamps: list[str] = []
+    for run_dir in sorted(_referenced_run_dirs(*sections)):
+        meta_path = run_dir / RUN_META_FILE
+        if not meta_path.exists():
+            raise DataError(f"consumed run has no {RUN_META_FILE}: {run_dir}")
+        meta = read_json(meta_path)
+        timestamp = meta.get("finished_utc") or meta.get("started_utc")
+        if not isinstance(timestamp, str) or not timestamp:
+            raise DataError(f"consumed run has no source timestamp: {run_dir}")
+        timestamps.append(timestamp)
+    return max(timestamps, default=None)
 
 
 # ------------------------------------------------------------------------- retrieval
@@ -578,6 +612,7 @@ def evaluate_all(cfg: AppConfig, *, allow_partial: bool = False) -> None:
     }
     split_payload = {
         "n_questions": len(examples),
+        "source_snapshot_utc": _source_snapshot_utc(retrieval, generation, attribution),
         "retrieval": retrieval,
         "generation": generation,
         "attribution": attribution,
@@ -590,14 +625,22 @@ def evaluate_all(cfg: AppConfig, *, allow_partial: bool = False) -> None:
         else {"schema_version": SUMMARY_SCHEMA_VERSION, "splits": {}}
     )
     manifest = load_manifest(cfg.manifest_file)
+    summary.pop("generated_utc", None)
+    summary["splits"][split] = split_payload
     summary.update(
         schema_version=SUMMARY_SCHEMA_VERSION,
-        generated_utc=_dt.datetime.now(_dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        source_snapshot_utc=max(
+            (
+                payload["source_snapshot_utc"]
+                for payload in summary["splits"].values()
+                if payload.get("source_snapshot_utc") is not None
+            ),
+            default=None,
+        ),
         package_version=rag_evidence.__version__,
         dataset_hash=manifest["fingerprint"]["dataset_hash"],
         primary_k=cfg.evaluation.primary_k,
     )
-    summary["splits"][split] = split_payload
     write_json_atomic(summary_path, summary)
     logger.info(
         "evaluate %s: retrieval=%d runs, generation=%d runs, attribution modes=%s -> %s",

@@ -1,0 +1,99 @@
+{
+  "schema_version": 2,
+  "run": "results/raw/smoke/attribute/gold/embedding",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "Tesla T4",
+  "method": "embedding",
+  "run_namespace": null,
+  "generation_run": null,
+  "is_control": false,
+  "agreement": {
+    "n": 20,
+    "subset": "all_successful_attributions",
+    "prf_at": {
+      "1": {
+        "p": 0.85,
+        "r": 0.425,
+        "f1": 0.5666666666666665
+      },
+      "2": {
+        "p": 0.75,
+        "r": 0.75,
+        "f1": 0.75
+      },
+      "3": {
+        "p": 0.5666666666666667,
+        "r": 0.85,
+        "f1": 0.6800000000000003
+      }
+    },
+    "mean_average_precision": 0.8405555555555555,
+    "ndcg_at_10": 0.9055634185338775
+  },
+  "causal_dependence": {
+    "n": 20,
+    "subset": "all_successful_non_abstained",
+    "sufficiency_mean": 1.550752181900948,
+    "comprehensiveness_mean": 4.939473857857234,
+    "validation_status": "not_run"
+  },
+  "execution": {
+    "n_attempted": 20,
+    "n_success": 20,
+    "n_failed": 0,
+    "n_skipped": 0,
+    "n_record_attempts": 20,
+    "n_retry_records": 0,
+    "n_historical_failure_records": 0,
+    "failure_rate": 0.0,
+    "seconds_per_sample": 13.10503,
+    "num_model_calls_mean": 0.0,
+    "peak_vram_mb": 13266.88818359375
+  },
+  "legacy_v1": {
+    "run": "results/raw/smoke/attribute/gold/embedding",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "Tesla T4",
+    "method": "embedding",
+    "run_namespace": null,
+    "generation_run": null,
+    "subset": null,
+    "is_control": false,
+    "n_attempted": 20,
+    "n_success": 20,
+    "n_failed": 0,
+    "n_skipped": 0,
+    "n_record_attempts": 20,
+    "n_retry_records": 0,
+    "n_historical_failure_records": 0,
+    "failure_rate": 0.0,
+    "n_agreement": 20,
+    "prf_at": {
+      "1": {
+        "p": 0.85,
+        "r": 0.425,
+        "f1": 0.5666666666666665
+      },
+      "2": {
+        "p": 0.75,
+        "r": 0.75,
+        "f1": 0.75
+      },
+      "3": {
+        "p": 0.5666666666666667,
+        "r": 0.85,
+        "f1": 0.6800000000000003
+      }
+    },
+    "auprc": 0.8405555555555555,
+    "ndcg_at_10": 0.9055634185338775,
+    "sufficiency": 1.550752181900948,
+    "comprehensiveness": 4.939473857857234,
+    "n_faithfulness": 20,
+    "seconds_per_sample": 13.10503,
+    "num_model_calls_mean": 0.0,
+    "peak_vram_mb": 13266.88818359375
+  }
+}

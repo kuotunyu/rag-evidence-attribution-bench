@@ -105,9 +105,7 @@ def test_no_complete_pairs_returns_null_effect_instead_of_zero() -> None:
         ({"favorable_direction": "sideways"}, "favorable_direction"),
     ],
 )
-def test_invalid_bootstrap_options_are_rejected(
-    overrides: dict[str, object], message: str
-) -> None:
+def test_invalid_bootstrap_options_are_rejected(overrides: dict[str, object], message: str) -> None:
     options: dict[str, object] = {
         "global_seed": 1,
         "seed_parts": ("smoke", "gold", "a", "b", "metric"),

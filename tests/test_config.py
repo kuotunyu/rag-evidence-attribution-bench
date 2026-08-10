@@ -108,6 +108,7 @@ def test_v1_configs_read_historical_raw_and_write_versioned_derived(
 
     assert cfg.paths.results_raw == "results/raw"
     assert cfg.paths.results_derived == "results/v1/derived"
+    assert cfg.paths.assets_dir == "results/v1/assets"
     assert cfg.evaluation.bootstrap_resamples == 10_000
     assert cfg.evaluation.bootstrap_confidence == 0.95
     assert cfg.evaluation.bootstrap_tolerance == 0.0
@@ -136,10 +137,7 @@ def test_v1_configs_preserve_historical_scientific_inputs(
     assert versioned.serve == historical.serve
     assert versioned.evaluation.attribution_ks == historical.evaluation.attribution_ks
     assert versioned.evaluation.primary_k == historical.evaluation.primary_k
-    assert (
-        versioned.evaluation.correctness_criterion
-        == historical.evaluation.correctness_criterion
-    )
+    assert versioned.evaluation.correctness_criterion == historical.evaluation.correctness_criterion
 
 
 @pytest.mark.parametrize(

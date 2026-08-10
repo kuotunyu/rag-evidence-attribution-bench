@@ -1,0 +1,105 @@
+{
+  "schema_version": 2,
+  "run": "results/raw/dev/attribute/generated/embedding",
+  "execution_kind": "real",
+  "partial": false,
+  "device": "NVIDIA A100-SXM4-40GB",
+  "method": "embedding",
+  "run_namespace": null,
+  "generation_run": "qwen3-4b",
+  "is_control": false,
+  "agreement": {
+    "n": 26,
+    "subset": "generated_exact_match",
+    "prf_at": {
+      "1": {
+        "p": 1.0,
+        "r": 0.5,
+        "f1": 0.6666666666666665
+      },
+      "2": {
+        "p": 0.8076923076923077,
+        "r": 0.8076923076923077,
+        "f1": 0.8076923076923077
+      },
+      "3": {
+        "p": 0.5769230769230768,
+        "r": 0.8653846153846154,
+        "f1": 0.6923076923076926
+      }
+    },
+    "mean_average_precision": 0.8895604395604396,
+    "ndcg_at_10": 0.9441136433954427
+  },
+  "causal_dependence": {
+    "n": 53,
+    "subset": "all_successful_non_abstained",
+    "sufficiency_mean": 1.9817481621294466,
+    "comprehensiveness_mean": 6.9709706458257,
+    "validation_status": "not_run"
+  },
+  "execution": {
+    "n_attempted": 53,
+    "n_success": 53,
+    "n_failed": 0,
+    "n_skipped": 7,
+    "n_record_attempts": 60,
+    "n_retry_records": 0,
+    "n_historical_failure_records": 0,
+    "failure_rate": 0.0,
+    "seconds_per_sample": 0.08567924528301889,
+    "num_model_calls_mean": 0.0,
+    "peak_vram_mb": 9609.5771484375
+  },
+  "legacy_v1": {
+    "run": "results/raw/dev/attribute/generated/embedding",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "NVIDIA A100-SXM4-40GB",
+    "method": "embedding",
+    "run_namespace": null,
+    "generation_run": "qwen3-4b",
+    "subset": {
+      "criterion": "em",
+      "n_total": 60,
+      "n_generated_ok": 60,
+      "n_abstained": 7,
+      "n_correct": 26
+    },
+    "is_control": false,
+    "n_attempted": 53,
+    "n_success": 53,
+    "n_failed": 0,
+    "n_skipped": 7,
+    "n_record_attempts": 60,
+    "n_retry_records": 0,
+    "n_historical_failure_records": 0,
+    "failure_rate": 0.0,
+    "n_agreement": 26,
+    "prf_at": {
+      "1": {
+        "p": 1.0,
+        "r": 0.5,
+        "f1": 0.6666666666666665
+      },
+      "2": {
+        "p": 0.8076923076923077,
+        "r": 0.8076923076923077,
+        "f1": 0.8076923076923077
+      },
+      "3": {
+        "p": 0.5769230769230768,
+        "r": 0.8653846153846154,
+        "f1": 0.6923076923076926
+      }
+    },
+    "auprc": 0.8895604395604396,
+    "ndcg_at_10": 0.9441136433954427,
+    "sufficiency": 1.9817481621294466,
+    "comprehensiveness": 6.9709706458257,
+    "n_faithfulness": 53,
+    "seconds_per_sample": 0.08567924528301889,
+    "num_model_calls_mean": 0.0,
+    "peak_vram_mb": 9609.5771484375
+  }
+}

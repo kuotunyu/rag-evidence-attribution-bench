@@ -2,44 +2,47 @@
 
 Which context passages does a RAG answer *actually* depend on?
 
-A benchmark on **HotpotQA (distractor)** comparing evidence-attribution methods for
-**Qwen/Qwen3-4B-Instruct-2507** answers — attribution quality vs. supporting-fact ground
-truth, faithfulness (sufficiency / comprehensiveness), latency, and peak VRAM — with
-controls, locked splits, content fingerprints, and a no-fabrication results pipeline.
+A reproducible benchmark of **closed-candidate context attribution** on **HotpotQA
+(distractor)** for **Qwen/Qwen3-4B-Instruct-2507** answers. It measures agreement with
+annotated supporting passages, teacher-forced dependency diagnostics, latency, and peak
+VRAM. It does **not** yet establish open-corpus evidence faithfulness or causal attribution.
 
 > 正體中文主版：[README.md](README.md)
 
 ## What's in the benchmark
 
-- **Data**: 320 HotpotQA-distractor questions in disjoint splits — smoke 20 / dev 60 /
-  **locked eval 240** — pinned by per-example SHA-256 fingerprints in a committed
-  manifest ([DATA_CARD.md](DATA_CARD.md)).
+- **Data**: 320 HotpotQA-distractor questions in question-disjoint splits — smoke 20 /
+  dev 60 / public eval 240 — pinned by per-example SHA-256 fingerprints in a committed
+  manifest ([DATA_CARD.md](DATA_CARD.md)). Passage/title group isolation was not enforced
+  in v0.1, so these splits must not be described as leakage-free.
 - **Retrieval**: BM25, dense (Qwen3-Embedding-0.6B), hybrid RRF — per-question ranking of
   the 10 candidate passages.
-- **Generation**: deterministic greedy Qwen3-4B with inline `[P#]` citations and explicit
-  abstention; checkpointed with `--resume` at per-sample granularity.
+- **Generation**: deterministic greedy Qwen3-4B over all ten dataset passages in their
+  dataset order, with inline `[P#]` citations and explicit abstention; the historical v0.1
+  generator did not consume the retrieval ranking.
 - **Attribution** (`attribute(question, passages, target_answer, model, method_config)`):
-  `citations`, `embedding`, `leave_one_out` (primary causal baseline), experimental
-  `arc_jsd`, optional `contextcite` — plus 5 controls (random / retrieval-rank / lexical /
-  length / shuffled) flowing through the identical pipeline ([MODEL_CARD.md](MODEL_CARD.md)).
+  `citations`, `embedding`, `leave_one_out` (confirmatory method in Gate A), experimental
+  `arc_jsd`, optional `contextcite` — plus registered positive and negative controls flowing
+  through the identical pipeline ([MODEL_CARD.md](MODEL_CARD.md)). Leave-one-out is a
+  teacher-forced context-dependence diagnostic, not validated causal ground truth.
 - **Two evaluation modes, never mixed**: A = teacher-forced gold answers (all samples);
   B = generated answers, with agreement metrics restricted to the correct subset
   (subset sizes always reported).
-- **Integrity by construction**: results only enter the repo through real executions or
-  sha256-verified `import-results`; mock-backend runs are stamped `execution_kind: mock`
-  and structurally excluded from the README; partial runs are excluded from `evaluate`
-  unless explicitly `--allow-partial` (and then visibly labeled).
+- **Traceable regeneration**: results enter through real executions or sha256-verified
+  `import-results`; mock-backend runs are stamped `execution_kind: mock` and structurally
+  excluded from the README; partial runs are excluded from `evaluate` unless explicitly
+  `--allow-partial` (and then visibly labeled). Fingerprints detect changes; they do not
+  make a writable repository tamper-proof.
 
 ## Results
 
-**Complete.** All three splits were executed end-to-end on real hardware, imported, and
-independently re-derived from the raw per-sample records on a second machine (the EM
-cross-check passes on every split). Every number below is generated from
-`results/derived/summary.json` by `python -m rag_evidence.cli report` — never edited by
-hand. Re-deriving from raw is deterministic: it reproduces these numbers bit-identically.
+The historical v0.1 run is complete, but flagship construct validation is not. Gate A
+re-derives its immutable raw records into schema v2 under `results/v1/derived/`, with
+paired uncertainty, explicit estimands, controls, and construct-validation status. The
+public `eval` split is descriptive rather than a blind generalization estimate because
+passage/title group isolation was not enforced.
 
-`eval` (n=240) is the locked split and the one to quote. `smoke` (n=20) is a pipeline
-sanity check whose accuracy is noisy by construction. Rows tagged `(cpu)` for dense
+`smoke` (n=20) is a pipeline sanity check whose accuracy is noisy by construction. Rows tagged `(cpu)` for dense
 retrieval are the honest — and expectedly slow — local CPU timings from before the GPU
 runs; the `(NVIDIA A100…)` rows are the ones to read for latency.
 
@@ -67,89 +70,631 @@ runs; the `(NVIDIA A100…)` rows are the ones to read for latency.
 | eval | qwen3-4b (bfloat16) | 0.362 | 0.496 | 0.940 | 0.745 | 0.801 | 0.200 | 19.7 | 8437 | 240 |
 
 **Attribution — mode A (teacher-forced gold answer), split `smoke`**
-| method | F1@2 | AUPRC | nDCG@10 | sufficiency ↓ | comprehensiveness ↑ | s/sample | fail % | n |
-|---|---|---|---|---|---|---|---|---|
-| embedding | 0.750 | 0.841 | 0.906 | 1.551 | 4.939 | 13.105 | 0.0 | 20 |
-| leave_one_out | 0.675 | 0.775 | 0.869 | 0.641 | 5.773 | 79.457 | 0.0 | 20 |
-| control_length _(control)_ | 0.025 | 0.249 | 0.450 | 6.551 | 0.026 | 7.551 | 0.0 | 20 |
-| control_lexical _(control)_ | 0.650 | 0.744 | 0.850 | 1.563 | 3.914 | 2.592 | 0.0 | 20 |
-| control_random _(control)_ | 0.250 | 0.411 | 0.595 | 4.904 | 1.556 | 7.780 | 0.0 | 20 |
-| control_retrieval _(control)_ | 0.650 | 0.734 | 0.832 | 1.562 | 4.272 | 4.129 | 0.0 | 20 |
-| control_shuffled _(control)_ | 0.250 | 0.427 | 0.592 | 5.038 | 2.125 | 7.233 | 0.0 | 20 |
+| method | F1@2 | MAP | nDCG@10 | sufficiency diagnostic ↓ | comprehensiveness diagnostic ↑ | n agreement | n causal | s/sample | fail % |
+|---|---|---|---|---|---|---|---|---|---|
+| embedding | 0.750 | 0.841 | 0.906 | 1.551 | 4.939 | 20 | 20 | 13.105 | 0.0 |
+| leave_one_out | 0.675 | 0.775 | 0.869 | 0.641 | 5.773 | 20 | 20 | 79.457 | 0.0 |
+| control_length _(control)_ | 0.025 | 0.249 | 0.450 | 6.551 | 0.026 | 20 | 20 | 7.551 | 0.0 |
+| control_lexical _(control)_ | 0.650 | 0.744 | 0.850 | 1.563 | 3.914 | 20 | 20 | 2.592 | 0.0 |
+| control_random _(control)_ | 0.250 | 0.411 | 0.595 | 4.904 | 1.556 | 20 | 20 | 7.780 | 0.0 |
+| control_retrieval _(control)_ | 0.650 | 0.734 | 0.832 | 1.562 | 4.272 | 20 | 20 | 4.129 | 0.0 |
+| control_shuffled _(control)_ | 0.250 | 0.427 | 0.592 | 5.038 | 2.125 | 20 | 20 | 7.233 | 0.0 |
+
+Causal-dependence validation: **NOT RUN**. Missing methods: control_answer_string, oracle_gold. Sufficiency and comprehensiveness remain diagnostics unless this status passes.
+
+**Paired comparisons**
+
+| comparison | tier | metric | delta 95% CI | n_pairs | exclusions | favorable |
+|---|---|---|---|---|---|---|
+| embedding__vs__control_length | secondary | comprehensiveness | 4.913 [3.124, 6.993] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_length | secondary | f1_at_2 | 0.725 [0.625, 0.825] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_length | secondary | mean_average_precision | 0.592 [0.512, 0.670] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_length | secondary | ndcg_at_10 | 0.456 [0.395, 0.514] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_length | secondary | sufficiency | -5.000 [-6.598, -3.499] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_lexical | secondary | comprehensiveness | 1.025 [-0.971, 2.935] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_lexical | secondary | f1_at_2 | 0.100 [-0.075, 0.250] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_lexical | secondary | mean_average_precision | 0.097 [-0.008, 0.199] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_lexical | secondary | ndcg_at_10 | 0.056 [-0.008, 0.120] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_lexical | secondary | sufficiency | -0.012 [-1.697, 1.723] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_random | secondary | comprehensiveness | 3.383 [0.898, 5.559] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_random | secondary | f1_at_2 | 0.500 [0.325, 0.675] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_random | secondary | mean_average_precision | 0.430 [0.294, 0.549] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_random | secondary | ndcg_at_10 | 0.311 [0.203, 0.403] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_random | secondary | sufficiency | -3.354 [-5.595, -0.892] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_retrieval | secondary | comprehensiveness | 0.668 [-1.080, 2.461] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_retrieval | secondary | f1_at_2 | 0.100 [-0.075, 0.275] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_retrieval | secondary | mean_average_precision | 0.107 [-0.019, 0.239] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_retrieval | secondary | ndcg_at_10 | 0.074 [-0.013, 0.170] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_retrieval | secondary | sufficiency | -0.011 [-1.892, 1.856] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_shuffled | secondary | comprehensiveness | 2.814 [1.299, 4.464] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_shuffled | secondary | f1_at_2 | 0.500 [0.300, 0.700] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_shuffled | secondary | mean_average_precision | 0.414 [0.266, 0.547] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_shuffled | secondary | ndcg_at_10 | 0.313 [0.210, 0.407] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_shuffled | secondary | sufficiency | -3.487 [-5.149, -1.926] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__leave_one_out | secondary | comprehensiveness | -0.834 [-2.267, 0.223] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__leave_one_out | secondary | f1_at_2 | 0.075 [-0.100, 0.250] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__leave_one_out | secondary | mean_average_precision | 0.065 [-0.043, 0.189] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__leave_one_out | secondary | ndcg_at_10 | 0.037 [-0.032, 0.119] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__leave_one_out | secondary | sufficiency | 0.910 [-0.545, 2.505] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_length | secondary | comprehensiveness | 5.747 [3.964, 7.683] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_length | secondary | f1_at_2 | 0.650 [0.500, 0.800] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_length | secondary | mean_average_precision | 0.527 [0.407, 0.638] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_length | secondary | ndcg_at_10 | 0.419 [0.330, 0.497] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_length | secondary | sufficiency | -5.910 [-7.856, -3.943] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_lexical | confirmatory | comprehensiveness | 1.859 [0.548, 3.412] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | f1_at_2 | 0.025 [-0.175, 0.225] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | mean_average_precision | 0.031 [-0.125, 0.182] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | ndcg_at_10 | 0.019 [-0.091, 0.120] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | sufficiency | -0.922 [-2.395, 0.434] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_random | secondary | comprehensiveness | 4.217 [2.637, 5.788] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_random | secondary | f1_at_2 | 0.425 [0.225, 0.600] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_random | secondary | mean_average_precision | 0.365 [0.225, 0.494] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_random | secondary | ndcg_at_10 | 0.274 [0.170, 0.368] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_random | secondary | sufficiency | -4.263 [-6.448, -2.197] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_retrieval | secondary | comprehensiveness | 1.501 [0.266, 3.048] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_retrieval | secondary | f1_at_2 | 0.025 [-0.175, 0.225] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_retrieval | secondary | mean_average_precision | 0.042 [-0.130, 0.205] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_retrieval | secondary | ndcg_at_10 | 0.037 [-0.090, 0.154] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_retrieval | secondary | sufficiency | -0.921 [-2.439, 0.412] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_shuffled | secondary | comprehensiveness | 3.648 [2.090, 5.363] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_shuffled | secondary | f1_at_2 | 0.425 [0.200, 0.625] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_shuffled | secondary | mean_average_precision | 0.348 [0.184, 0.490] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_shuffled | secondary | ndcg_at_10 | 0.276 [0.155, 0.382] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_shuffled | secondary | sufficiency | -4.396 [-6.061, -2.729] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__embedding | secondary | comprehensiveness | 0.834 [-0.233, 2.245] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__embedding | secondary | f1_at_2 | -0.075 [-0.250, 0.100] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__embedding | secondary | mean_average_precision | -0.065 [-0.186, 0.044] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__embedding | secondary | ndcg_at_10 | -0.037 [-0.120, 0.033] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__embedding | secondary | sufficiency | -0.910 [-2.515, 0.531] | 20 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
 
 **Attribution — mode B (generated answer), split `smoke`**
-_Agreement metrics over the correct subset only: n_correct=10 of n_total=20 (criterion: em; abstained: 1)._
+_Agreement metrics use the correct-answer subset: n_correct=10 of n_total=20 (criterion: em; abstained: 1)._
 
-| method | F1@2 | AUPRC | nDCG@10 | sufficiency ↓ | comprehensiveness ↑ | s/sample | fail % | n |
-|---|---|---|---|---|---|---|---|---|
-| citations | 0.650 | 0.748 | 0.862 | 1.477 | 6.646 | 16.485 | 0.0 | 10 |
-| contextcite | 0.750 | 0.836 | 0.908 | 0.974 | 5.841 | 78.280 | 5.3 | 10 |
-| embedding | 0.700 | 0.823 | 0.902 | 2.124 | 5.290 | 2.277 | 0.0 | 10 |
-| leave_one_out | 0.800 | 0.877 | 0.938 | 1.055 | 6.371 | 41.120 | 0.0 | 10 |
-| control_length _(control)_ | 0.050 | 0.268 | 0.469 | 7.053 | 0.313 | 3.756 | 0.0 | 10 |
-| control_lexical _(control)_ | 0.650 | 0.751 | 0.845 | 2.457 | 5.016 | 1.129 | 0.0 | 10 |
-| control_random _(control)_ | 0.150 | 0.352 | 0.547 | 5.054 | 1.690 | 3.382 | 0.0 | 10 |
-| control_retrieval _(control)_ | 0.600 | 0.665 | 0.765 | 2.226 | 5.275 | 2.097 | 0.0 | 10 |
-| control_shuffled _(control)_ | 0.200 | 0.397 | 0.570 | 6.483 | 0.949 | 4.431 | 0.0 | 10 |
+| method | F1@2 | MAP | nDCG@10 | sufficiency diagnostic ↓ | comprehensiveness diagnostic ↑ | n agreement | n causal | s/sample | fail % |
+|---|---|---|---|---|---|---|---|---|---|
+| citations | 0.650 | 0.748 | 0.862 | 1.477 | 6.646 | 10 | 19 | 16.485 | 0.0 |
+| contextcite | 0.750 | 0.836 | 0.908 | 0.974 | 5.841 | 10 | 18 | 78.280 | 5.3 |
+| embedding | 0.700 | 0.823 | 0.902 | 2.124 | 5.290 | 10 | 19 | 2.277 | 0.0 |
+| leave_one_out | 0.800 | 0.877 | 0.938 | 1.055 | 6.371 | 10 | 19 | 41.120 | 0.0 |
+| control_length _(control)_ | 0.050 | 0.268 | 0.469 | 7.053 | 0.313 | 10 | 19 | 3.756 | 0.0 |
+| control_lexical _(control)_ | 0.650 | 0.751 | 0.845 | 2.457 | 5.016 | 10 | 19 | 1.129 | 0.0 |
+| control_random _(control)_ | 0.150 | 0.352 | 0.547 | 5.054 | 1.690 | 10 | 19 | 3.382 | 0.0 |
+| control_retrieval _(control)_ | 0.600 | 0.665 | 0.765 | 2.226 | 5.275 | 10 | 19 | 2.097 | 0.0 |
+| control_shuffled _(control)_ | 0.200 | 0.397 | 0.570 | 6.483 | 0.949 | 10 | 19 | 4.431 | 0.0 |
+
+Causal-dependence validation: **NOT RUN**. Missing methods: control_answer_string, oracle_gold. Sufficiency and comprehensiveness remain diagnostics unless this status passes.
+
+**Paired comparisons**
+
+| comparison | tier | metric | delta 95% CI | n_pairs | exclusions | favorable |
+|---|---|---|---|---|---|---|
+| citations__vs__control_length | secondary | comprehensiveness | 6.333 [4.305, 8.497] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__control_length | secondary | f1_at_2 | 0.600 [0.500, 0.750] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__control_length | secondary | mean_average_precision | 0.481 [0.346, 0.619] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__control_length | secondary | ndcg_at_10 | 0.393 [0.286, 0.496] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__control_length | secondary | sufficiency | -5.576 [-7.533, -3.766] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__control_lexical | secondary | comprehensiveness | 1.631 [0.484, 3.102] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__control_lexical | secondary | f1_at_2 | 0.000 [-0.250, 0.250] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__control_lexical | secondary | mean_average_precision | -0.003 [-0.153, 0.157] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__control_lexical | secondary | ndcg_at_10 | 0.017 [-0.074, 0.119] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__control_lexical | secondary | sufficiency | -0.980 [-2.178, -0.118] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__control_random | secondary | comprehensiveness | 4.956 [2.907, 7.278] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__control_random | secondary | f1_at_2 | 0.500 [0.300, 0.700] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__control_random | secondary | mean_average_precision | 0.397 [0.204, 0.561] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__control_random | secondary | ndcg_at_10 | 0.315 [0.164, 0.438] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__control_random | secondary | sufficiency | -3.577 [-5.613, -1.776] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__control_retrieval | secondary | comprehensiveness | 1.372 [0.323, 2.779] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__control_retrieval | secondary | f1_at_2 | 0.050 [-0.250, 0.350] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__control_retrieval | secondary | mean_average_precision | 0.083 [-0.124, 0.306] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__control_retrieval | secondary | ndcg_at_10 | 0.097 [-0.046, 0.261] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__control_retrieval | secondary | sufficiency | -0.749 [-2.048, 0.066] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__control_shuffled | secondary | comprehensiveness | 5.697 [3.542, 8.024] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__control_shuffled | secondary | f1_at_2 | 0.450 [0.250, 0.650] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__control_shuffled | secondary | mean_average_precision | 0.352 [0.184, 0.504] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__control_shuffled | secondary | ndcg_at_10 | 0.292 [0.174, 0.392] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__control_shuffled | secondary | sufficiency | -5.006 [-7.157, -3.004] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__embedding | secondary | comprehensiveness | 1.357 [0.214, 2.942] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__embedding | secondary | f1_at_2 | -0.050 [-0.200, 0.100] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__embedding | secondary | mean_average_precision | -0.074 [-0.167, 0.027] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__embedding | secondary | ndcg_at_10 | -0.039 [-0.088, 0.012] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__embedding | secondary | sufficiency | -0.647 [-2.310, 0.845] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__leave_one_out | secondary | comprehensiveness | 0.275 [-0.144, 0.826] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__leave_one_out | secondary | f1_at_2 | -0.150 [-0.300, 0.000] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__leave_one_out | secondary | mean_average_precision | -0.128 [-0.241, -0.011] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__leave_one_out | secondary | ndcg_at_10 | -0.076 [-0.144, -0.007] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| citations__vs__leave_one_out | secondary | sufficiency | 0.422 [-0.017, 1.012] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| contextcite__vs__control_length | exploratory | comprehensiveness | 5.582 [3.414, 7.881] | 18 | candidate_missing=1, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| contextcite__vs__control_length | exploratory | f1_at_2 | 0.700 [0.550, 0.850] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__control_length | exploratory | mean_average_precision | 0.569 [0.441, 0.693] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__control_length | exploratory | ndcg_at_10 | 0.439 [0.342, 0.531] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__control_length | exploratory | sufficiency | -5.799 [-7.769, -3.869] | 18 | candidate_missing=1, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| contextcite__vs__control_lexical | exploratory | comprehensiveness | 0.968 [-0.185, 2.408] | 18 | candidate_missing=1, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| contextcite__vs__control_lexical | exploratory | f1_at_2 | 0.100 [-0.150, 0.400] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__control_lexical | exploratory | mean_average_precision | 0.085 [-0.114, 0.295] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__control_lexical | exploratory | ndcg_at_10 | 0.063 [-0.061, 0.205] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__control_lexical | exploratory | sufficiency | -1.037 [-2.482, 0.045] | 18 | candidate_missing=1, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| contextcite__vs__control_random | exploratory | comprehensiveness | 4.663 [2.504, 7.110] | 18 | candidate_missing=1, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| contextcite__vs__control_random | exploratory | f1_at_2 | 0.600 [0.350, 0.800] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__control_random | exploratory | mean_average_precision | 0.484 [0.317, 0.630] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__control_random | exploratory | ndcg_at_10 | 0.360 [0.236, 0.465] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__control_random | exploratory | sufficiency | -3.897 [-5.992, -1.995] | 18 | candidate_missing=1, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| contextcite__vs__control_retrieval | exploratory | comprehensiveness | 0.695 [-0.039, 1.864] | 18 | candidate_missing=1, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| contextcite__vs__control_retrieval | exploratory | f1_at_2 | 0.150 [-0.100, 0.400] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__control_retrieval | exploratory | mean_average_precision | 0.171 [-0.046, 0.388] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__control_retrieval | exploratory | ndcg_at_10 | 0.143 [-0.006, 0.297] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__control_retrieval | exploratory | sufficiency | -0.793 [-2.241, 0.135] | 18 | candidate_missing=1, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| contextcite__vs__control_shuffled | exploratory | comprehensiveness | 5.108 [2.770, 7.650] | 18 | candidate_missing=1, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| contextcite__vs__control_shuffled | exploratory | f1_at_2 | 0.550 [0.300, 0.800] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__control_shuffled | exploratory | mean_average_precision | 0.440 [0.255, 0.607] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__control_shuffled | exploratory | ndcg_at_10 | 0.338 [0.202, 0.458] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__control_shuffled | exploratory | sufficiency | -5.349 [-7.390, -3.357] | 18 | candidate_missing=1, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| contextcite__vs__embedding | exploratory | comprehensiveness | 0.679 [-0.206, 2.124] | 18 | candidate_missing=1, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| contextcite__vs__embedding | exploratory | f1_at_2 | 0.050 [-0.100, 0.200] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__embedding | exploratory | mean_average_precision | 0.013 [-0.097, 0.127] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__embedding | exploratory | ndcg_at_10 | 0.006 [-0.064, 0.081] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__embedding | exploratory | sufficiency | -0.685 [-2.523, 0.952] | 18 | candidate_missing=1, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| contextcite__vs__leave_one_out | exploratory | comprehensiveness | -0.328 [-0.844, 0.071] | 18 | candidate_missing=1, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| contextcite__vs__leave_one_out | exploratory | f1_at_2 | -0.050 [-0.250, 0.150] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__leave_one_out | exploratory | mean_average_precision | -0.041 [-0.185, 0.112] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__leave_one_out | exploratory | ndcg_at_10 | -0.030 [-0.111, 0.052] | 10 | candidate_missing=1, comparator_missing=0, candidate_null=8, comparator_null=9 | higher |
+| contextcite__vs__leave_one_out | exploratory | sufficiency | 0.095 [-0.053, 0.260] | 18 | candidate_missing=1, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_length | secondary | comprehensiveness | 4.977 [3.013, 7.148] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_length | secondary | f1_at_2 | 0.650 [0.500, 0.800] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__control_length | secondary | mean_average_precision | 0.555 [0.440, 0.670] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__control_length | secondary | ndcg_at_10 | 0.433 [0.338, 0.523] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__control_length | secondary | sufficiency | -4.929 [-7.122, -2.965] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_lexical | secondary | comprehensiveness | 0.274 [-1.629, 2.190] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_lexical | secondary | f1_at_2 | 0.050 [-0.200, 0.300] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__control_lexical | secondary | mean_average_precision | 0.072 [-0.068, 0.218] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__control_lexical | secondary | ndcg_at_10 | 0.057 [-0.028, 0.152] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__control_lexical | secondary | sufficiency | -0.333 [-2.272, 1.685] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_random | secondary | comprehensiveness | 3.600 [0.860, 6.409] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_random | secondary | f1_at_2 | 0.550 [0.350, 0.750] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__control_random | secondary | mean_average_precision | 0.471 [0.307, 0.605] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__control_random | secondary | ndcg_at_10 | 0.354 [0.217, 0.461] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__control_random | secondary | sufficiency | -2.930 [-5.485, -0.361] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_retrieval | secondary | comprehensiveness | 0.015 [-1.753, 1.736] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_retrieval | secondary | f1_at_2 | 0.100 [-0.200, 0.400] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__control_retrieval | secondary | mean_average_precision | 0.157 [-0.043, 0.378] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__control_retrieval | secondary | ndcg_at_10 | 0.137 [-0.002, 0.300] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__control_retrieval | secondary | sufficiency | -0.102 [-2.107, 1.881] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_shuffled | secondary | comprehensiveness | 4.341 [2.145, 6.715] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_shuffled | secondary | f1_at_2 | 0.500 [0.250, 0.750] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__control_shuffled | secondary | mean_average_precision | 0.426 [0.270, 0.578] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__control_shuffled | secondary | ndcg_at_10 | 0.332 [0.223, 0.436] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__control_shuffled | secondary | sufficiency | -4.359 [-6.895, -2.086] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__leave_one_out | secondary | comprehensiveness | -1.081 [-2.446, -0.087] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__leave_one_out | secondary | f1_at_2 | -0.100 [-0.350, 0.150] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__leave_one_out | secondary | mean_average_precision | -0.054 [-0.174, 0.087] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__leave_one_out | secondary | ndcg_at_10 | -0.036 [-0.103, 0.040] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| embedding__vs__leave_one_out | secondary | sufficiency | 1.069 [-0.569, 2.779] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_length | secondary | comprehensiveness | 6.058 [4.014, 8.230] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_length | secondary | f1_at_2 | 0.750 [0.600, 0.900] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__control_length | secondary | mean_average_precision | 0.609 [0.496, 0.723] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__control_length | secondary | ndcg_at_10 | 0.469 [0.384, 0.550] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__control_length | secondary | sufficiency | -5.998 [-7.913, -4.137] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_lexical | confirmatory | comprehensiveness | 1.355 [0.281, 2.832] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | f1_at_2 | 0.150 [-0.100, 0.400] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | mean_average_precision | 0.125 [-0.045, 0.307] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | ndcg_at_10 | 0.093 [-0.018, 0.213] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | sufficiency | -1.402 [-2.858, -0.233] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_random | secondary | comprehensiveness | 4.681 [2.495, 7.069] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_random | secondary | f1_at_2 | 0.650 [0.450, 0.850] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__control_random | secondary | mean_average_precision | 0.525 [0.379, 0.654] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__control_random | secondary | ndcg_at_10 | 0.390 [0.278, 0.485] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__control_random | secondary | sufficiency | -3.998 [-5.981, -2.217] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_retrieval | secondary | comprehensiveness | 1.097 [0.152, 2.464] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_retrieval | secondary | f1_at_2 | 0.200 [-0.050, 0.450] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__control_retrieval | secondary | mean_average_precision | 0.211 [-0.002, 0.425] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__control_retrieval | secondary | ndcg_at_10 | 0.173 [0.026, 0.331] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__control_retrieval | secondary | sufficiency | -1.171 [-2.589, -0.107] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_shuffled | secondary | comprehensiveness | 5.422 [3.300, 7.743] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_shuffled | secondary | f1_at_2 | 0.600 [0.400, 0.800] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__control_shuffled | secondary | mean_average_precision | 0.480 [0.358, 0.597] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__control_shuffled | secondary | ndcg_at_10 | 0.368 [0.278, 0.449] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__control_shuffled | secondary | sufficiency | -5.428 [-7.438, -3.519] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__embedding | secondary | comprehensiveness | 1.081 [0.094, 2.496] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__embedding | secondary | f1_at_2 | 0.100 [-0.150, 0.300] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__embedding | secondary | mean_average_precision | 0.054 [-0.085, 0.174] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__embedding | secondary | ndcg_at_10 | 0.036 [-0.041, 0.102] | 10 | candidate_missing=0, comparator_missing=0, candidate_null=9, comparator_null=9 | higher |
+| leave_one_out__vs__embedding | secondary | sufficiency | -1.069 [-2.836, 0.553] | 19 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
 
 **Attribution — mode A (teacher-forced gold answer), split `dev`**
-| method | F1@2 | AUPRC | nDCG@10 | sufficiency ↓ | comprehensiveness ↑ | s/sample | fail % | n |
-|---|---|---|---|---|---|---|---|---|
-| embedding | 0.817 | 0.885 | 0.938 | 0.669 | 5.742 | 0.241 | 0.0 | 60 |
-| leave_one_out | 0.758 | 0.823 | 0.899 | -0.359 | 6.637 | 1.050 | 0.0 | 60 |
-| control_length _(control)_ | 0.117 | 0.287 | 0.483 | 6.065 | 0.354 | 0.135 | 0.0 | 60 |
-| control_lexical _(control)_ | 0.658 | 0.737 | 0.831 | 1.672 | 4.972 | 0.068 | 0.0 | 60 |
-| control_random _(control)_ | 0.167 | 0.330 | 0.523 | 5.695 | 1.322 | 0.148 | 0.0 | 60 |
-| control_retrieval _(control)_ | 0.600 | 0.707 | 0.821 | 2.315 | 4.006 | 0.096 | 0.0 | 60 |
-| control_shuffled _(control)_ | 0.167 | 0.346 | 0.536 | 6.302 | 0.611 | 0.144 | 0.0 | 60 |
+| method | F1@2 | MAP | nDCG@10 | sufficiency diagnostic ↓ | comprehensiveness diagnostic ↑ | n agreement | n causal | s/sample | fail % |
+|---|---|---|---|---|---|---|---|---|---|
+| embedding | 0.817 | 0.885 | 0.938 | 0.669 | 5.742 | 60 | 60 | 0.241 | 0.0 |
+| leave_one_out | 0.758 | 0.823 | 0.899 | -0.359 | 6.637 | 60 | 60 | 1.050 | 0.0 |
+| control_length _(control)_ | 0.117 | 0.287 | 0.483 | 6.065 | 0.354 | 60 | 60 | 0.135 | 0.0 |
+| control_lexical _(control)_ | 0.658 | 0.737 | 0.831 | 1.672 | 4.972 | 60 | 60 | 0.068 | 0.0 |
+| control_random _(control)_ | 0.167 | 0.330 | 0.523 | 5.695 | 1.322 | 60 | 60 | 0.148 | 0.0 |
+| control_retrieval _(control)_ | 0.600 | 0.707 | 0.821 | 2.315 | 4.006 | 60 | 60 | 0.096 | 0.0 |
+| control_shuffled _(control)_ | 0.167 | 0.346 | 0.536 | 6.302 | 0.611 | 60 | 60 | 0.144 | 0.0 |
+
+Causal-dependence validation: **NOT RUN**. Missing methods: control_answer_string, oracle_gold. Sufficiency and comprehensiveness remain diagnostics unless this status passes.
+
+**Paired comparisons**
+
+| comparison | tier | metric | delta 95% CI | n_pairs | exclusions | favorable |
+|---|---|---|---|---|---|---|
+| embedding__vs__control_length | secondary | comprehensiveness | 5.387 [4.144, 6.688] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_length | secondary | f1_at_2 | 0.700 [0.608, 0.783] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_length | secondary | mean_average_precision | 0.598 [0.535, 0.656] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_length | secondary | ndcg_at_10 | 0.455 [0.410, 0.497] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_length | secondary | sufficiency | -5.396 [-6.777, -4.057] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_lexical | secondary | comprehensiveness | 0.770 [-0.432, 1.801] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_lexical | secondary | f1_at_2 | 0.158 [0.075, 0.242] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_lexical | secondary | mean_average_precision | 0.148 [0.078, 0.217] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_lexical | secondary | ndcg_at_10 | 0.107 [0.057, 0.157] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_lexical | secondary | sufficiency | -1.003 [-1.827, -0.258] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_random | secondary | comprehensiveness | 4.420 [3.144, 5.767] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_random | secondary | f1_at_2 | 0.650 [0.567, 0.733] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_random | secondary | mean_average_precision | 0.555 [0.496, 0.612] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_random | secondary | ndcg_at_10 | 0.415 [0.372, 0.456] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_random | secondary | sufficiency | -5.026 [-6.468, -3.640] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_retrieval | secondary | comprehensiveness | 1.736 [0.918, 2.646] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_retrieval | secondary | f1_at_2 | 0.217 [0.133, 0.300] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_retrieval | secondary | mean_average_precision | 0.178 [0.119, 0.238] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_retrieval | secondary | ndcg_at_10 | 0.117 [0.077, 0.160] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_retrieval | secondary | sufficiency | -1.647 [-2.502, -0.849] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_shuffled | secondary | comprehensiveness | 5.130 [3.822, 6.449] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_shuffled | secondary | f1_at_2 | 0.650 [0.567, 0.742] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_shuffled | secondary | mean_average_precision | 0.538 [0.480, 0.596] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_shuffled | secondary | ndcg_at_10 | 0.403 [0.357, 0.446] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_shuffled | secondary | sufficiency | -5.633 [-6.956, -4.349] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__leave_one_out | secondary | comprehensiveness | -0.896 [-2.006, -0.045] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__leave_one_out | secondary | f1_at_2 | 0.058 [-0.042, 0.158] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__leave_one_out | secondary | mean_average_precision | 0.061 [-0.012, 0.136] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__leave_one_out | secondary | ndcg_at_10 | 0.039 [-0.005, 0.084] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__leave_one_out | secondary | sufficiency | 1.028 [0.149, 2.021] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_length | secondary | comprehensiveness | 6.283 [4.963, 7.692] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_length | secondary | f1_at_2 | 0.642 [0.550, 0.725] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_length | secondary | mean_average_precision | 0.536 [0.471, 0.600] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_length | secondary | ndcg_at_10 | 0.416 [0.366, 0.462] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_length | secondary | sufficiency | -6.424 [-7.802, -5.018] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_lexical | confirmatory | comprehensiveness | 1.666 [0.857, 2.549] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | f1_at_2 | 0.100 [-0.008, 0.217] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | mean_average_precision | 0.086 [-0.001, 0.174] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | ndcg_at_10 | 0.068 [0.011, 0.124] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | sufficiency | -2.031 [-3.134, -1.001] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_random | secondary | comprehensiveness | 5.316 [4.040, 6.731] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_random | secondary | f1_at_2 | 0.592 [0.500, 0.683] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_random | secondary | mean_average_precision | 0.494 [0.430, 0.555] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_random | secondary | ndcg_at_10 | 0.376 [0.330, 0.421] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_random | secondary | sufficiency | -6.054 [-7.459, -4.735] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_retrieval | secondary | comprehensiveness | 2.632 [1.537, 3.938] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_retrieval | secondary | f1_at_2 | 0.158 [0.050, 0.275] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_retrieval | secondary | mean_average_precision | 0.116 [0.032, 0.201] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_retrieval | secondary | ndcg_at_10 | 0.079 [0.019, 0.138] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_retrieval | secondary | sufficiency | -2.675 [-3.917, -1.567] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_shuffled | secondary | comprehensiveness | 6.026 [4.635, 7.465] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_shuffled | secondary | f1_at_2 | 0.592 [0.500, 0.683] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_shuffled | secondary | mean_average_precision | 0.477 [0.401, 0.549] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_shuffled | secondary | ndcg_at_10 | 0.364 [0.311, 0.416] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_shuffled | secondary | sufficiency | -6.661 [-7.981, -5.376] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__embedding | secondary | comprehensiveness | 0.896 [0.040, 2.043] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__embedding | secondary | f1_at_2 | -0.058 [-0.158, 0.042] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__embedding | secondary | mean_average_precision | -0.061 [-0.137, 0.014] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__embedding | secondary | ndcg_at_10 | -0.039 [-0.086, 0.006] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__embedding | secondary | sufficiency | -1.028 [-2.004, -0.152] | 60 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
 
 **Attribution — mode B (generated answer), split `dev`**
-_Agreement metrics over the correct subset only: n_correct=26 of n_total=60 (criterion: em; abstained: 7)._
+_Agreement metrics use the correct-answer subset: n_correct=26 of n_total=60 (criterion: em; abstained: 7)._
 
-| method | F1@2 | AUPRC | nDCG@10 | sufficiency ↓ | comprehensiveness ↑ | s/sample | fail % | n |
-|---|---|---|---|---|---|---|---|---|
-| citations | 0.788 | 0.868 | 0.926 | 1.854 | 6.742 | 0.262 | 0.0 | 26 |
-| embedding | 0.808 | 0.890 | 0.944 | 1.982 | 6.971 | 0.086 | 0.0 | 26 |
-| leave_one_out | 0.788 | 0.866 | 0.932 | 1.449 | 6.884 | 0.574 | 0.0 | 26 |
-| control_length _(control)_ | 0.038 | 0.229 | 0.436 | 7.661 | 0.674 | 0.072 | 0.0 | 26 |
-| control_lexical _(control)_ | 0.635 | 0.724 | 0.823 | 2.680 | 5.802 | 0.027 | 0.0 | 26 |
-| control_random _(control)_ | 0.173 | 0.343 | 0.536 | 6.786 | 1.400 | 0.080 | 0.0 | 26 |
-| control_retrieval _(control)_ | 0.673 | 0.753 | 0.851 | 3.465 | 5.350 | 0.047 | 0.0 | 26 |
-| control_shuffled _(control)_ | 0.173 | 0.341 | 0.530 | 6.604 | 0.833 | 0.078 | 0.0 | 26 |
+| method | F1@2 | MAP | nDCG@10 | sufficiency diagnostic ↓ | comprehensiveness diagnostic ↑ | n agreement | n causal | s/sample | fail % |
+|---|---|---|---|---|---|---|---|---|---|
+| citations | 0.788 | 0.868 | 0.926 | 1.854 | 6.742 | 26 | 53 | 0.262 | 0.0 |
+| embedding | 0.808 | 0.890 | 0.944 | 1.982 | 6.971 | 26 | 53 | 0.086 | 0.0 |
+| leave_one_out | 0.788 | 0.866 | 0.932 | 1.449 | 6.884 | 26 | 53 | 0.574 | 0.0 |
+| control_length _(control)_ | 0.038 | 0.229 | 0.436 | 7.661 | 0.674 | 26 | 53 | 0.072 | 0.0 |
+| control_lexical _(control)_ | 0.635 | 0.724 | 0.823 | 2.680 | 5.802 | 26 | 53 | 0.027 | 0.0 |
+| control_random _(control)_ | 0.173 | 0.343 | 0.536 | 6.786 | 1.400 | 26 | 53 | 0.080 | 0.0 |
+| control_retrieval _(control)_ | 0.673 | 0.753 | 0.851 | 3.465 | 5.350 | 26 | 53 | 0.047 | 0.0 |
+| control_shuffled _(control)_ | 0.173 | 0.341 | 0.530 | 6.604 | 0.833 | 26 | 53 | 0.078 | 0.0 |
+
+Causal-dependence validation: **NOT RUN**. Missing methods: control_answer_string, oracle_gold. Sufficiency and comprehensiveness remain diagnostics unless this status passes.
+
+**Paired comparisons**
+
+| comparison | tier | metric | delta 95% CI | n_pairs | exclusions | favorable |
+|---|---|---|---|---|---|---|
+| citations__vs__control_length | secondary | comprehensiveness | 6.068 [4.521, 7.629] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__control_length | secondary | f1_at_2 | 0.750 [0.635, 0.846] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__control_length | secondary | mean_average_precision | 0.639 [0.570, 0.707] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__control_length | secondary | ndcg_at_10 | 0.489 [0.444, 0.533] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__control_length | secondary | sufficiency | -5.806 [-7.279, -4.364] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__control_lexical | secondary | comprehensiveness | 0.940 [0.073, 1.900] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__control_lexical | secondary | f1_at_2 | 0.154 [0.019, 0.308] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__control_lexical | secondary | mean_average_precision | 0.144 [0.030, 0.258] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__control_lexical | secondary | ndcg_at_10 | 0.102 [0.025, 0.182] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__control_lexical | secondary | sufficiency | -0.825 [-1.687, -0.199] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__control_random | secondary | comprehensiveness | 5.342 [3.903, 6.846] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__control_random | secondary | f1_at_2 | 0.615 [0.462, 0.769] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__control_random | secondary | mean_average_precision | 0.525 [0.424, 0.618] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__control_random | secondary | ndcg_at_10 | 0.389 [0.314, 0.457] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__control_random | secondary | sufficiency | -4.932 [-6.555, -3.352] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__control_retrieval | secondary | comprehensiveness | 1.392 [0.216, 2.615] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__control_retrieval | secondary | f1_at_2 | 0.115 [-0.038, 0.250] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__control_retrieval | secondary | mean_average_precision | 0.114 [0.000, 0.226] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__control_retrieval | secondary | ndcg_at_10 | 0.074 [0.000, 0.149] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__control_retrieval | secondary | sufficiency | -1.611 [-2.542, -0.782] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__control_shuffled | secondary | comprehensiveness | 5.909 [4.480, 7.419] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__control_shuffled | secondary | f1_at_2 | 0.615 [0.481, 0.750] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__control_shuffled | secondary | mean_average_precision | 0.527 [0.413, 0.625] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__control_shuffled | secondary | ndcg_at_10 | 0.396 [0.310, 0.468] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__control_shuffled | secondary | sufficiency | -4.750 [-6.688, -2.638] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__embedding | secondary | comprehensiveness | -0.229 [-1.015, 0.524] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__embedding | secondary | f1_at_2 | -0.019 [-0.135, 0.096] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__embedding | secondary | mean_average_precision | -0.022 [-0.106, 0.060] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__embedding | secondary | ndcg_at_10 | -0.018 [-0.067, 0.027] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__embedding | secondary | sufficiency | -0.128 [-1.235, 1.175] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__leave_one_out | secondary | comprehensiveness | -0.142 [-0.886, 0.562] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__leave_one_out | secondary | f1_at_2 | 0.000 [-0.115, 0.115] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__leave_one_out | secondary | mean_average_precision | 0.001 [-0.078, 0.084] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__leave_one_out | secondary | ndcg_at_10 | -0.006 [-0.051, 0.037] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| citations__vs__leave_one_out | secondary | sufficiency | 0.405 [-1.051, 1.843] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_length | secondary | comprehensiveness | 6.297 [4.821, 7.849] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_length | secondary | f1_at_2 | 0.769 [0.635, 0.885] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__control_length | secondary | mean_average_precision | 0.661 [0.588, 0.725] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__control_length | secondary | ndcg_at_10 | 0.508 [0.463, 0.548] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__control_length | secondary | sufficiency | -5.679 [-7.441, -3.971] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_lexical | secondary | comprehensiveness | 1.169 [0.057, 2.390] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_lexical | secondary | f1_at_2 | 0.173 [0.058, 0.288] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__control_lexical | secondary | mean_average_precision | 0.165 [0.072, 0.263] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__control_lexical | secondary | ndcg_at_10 | 0.121 [0.057, 0.188] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__control_lexical | secondary | sufficiency | -0.698 [-2.188, 0.533] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_random | secondary | comprehensiveness | 5.571 [3.994, 7.208] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_random | secondary | f1_at_2 | 0.635 [0.500, 0.769] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__control_random | secondary | mean_average_precision | 0.547 [0.452, 0.637] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__control_random | secondary | ndcg_at_10 | 0.408 [0.337, 0.473] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__control_random | secondary | sufficiency | -4.804 [-6.627, -3.036] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_retrieval | secondary | comprehensiveness | 1.621 [0.666, 2.671] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_retrieval | secondary | f1_at_2 | 0.135 [0.000, 0.250] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__control_retrieval | secondary | mean_average_precision | 0.136 [0.060, 0.211] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__control_retrieval | secondary | ndcg_at_10 | 0.093 [0.045, 0.144] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__control_retrieval | secondary | sufficiency | -1.483 [-2.826, -0.426] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_shuffled | secondary | comprehensiveness | 6.137 [4.642, 7.738] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_shuffled | secondary | f1_at_2 | 0.635 [0.500, 0.769] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__control_shuffled | secondary | mean_average_precision | 0.548 [0.455, 0.637] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__control_shuffled | secondary | ndcg_at_10 | 0.414 [0.347, 0.478] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__control_shuffled | secondary | sufficiency | -4.622 [-6.323, -2.970] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__leave_one_out | secondary | comprehensiveness | 0.087 [-0.484, 0.574] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__leave_one_out | secondary | f1_at_2 | 0.019 [-0.096, 0.154] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__leave_one_out | secondary | mean_average_precision | 0.023 [-0.057, 0.104] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__leave_one_out | secondary | ndcg_at_10 | 0.012 [-0.029, 0.054] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| embedding__vs__leave_one_out | secondary | sufficiency | 0.533 [-0.382, 1.425] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_length | secondary | comprehensiveness | 6.210 [4.749, 7.690] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_length | secondary | f1_at_2 | 0.750 [0.635, 0.865] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__control_length | secondary | mean_average_precision | 0.637 [0.574, 0.697] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__control_length | secondary | ndcg_at_10 | 0.495 [0.459, 0.529] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__control_length | secondary | sufficiency | -6.212 [-8.031, -4.216] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_lexical | confirmatory | comprehensiveness | 1.082 [-0.001, 2.312] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | f1_at_2 | 0.154 [-0.019, 0.327] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | mean_average_precision | 0.142 [0.004, 0.282] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | ndcg_at_10 | 0.109 [0.021, 0.199] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | sufficiency | -1.231 [-2.840, 0.341] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_random | secondary | comprehensiveness | 5.484 [4.008, 7.033] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_random | secondary | f1_at_2 | 0.615 [0.462, 0.750] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__control_random | secondary | mean_average_precision | 0.524 [0.434, 0.612] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__control_random | secondary | ndcg_at_10 | 0.395 [0.330, 0.458] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__control_random | secondary | sufficiency | -5.337 [-7.119, -3.610] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_retrieval | secondary | comprehensiveness | 1.534 [0.515, 2.702] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_retrieval | secondary | f1_at_2 | 0.115 [-0.038, 0.269] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__control_retrieval | secondary | mean_average_precision | 0.113 [0.007, 0.225] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__control_retrieval | secondary | ndcg_at_10 | 0.081 [0.015, 0.152] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__control_retrieval | secondary | sufficiency | -2.016 [-3.508, -0.688] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_shuffled | secondary | comprehensiveness | 6.051 [4.573, 7.599] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_shuffled | secondary | f1_at_2 | 0.615 [0.462, 0.750] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__control_shuffled | secondary | mean_average_precision | 0.525 [0.413, 0.626] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__control_shuffled | secondary | ndcg_at_10 | 0.402 [0.323, 0.474] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__control_shuffled | secondary | sufficiency | -5.155 [-6.849, -3.412] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__embedding | secondary | comprehensiveness | -0.087 [-0.567, 0.468] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__embedding | secondary | f1_at_2 | -0.019 [-0.135, 0.115] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__embedding | secondary | mean_average_precision | -0.023 [-0.105, 0.058] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__embedding | secondary | ndcg_at_10 | -0.012 [-0.055, 0.029] | 26 | candidate_missing=0, comparator_missing=0, candidate_null=27, comparator_null=27 | higher |
+| leave_one_out__vs__embedding | secondary | sufficiency | -0.533 [-1.406, 0.357] | 53 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
 
 **Attribution — mode A (teacher-forced gold answer), split `eval`**
-| method | F1@2 | AUPRC | nDCG@10 | sufficiency ↓ | comprehensiveness ↑ | s/sample | fail % | n |
-|---|---|---|---|---|---|---|---|---|
-| embedding | 0.812 | 0.894 | 0.940 | 1.604 | 6.249 | 0.254 | 0.0 | 240 |
-| leave_one_out | 0.727 | 0.813 | 0.892 | -0.262 | 7.180 | 1.072 | 0.0 | 240 |
-| control_length _(control)_ | 0.104 | 0.281 | 0.478 | 7.559 | 0.707 | 0.131 | 0.0 | 240 |
-| control_lexical _(control)_ | 0.619 | 0.731 | 0.833 | 2.728 | 5.384 | 0.072 | 0.0 | 240 |
-| control_random _(control)_ | 0.206 | 0.374 | 0.560 | 6.259 | 1.731 | 0.143 | 0.0 | 240 |
-| control_retrieval _(control)_ | 0.598 | 0.722 | 0.831 | 3.330 | 5.099 | 0.100 | 0.0 | 240 |
-| control_shuffled _(control)_ | 0.179 | 0.372 | 0.558 | 6.368 | 1.104 | 0.139 | 0.0 | 240 |
+| method | F1@2 | MAP | nDCG@10 | sufficiency diagnostic ↓ | comprehensiveness diagnostic ↑ | n agreement | n causal | s/sample | fail % |
+|---|---|---|---|---|---|---|---|---|---|
+| embedding | 0.812 | 0.894 | 0.940 | 1.604 | 6.249 | 240 | 240 | 0.254 | 0.0 |
+| leave_one_out | 0.727 | 0.813 | 0.892 | -0.262 | 7.180 | 240 | 240 | 1.072 | 0.0 |
+| control_length _(control)_ | 0.104 | 0.281 | 0.478 | 7.559 | 0.707 | 240 | 240 | 0.131 | 0.0 |
+| control_lexical _(control)_ | 0.619 | 0.731 | 0.833 | 2.728 | 5.384 | 240 | 240 | 0.072 | 0.0 |
+| control_random _(control)_ | 0.206 | 0.374 | 0.560 | 6.259 | 1.731 | 240 | 240 | 0.143 | 0.0 |
+| control_retrieval _(control)_ | 0.598 | 0.722 | 0.831 | 3.330 | 5.099 | 240 | 240 | 0.100 | 0.0 |
+| control_shuffled _(control)_ | 0.179 | 0.372 | 0.558 | 6.368 | 1.104 | 240 | 240 | 0.139 | 0.0 |
+
+Causal-dependence validation: **NOT RUN**. Missing methods: control_answer_string, oracle_gold. Sufficiency and comprehensiveness remain diagnostics unless this status passes.
+
+**Paired comparisons**
+
+| comparison | tier | metric | delta 95% CI | n_pairs | exclusions | favorable |
+|---|---|---|---|---|---|---|
+| embedding__vs__control_length | secondary | comprehensiveness | 5.542 [4.748, 6.342] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_length | secondary | f1_at_2 | 0.708 [0.665, 0.752] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_length | secondary | mean_average_precision | 0.614 [0.582, 0.643] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_length | secondary | ndcg_at_10 | 0.462 [0.439, 0.484] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_length | secondary | sufficiency | -5.955 [-6.794, -5.120] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_lexical | secondary | comprehensiveness | 0.865 [0.206, 1.530] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_lexical | secondary | f1_at_2 | 0.194 [0.146, 0.242] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_lexical | secondary | mean_average_precision | 0.163 [0.128, 0.198] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_lexical | secondary | ndcg_at_10 | 0.107 [0.082, 0.133] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_lexical | secondary | sufficiency | -1.124 [-1.885, -0.383] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_random | secondary | comprehensiveness | 4.519 [3.767, 5.287] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_random | secondary | f1_at_2 | 0.606 [0.560, 0.652] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_random | secondary | mean_average_precision | 0.521 [0.487, 0.552] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_random | secondary | ndcg_at_10 | 0.381 [0.355, 0.404] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_random | secondary | sufficiency | -4.656 [-5.434, -3.891] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_retrieval | secondary | comprehensiveness | 1.150 [0.637, 1.676] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_retrieval | secondary | f1_at_2 | 0.215 [0.169, 0.260] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_retrieval | secondary | mean_average_precision | 0.172 [0.141, 0.204] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_retrieval | secondary | ndcg_at_10 | 0.110 [0.088, 0.132] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_retrieval | secondary | sufficiency | -1.726 [-2.456, -1.009] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_shuffled | secondary | comprehensiveness | 5.145 [4.338, 5.961] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_shuffled | secondary | f1_at_2 | 0.633 [0.588, 0.677] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_shuffled | secondary | mean_average_precision | 0.522 [0.488, 0.554] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_shuffled | secondary | ndcg_at_10 | 0.383 [0.357, 0.407] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_shuffled | secondary | sufficiency | -4.764 [-5.635, -3.881] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__leave_one_out | secondary | comprehensiveness | -0.931 [-1.444, -0.458] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__leave_one_out | secondary | f1_at_2 | 0.085 [0.033, 0.135] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__leave_one_out | secondary | mean_average_precision | 0.081 [0.046, 0.118] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__leave_one_out | secondary | ndcg_at_10 | 0.048 [0.024, 0.072] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__leave_one_out | secondary | sufficiency | 1.866 [1.152, 2.608] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_length | secondary | comprehensiveness | 6.472 [5.741, 7.224] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_length | secondary | f1_at_2 | 0.623 [0.573, 0.671] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_length | secondary | mean_average_precision | 0.532 [0.495, 0.567] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_length | secondary | ndcg_at_10 | 0.414 [0.387, 0.440] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_length | secondary | sufficiency | -7.820 [-8.679, -6.978] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_lexical | confirmatory | comprehensiveness | 1.796 [1.217, 2.413] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | f1_at_2 | 0.108 [0.054, 0.163] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | mean_average_precision | 0.081 [0.040, 0.124] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | ndcg_at_10 | 0.059 [0.030, 0.088] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | sufficiency | -2.990 [-3.804, -2.205] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_random | secondary | comprehensiveness | 5.449 [4.750, 6.185] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_random | secondary | f1_at_2 | 0.521 [0.469, 0.573] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_random | secondary | mean_average_precision | 0.439 [0.402, 0.476] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_random | secondary | ndcg_at_10 | 0.333 [0.305, 0.360] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_random | secondary | sufficiency | -6.521 [-7.404, -5.651] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_retrieval | secondary | comprehensiveness | 2.081 [1.548, 2.665] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_retrieval | secondary | f1_at_2 | 0.129 [0.077, 0.181] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_retrieval | secondary | mean_average_precision | 0.091 [0.050, 0.131] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_retrieval | secondary | ndcg_at_10 | 0.061 [0.034, 0.089] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_retrieval | secondary | sufficiency | -3.592 [-4.381, -2.841] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_shuffled | secondary | comprehensiveness | 6.076 [5.330, 6.834] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_shuffled | secondary | f1_at_2 | 0.548 [0.498, 0.598] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_shuffled | secondary | mean_average_precision | 0.441 [0.399, 0.480] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_shuffled | secondary | ndcg_at_10 | 0.334 [0.303, 0.365] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_shuffled | secondary | sufficiency | -6.629 [-7.550, -5.749] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__embedding | secondary | comprehensiveness | 0.931 [0.464, 1.432] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__embedding | secondary | f1_at_2 | -0.085 [-0.138, -0.033] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__embedding | secondary | mean_average_precision | -0.081 [-0.118, -0.045] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__embedding | secondary | ndcg_at_10 | -0.048 [-0.072, -0.024] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__embedding | secondary | sufficiency | -1.866 [-2.607, -1.151] | 240 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
 
 **Attribution — mode B (generated answer), split `eval`**
-_Agreement metrics over the correct subset only: n_correct=87 of n_total=240 (criterion: em; abstained: 48)._
+_Agreement metrics use the correct-answer subset: n_correct=87 of n_total=240 (criterion: em; abstained: 48)._
 
-| method | F1@2 | AUPRC | nDCG@10 | sufficiency ↓ | comprehensiveness ↑ | s/sample | fail % | n |
-|---|---|---|---|---|---|---|---|---|
-| citations | 0.753 | 0.844 | 0.915 | 1.582 | 6.727 | 0.257 | 0.0 | 87 |
-| embedding | 0.816 | 0.900 | 0.945 | 2.521 | 6.555 | 0.091 | 0.0 | 87 |
-| leave_one_out | 0.793 | 0.857 | 0.921 | 0.860 | 7.156 | 0.650 | 0.0 | 87 |
-| control_length _(control)_ | 0.075 | 0.262 | 0.462 | 7.765 | 0.939 | 0.081 | 0.0 | 87 |
-| control_lexical _(control)_ | 0.649 | 0.758 | 0.851 | 2.720 | 5.842 | 0.035 | 0.0 | 87 |
-| control_random _(control)_ | 0.207 | 0.381 | 0.565 | 6.604 | 1.873 | 0.088 | 0.0 | 87 |
-| control_retrieval _(control)_ | 0.615 | 0.742 | 0.846 | 3.473 | 5.547 | 0.062 | 0.0 | 87 |
-| control_shuffled _(control)_ | 0.172 | 0.363 | 0.551 | 7.057 | 1.252 | 0.083 | 0.0 | 87 |
+| method | F1@2 | MAP | nDCG@10 | sufficiency diagnostic ↓ | comprehensiveness diagnostic ↑ | n agreement | n causal | s/sample | fail % |
+|---|---|---|---|---|---|---|---|---|---|
+| citations | 0.753 | 0.844 | 0.915 | 1.582 | 6.727 | 87 | 192 | 0.257 | 0.0 |
+| embedding | 0.816 | 0.900 | 0.945 | 2.521 | 6.555 | 87 | 192 | 0.091 | 0.0 |
+| leave_one_out | 0.793 | 0.857 | 0.921 | 0.860 | 7.156 | 87 | 192 | 0.650 | 0.0 |
+| control_length _(control)_ | 0.075 | 0.262 | 0.462 | 7.765 | 0.939 | 87 | 192 | 0.081 | 0.0 |
+| control_lexical _(control)_ | 0.649 | 0.758 | 0.851 | 2.720 | 5.842 | 87 | 192 | 0.035 | 0.0 |
+| control_random _(control)_ | 0.207 | 0.381 | 0.565 | 6.604 | 1.873 | 87 | 192 | 0.088 | 0.0 |
+| control_retrieval _(control)_ | 0.615 | 0.742 | 0.846 | 3.473 | 5.547 | 87 | 192 | 0.062 | 0.0 |
+| control_shuffled _(control)_ | 0.172 | 0.363 | 0.551 | 7.057 | 1.252 | 87 | 192 | 0.083 | 0.0 |
 
-_Generated by `report` from `results/derived/summary.json` at 2026-07-25T08:30:49Z (package 0.1.0; dataset sha256:aa57b60128d8…). Do not edit by hand._
+Causal-dependence validation: **NOT RUN**. Missing methods: control_answer_string, oracle_gold. Sufficiency and comprehensiveness remain diagnostics unless this status passes.
+
+**Paired comparisons**
+
+| comparison | tier | metric | delta 95% CI | n_pairs | exclusions | favorable |
+|---|---|---|---|---|---|---|
+| citations__vs__control_length | secondary | comprehensiveness | 5.788 [4.984, 6.610] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__control_length | secondary | f1_at_2 | 0.678 [0.609, 0.747] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__control_length | secondary | mean_average_precision | 0.582 [0.533, 0.629] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__control_length | secondary | ndcg_at_10 | 0.453 [0.418, 0.487] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__control_length | secondary | sufficiency | -6.183 [-7.107, -5.264] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__control_lexical | secondary | comprehensiveness | 0.885 [0.212, 1.612] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__control_lexical | secondary | f1_at_2 | 0.103 [0.017, 0.195] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__control_lexical | secondary | mean_average_precision | 0.086 [0.021, 0.155] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__control_lexical | secondary | ndcg_at_10 | 0.064 [0.021, 0.111] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__control_lexical | secondary | sufficiency | -1.138 [-1.892, -0.405] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__control_random | secondary | comprehensiveness | 4.854 [4.020, 5.711] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__control_random | secondary | f1_at_2 | 0.546 [0.466, 0.621] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__control_random | secondary | mean_average_precision | 0.463 [0.405, 0.518] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__control_random | secondary | ndcg_at_10 | 0.349 [0.307, 0.390] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__control_random | secondary | sufficiency | -5.022 [-5.998, -4.088] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__control_retrieval | secondary | comprehensiveness | 1.180 [0.546, 1.829] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__control_retrieval | secondary | f1_at_2 | 0.138 [0.052, 0.218] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__control_retrieval | secondary | mean_average_precision | 0.101 [0.043, 0.162] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__control_retrieval | secondary | ndcg_at_10 | 0.069 [0.030, 0.111] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__control_retrieval | secondary | sufficiency | -1.890 [-2.664, -1.107] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__control_shuffled | secondary | comprehensiveness | 5.474 [4.705, 6.275] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__control_shuffled | secondary | f1_at_2 | 0.580 [0.506, 0.655] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__control_shuffled | secondary | mean_average_precision | 0.480 [0.424, 0.531] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__control_shuffled | secondary | ndcg_at_10 | 0.364 [0.323, 0.403] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__control_shuffled | secondary | sufficiency | -5.475 [-6.428, -4.544] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__embedding | secondary | comprehensiveness | 0.172 [-0.365, 0.742] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__embedding | secondary | f1_at_2 | -0.063 [-0.132, 0.006] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__embedding | secondary | mean_average_precision | -0.057 [-0.099, -0.014] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__embedding | secondary | ndcg_at_10 | -0.030 [-0.055, -0.004] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__embedding | secondary | sufficiency | -0.939 [-1.665, -0.273] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| citations__vs__leave_one_out | secondary | comprehensiveness | -0.430 [-0.865, -0.034] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| citations__vs__leave_one_out | secondary | f1_at_2 | -0.040 [-0.109, 0.029] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__leave_one_out | secondary | mean_average_precision | -0.014 [-0.061, 0.033] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__leave_one_out | secondary | ndcg_at_10 | -0.006 [-0.033, 0.022] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| citations__vs__leave_one_out | secondary | sufficiency | 0.723 [0.254, 1.273] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_length | secondary | comprehensiveness | 5.616 [4.841, 6.432] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_length | secondary | f1_at_2 | 0.741 [0.672, 0.810] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__control_length | secondary | mean_average_precision | 0.639 [0.588, 0.683] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__control_length | secondary | ndcg_at_10 | 0.483 [0.446, 0.517] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__control_length | secondary | sufficiency | -5.244 [-6.111, -4.381] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_lexical | secondary | comprehensiveness | 0.713 [-0.032, 1.460] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_lexical | secondary | f1_at_2 | 0.167 [0.080, 0.253] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__control_lexical | secondary | mean_average_precision | 0.142 [0.083, 0.202] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__control_lexical | secondary | ndcg_at_10 | 0.094 [0.054, 0.138] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__control_lexical | secondary | sufficiency | -0.199 [-0.957, 0.558] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_random | secondary | comprehensiveness | 4.682 [3.914, 5.463] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_random | secondary | f1_at_2 | 0.609 [0.534, 0.684] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__control_random | secondary | mean_average_precision | 0.519 [0.467, 0.570] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__control_random | secondary | ndcg_at_10 | 0.380 [0.338, 0.419] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__control_random | secondary | sufficiency | -4.083 [-4.970, -3.199] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_retrieval | secondary | comprehensiveness | 1.008 [0.496, 1.521] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_retrieval | secondary | f1_at_2 | 0.201 [0.126, 0.282] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__control_retrieval | secondary | mean_average_precision | 0.158 [0.107, 0.209] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__control_retrieval | secondary | ndcg_at_10 | 0.099 [0.066, 0.136] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__control_retrieval | secondary | sufficiency | -0.952 [-1.601, -0.270] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__control_shuffled | secondary | comprehensiveness | 5.303 [4.543, 6.100] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__control_shuffled | secondary | f1_at_2 | 0.644 [0.575, 0.707] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__control_shuffled | secondary | mean_average_precision | 0.537 [0.486, 0.586] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__control_shuffled | secondary | ndcg_at_10 | 0.394 [0.354, 0.432] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__control_shuffled | secondary | sufficiency | -4.536 [-5.417, -3.665] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| embedding__vs__leave_one_out | secondary | comprehensiveness | -0.601 [-1.160, -0.088] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| embedding__vs__leave_one_out | secondary | f1_at_2 | 0.023 [-0.052, 0.098] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__leave_one_out | secondary | mean_average_precision | 0.043 [-0.010, 0.095] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__leave_one_out | secondary | ndcg_at_10 | 0.024 [-0.008, 0.056] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| embedding__vs__leave_one_out | secondary | sufficiency | 1.661 [1.035, 2.364] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_length | secondary | comprehensiveness | 6.218 [5.396, 7.083] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_length | secondary | f1_at_2 | 0.718 [0.649, 0.782] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__control_length | secondary | mean_average_precision | 0.595 [0.546, 0.642] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__control_length | secondary | ndcg_at_10 | 0.459 [0.424, 0.492] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__control_length | secondary | sufficiency | -6.906 [-7.809, -6.062] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_lexical | confirmatory | comprehensiveness | 1.315 [0.738, 1.929] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | f1_at_2 | 0.144 [0.063, 0.230] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | mean_average_precision | 0.099 [0.037, 0.163] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | ndcg_at_10 | 0.070 [0.029, 0.113] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__control_lexical | confirmatory | sufficiency | -1.861 [-2.596, -1.185] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_random | secondary | comprehensiveness | 5.283 [4.514, 6.103] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_random | secondary | f1_at_2 | 0.586 [0.500, 0.667] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__control_random | secondary | mean_average_precision | 0.476 [0.413, 0.536] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__control_random | secondary | ndcg_at_10 | 0.355 [0.307, 0.401] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__control_random | secondary | sufficiency | -5.744 [-6.624, -4.874] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_retrieval | secondary | comprehensiveness | 1.609 [1.100, 2.187] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_retrieval | secondary | f1_at_2 | 0.178 [0.098, 0.259] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__control_retrieval | secondary | mean_average_precision | 0.115 [0.051, 0.177] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__control_retrieval | secondary | ndcg_at_10 | 0.075 [0.033, 0.116] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__control_retrieval | secondary | sufficiency | -2.613 [-3.278, -1.972] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__control_shuffled | secondary | comprehensiveness | 5.904 [5.085, 6.753] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__control_shuffled | secondary | f1_at_2 | 0.621 [0.540, 0.695] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__control_shuffled | secondary | mean_average_precision | 0.494 [0.433, 0.552] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__control_shuffled | secondary | ndcg_at_10 | 0.370 [0.323, 0.414] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__control_shuffled | secondary | sufficiency | -6.197 [-7.098, -5.360] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+| leave_one_out__vs__embedding | secondary | comprehensiveness | 0.601 [0.087, 1.174] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | higher |
+| leave_one_out__vs__embedding | secondary | f1_at_2 | -0.023 [-0.098, 0.052] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__embedding | secondary | mean_average_precision | -0.043 [-0.096, 0.011] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__embedding | secondary | ndcg_at_10 | -0.024 [-0.057, 0.007] | 87 | candidate_missing=0, comparator_missing=0, candidate_null=105, comparator_null=105 | higher |
+| leave_one_out__vs__embedding | secondary | sufficiency | -1.661 [-2.360, -1.040] | 192 | candidate_missing=0, comparator_missing=0, candidate_null=0, comparator_null=0 | lower |
+
+_Generated by `report` from the configured derived `summary.json` at source snapshot 2026-07-25T03:39:39Z (package 0.1.0; dataset sha256:aa57b60128d8…). Do not edit by hand._
 <!-- END AUTOGENERATED RESULTS -->
 
 ## Controlled cross-encoder reranking extension
 
 The tables above are the immutable **original evidence-attribution benchmark**. A separate,
 preregistered extension asks whether reranking improvements propagate to citation coverage,
-evidence sufficiency/comprehensiveness, and answer faithfulness. Its raw/derived artifacts
+teacher-forced sufficiency/comprehensiveness diagnostics, and answer quality. Its raw/derived artifacts
 live under `results/reranking/`, so the extension cannot overwrite the original benchmark.
 
 - Locked design: [PREREGISTRATION_RERANKING.md](PREREGISTRATION_RERANKING.md)
@@ -210,7 +755,7 @@ docker compose up            # or: python -m rag_evidence.cli serve --config con
 ## Reproducing the GPU stages (Google Colab)
 
 The published results were produced this way. The 4B-model stages (generate,
-leave_one_out / arc_jsd / contextcite attribution, faithfulness logprobs) run on Colab;
+leave_one_out / arc_jsd / contextcite attribution, teacher-forced dependency logprobs) run on Colab;
 everything downstream is CPU arithmetic:
 
 1. `uv run python scripts/make_colab_bundle.py` → produces `reab_bundle.zip`.
@@ -255,11 +800,11 @@ API: `GET /health`, `GET /methods`, `GET /benchmark/{sample_id}`, `POST /retriev
 ```
 src/rag_evidence/     library (data, retrieval, generation, attribution, metrics,
                       evaluation, reporting, storage, api/explorer)
-configs/              smoke.yaml (20) / dev.yaml (60) / full.yaml (locked 240)
+configs/              historical configs plus versioned Gate A projection configs
 notebooks/            thin Colab wrappers + CPU report viewer
 legacy/arc_jsd/       isolated env reproducing the official ARC-JSD (transformers 4.43.3)
 results/              raw per-sample records + derived metrics (provenance rules inside)
-tests/                92 tests — synthetic fixtures + deterministic FakeLM, fully offline
+tests/                synthetic fixtures + deterministic FakeLM, fully offline
 ```
 
 ## Documentation

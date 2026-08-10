@@ -1,0 +1,38 @@
+{
+  "qwen3-4b": {
+    "run": "results/raw/smoke/generate/qwen3-4b",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "Tesla T4",
+    "model": {
+      "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+      "device": "cuda",
+      "dtype_requested": "bfloat16",
+      "dtype_effective": "bfloat16",
+      "quantization_requested": "none",
+      "quantization_effective": "none"
+    },
+    "n_evaluated": 20,
+    "n_failed": 0,
+    "failure_rate": 0.0,
+    "abstain_rate": 0.05,
+    "em": 0.5,
+    "f1": 0.6361408,
+    "citation": {
+      "precision": 0.9122807017543861,
+      "recall": 0.7368421052631579,
+      "f1": 0.7859649122807016,
+      "no_citation_rate": 0.0,
+      "n_scored": 19,
+      "coverage_all": 0.7,
+      "complete_coverage_all": 0.45
+    },
+    "latency_ms": {
+      "mean": 7660.38985,
+      "p50": 6616.516,
+      "p95": 13221.438
+    },
+    "throughput_tokens_per_s": 2.4802915219778274,
+    "peak_vram_mb": 12119.9306640625
+  }
+}

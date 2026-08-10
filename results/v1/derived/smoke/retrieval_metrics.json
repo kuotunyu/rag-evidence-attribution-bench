@@ -1,0 +1,128 @@
+{
+  "bm25": {
+    "run": "results/raw/smoke/retrieve/bm25",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "cpu",
+    "n_evaluated": 20,
+    "n_failed": 0,
+    "failure_rate": 0.0,
+    "recall_at": {
+      "2": 0.65,
+      "5": 0.725,
+      "10": 1.0
+    },
+    "evidence_coverage_at": {
+      "2": 0.65,
+      "5": 0.725,
+      "10": 1.0
+    },
+    "multi_hop_necessary_passage_coverage_at": {
+      "2": 0.45,
+      "5": 0.55,
+      "10": 1.0
+    },
+    "mrr": 0.8520833333333332,
+    "ndcg_at_10": 0.8317348569133765,
+    "ndcg_at": {
+      "2": 0.6839441578296375,
+      "5": 0.7243361294158683,
+      "10": 0.8317348569133765
+    },
+    "latency_ms": {
+      "mean": 1.0865500000000001,
+      "p50": 1.02,
+      "p95": 1.38
+    },
+    "rerank_latency_ms": null,
+    "estimated_end_to_end_latency_ms": null,
+    "peak_vram_mb": null,
+    "cache": null,
+    "throughput_pairs_per_s": null,
+    "reranker_systems": null
+  },
+  "dense": {
+    "run": "results/raw/smoke/retrieve/dense",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "cpu",
+    "n_evaluated": 20,
+    "n_failed": 0,
+    "failure_rate": 0.0,
+    "recall_at": {
+      "2": 0.625,
+      "5": 0.85,
+      "10": 1.0
+    },
+    "evidence_coverage_at": {
+      "2": 0.625,
+      "5": 0.85,
+      "10": 1.0
+    },
+    "multi_hop_necessary_passage_coverage_at": {
+      "2": 0.35,
+      "5": 0.75,
+      "10": 1.0
+    },
+    "mrr": 0.8738095238095237,
+    "ndcg_at_10": 0.848561854156122,
+    "ndcg_at": {
+      "2": 0.6646015174679104,
+      "5": 0.789807993697097,
+      "10": 0.848561854156122
+    },
+    "latency_ms": {
+      "mean": 68923.51705,
+      "p50": 54265.473,
+      "p95": 135512.803
+    },
+    "rerank_latency_ms": null,
+    "estimated_end_to_end_latency_ms": null,
+    "peak_vram_mb": null,
+    "cache": null,
+    "throughput_pairs_per_s": null,
+    "reranker_systems": null
+  },
+  "hybrid_rrf": {
+    "run": "results/raw/smoke/retrieve/hybrid_rrf",
+    "execution_kind": "real",
+    "partial": false,
+    "device": "cpu",
+    "n_evaluated": 20,
+    "n_failed": 0,
+    "failure_rate": 0.0,
+    "recall_at": {
+      "2": 0.625,
+      "5": 0.85,
+      "10": 1.0
+    },
+    "evidence_coverage_at": {
+      "2": 0.625,
+      "5": 0.85,
+      "10": 1.0
+    },
+    "multi_hop_necessary_passage_coverage_at": {
+      "2": 0.4,
+      "5": 0.75,
+      "10": 1.0
+    },
+    "mrr": 0.8138888888888889,
+    "ndcg_at_10": 0.8194735297718058,
+    "ndcg_at": {
+      "2": 0.6419720789148188,
+      "5": 0.7604609526931816,
+      "10": 0.8194735297718058
+    },
+    "latency_ms": {
+      "mean": 0.27305,
+      "p50": 0.049,
+      "p95": 0.072
+    },
+    "rerank_latency_ms": null,
+    "estimated_end_to_end_latency_ms": null,
+    "peak_vram_mb": null,
+    "cache": null,
+    "throughput_pairs_per_s": null,
+    "reranker_systems": null
+  }
+}

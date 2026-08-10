@@ -17,7 +17,7 @@ paths:
   data_dir: data
   results_raw: results/raw
   results_derived: results/v1/derived
-  assets_dir: assets
+  assets_dir: results/v1/assets
 
 retrieval:
   ks: [2, 5, 10]
