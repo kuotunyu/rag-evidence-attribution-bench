@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from typer.testing import CliRunner
+from typer.core import TyperGroup, TyperOption
+from typer.main import get_command
 
 from rag_evidence.cli import app
 from rag_evidence.config import AppConfig, load_config
@@ -26,18 +27,14 @@ REVISION = "1908d6afbbead072334abe2965f91bd2709910ab"
 
 
 def test_data_challenge_cli_is_registered() -> None:
-    # Rich may insert ANSI style sequences inside option names when the test
-    # runner is attached to a colour-capable terminal.  Keep this registration
-    # assertion about the CLI contract, not terminal rendering details.
-    result = CliRunner().invoke(
-        app,
-        ["data", "challenge", "--help"],
-        color=False,
-        terminal_width=120,
-    )
-
-    assert result.exit_code == 0
-    assert "--config" in result.stdout
+    root = get_command(app)
+    assert isinstance(root, TyperGroup)
+    data = root.commands["data"]
+    assert isinstance(data, TyperGroup)
+    challenge = data.commands["challenge"]
+    config = next(parameter for parameter in challenge.params if parameter.name == "config")
+    assert isinstance(config, TyperOption)
+    assert "--config" in config.opts
 
 
 def _raw(index: int) -> dict[str, Any]:
