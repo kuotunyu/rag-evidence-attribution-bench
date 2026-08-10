@@ -32,7 +32,7 @@ VRAM. It does **not** yet establish open-corpus evidence faithfulness or causal 
   `import-results`; mock-backend runs are stamped `execution_kind: mock` and structurally
   excluded from the README; partial runs are excluded from `evaluate` unless explicitly
   `--allow-partial` (and then visibly labeled). Fingerprints detect changes; they do not
-  make a writable repository tamper-proof.
+  prevent writes or establish repository access control.
 
 ## Results
 

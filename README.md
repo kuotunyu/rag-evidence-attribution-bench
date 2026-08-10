@@ -4,7 +4,7 @@
 ![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-本專案是 **HotpotQA (distractor) 封閉候選脈絡歸因**的可重現 benchmark，比較 **Qwen3-4B-Instruct** 回答的 supporting-passage agreement、teacher-forced 依賴性診斷、Latency 與 Peak VRAM。目前證據不足以聲稱已測得 open-corpus evidence faithfulness 或因果歸因；SHA-256 用於變更偵測與可追溯重建，並非將可寫入 repository 變成防篡改系統。
+本專案是 **HotpotQA (distractor) 封閉候選脈絡歸因**的可重現 benchmark，比較 **Qwen3-4B-Instruct** 回答的 supporting-passage agreement、teacher-forced 依賴性診斷、Latency 與 Peak VRAM。目前證據不足以聲稱已測得 open-corpus evidence faithfulness 或因果歸因；SHA-256 用於變更偵測與可追溯重建，不會阻止具寫入權限者修改 repository。
 
 > English version: [README_en.md](README_en.md)
 
