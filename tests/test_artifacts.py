@@ -13,6 +13,7 @@ from rag_evidence.storage.artifacts import (
     read_json,
     read_records,
     write_json_atomic,
+    write_records_atomic,
 )
 
 
@@ -75,3 +76,35 @@ def test_write_json_atomic_roundtrip_and_no_temp_left(tmp_path: Path) -> None:
     assert read_json(path) == obj
     leftovers = [p for p in tmp_path.iterdir() if ".tmp." in p.name]
     assert leftovers == []
+
+
+def test_write_records_atomic_replaces_with_compact_unicode_jsonl(tmp_path: Path) -> None:
+    path = tmp_path / "records.jsonl"
+    path.write_text('{"stale":true}\n', encoding="utf-8")
+    records = (
+        {"question_id": "q1", "text": "證據"},
+        {"question_id": "q2", "nested": {"ok": True}},
+    )
+
+    write_records_atomic(path, records)
+
+    assert list(read_records(path)) == list(records)
+    assert path.read_bytes() == (
+        '{"question_id":"q1","text":"證據"}\n'
+        '{"question_id":"q2","nested":{"ok":true}}\n'
+    ).encode()
+    assert not list(tmp_path.glob("records.jsonl.tmp.*"))
+
+
+def test_write_records_atomic_preserves_target_after_serialization_failure(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "records.jsonl"
+    original = b'{"question_id":"original"}\n'
+    path.write_bytes(original)
+
+    with pytest.raises(ArtifactError, match="failed to write"):
+        write_records_atomic(path, ({"not_json": object()},))
+
+    assert path.read_bytes() == original
+    assert not list(tmp_path.glob("records.jsonl.tmp.*"))

@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +37,23 @@ def append_record(path: Path, record: Mapping[str, Any]) -> None:
             os.fsync(fh.fileno())
     except OSError as exc:
         raise ArtifactError(f"failed to append record to {path}: {exc}") from exc
+
+
+def write_records_atomic(path: Path, records: Iterable[Mapping[str, Any]]) -> None:
+    """Replace a JSONL artifact only after every record is durably serialized."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + f".tmp.{os.getpid()}")
+    try:
+        with tmp.open("w", encoding="utf-8", newline="\n") as fh:
+            for record in records:
+                line = json.dumps(record, ensure_ascii=False, separators=(",", ":"))
+                fh.write(line + "\n")
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
+    except (OSError, TypeError, ValueError) as exc:
+        tmp.unlink(missing_ok=True)
+        raise ArtifactError(f"failed to write {path}: {exc}") from exc
 
 
 def read_records(path: Path) -> Iterator[dict[str, Any]]:
