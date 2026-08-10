@@ -21,9 +21,7 @@ TRANSFORMATIONS = (
 )
 SOURCE_SPLITS = ("smoke", "dev", "eval")
 
-Transformation = Literal[
-    "missing_hop", "answer_bearing_distractor", "evidence_swap"
-]
+Transformation = Literal["missing_hop", "answer_bearing_distractor", "evidence_swap"]
 Answerability = Literal["answerable", "unanswerable"]
 ReviewStatus = Literal["not_required", "pending_two_annotators"]
 
@@ -162,9 +160,7 @@ def remap_example(
         level=example.level,
         qtype=example.qtype,
         passages=remapped_passages,
-        gold_passage_ids=tuple(
-            ids.passage_id(challenge_id, index) for index in sorted(gold_slots)
-        ),
+        gold_passage_ids=tuple(ids.passage_id(challenge_id, index) for index in sorted(gold_slots)),
         supporting_fact_sentence_ids=tuple(
             ids.sentence_id(ids.passage_id(challenge_id, pidx), sidx)
             for pidx, sidx in sorted(supporting_slots)
@@ -195,9 +191,7 @@ def _validate_example(payload: Mapping[str, Any], challenge_id: str) -> Example:
         raise DataError("challenge passage IDs are not stable slot IDs")
     if [passage.index for passage in example.passages] != list(range(len(example.passages))):
         raise DataError("challenge passage indices are not canonical")
-    expected_gold = tuple(
-        passage.passage_id for passage in example.passages if passage.is_gold
-    )
+    expected_gold = tuple(passage.passage_id for passage in example.passages if passage.is_gold)
     if example.gold_passage_ids != expected_gold:
         raise DataError("challenge gold passage labels do not match passage flags")
     for sentence_id in example.supporting_fact_sentence_ids:

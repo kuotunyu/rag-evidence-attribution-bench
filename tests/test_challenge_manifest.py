@@ -142,8 +142,7 @@ def _validate(manifest: dict[str, Any], rows=None, source_bytes: bytes | None = 
 def test_manifest_is_reorder_stable_and_validates_against_source() -> None:
     records = _records()
     reversed_records = {
-        split: tuple(reversed(rows))
-        for split, rows in reversed(tuple(records.items()))
+        split: tuple(reversed(rows)) for split, rows in reversed(tuple(records.items()))
     }
 
     manifest = _manifest(records)
@@ -194,9 +193,7 @@ def test_manifest_rejects_corrupt_accounting(field: str, message: str) -> None:
     elif field == "transformation_count":
         manifest["splits"]["eval"]["transformation_counts"]["missing_hop"] -= 1
     else:
-        manifest["splits"]["eval"]["review_status_counts"][
-            "pending_two_annotators"
-        ] -= 1
+        manifest["splits"]["eval"]["review_status_counts"]["pending_two_annotators"] -= 1
 
     with pytest.raises(DataError, match=message):
         _validate(manifest)

@@ -97,9 +97,7 @@ def build_challenge_manifest(
                 sorted(Counter(record.transformation for record in records).items())
             ),
             "expected_answerability_counts": dict(
-                sorted(
-                    Counter(record.expected_answerability for record in records).items()
-                )
+                sorted(Counter(record.expected_answerability for record in records).items())
             ),
             "review_status_counts": dict(
                 sorted(Counter(record.review.status for record in records).items())
@@ -107,8 +105,7 @@ def build_challenge_manifest(
             "confirmatory_eligible_counts": dict(
                 sorted(
                     Counter(
-                        str(record.review.confirmatory_eligible).lower()
-                        for record in records
+                        str(record.review.confirmatory_eligible).lower() for record in records
                     ).items()
                 )
             ),

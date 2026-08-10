@@ -82,12 +82,15 @@ def _valid_record_json() -> dict[str, Any]:
 
 
 def test_challenge_id_and_content_hash_have_hand_checked_values() -> None:
-    assert make_challenge_id(
-        "q-parent",
-        "eval",
-        "missing_hop",
-        transform_version="challenge-v1",
-    ) == "ch-85b7c8651ecaec71e8b772cc"
+    assert (
+        make_challenge_id(
+            "q-parent",
+            "eval",
+            "missing_hop",
+            transform_version="challenge-v1",
+        )
+        == "ch-85b7c8651ecaec71e8b772cc"
+    )
     assert record_content_hash({"b": 2, "a": "evidence"}) == (
         "ec54faa689b855a5e40ee5e6786ec558ced9b66652fc2f8d3f2065c2d76bb94a"
     )
@@ -113,9 +116,7 @@ def test_remap_example_rebuilds_all_stable_ids_from_slots() -> None:
     assert [passage.index for passage in remapped.passages] == [0, 1]
     assert [passage.is_gold for passage in remapped.passages] == [True, False]
     assert remapped.gold_passage_ids == ("ch-85b7c8651ecaec71e8b772cc-p00",)
-    assert remapped.supporting_fact_sentence_ids == (
-        "ch-85b7c8651ecaec71e8b772cc-p00-s01",
-    )
+    assert remapped.supporting_fact_sentence_ids == ("ch-85b7c8651ecaec71e8b772cc-p00-s01",)
     assert _source_example().question_id == "q-parent"
 
 

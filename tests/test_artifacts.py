@@ -89,10 +89,12 @@ def test_write_records_atomic_replaces_with_compact_unicode_jsonl(tmp_path: Path
     write_records_atomic(path, records)
 
     assert list(read_records(path)) == list(records)
-    assert path.read_bytes() == (
-        '{"question_id":"q1","text":"證據"}\n'
-        '{"question_id":"q2","nested":{"ok":true}}\n'
-    ).encode()
+    assert (
+        path.read_bytes()
+        == (
+            '{"question_id":"q1","text":"證據"}\n{"question_id":"q2","nested":{"ok":true}}\n'
+        ).encode()
+    )
     assert not list(tmp_path.glob("records.jsonl.tmp.*"))
 
 
