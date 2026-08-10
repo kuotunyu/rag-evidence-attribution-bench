@@ -115,10 +115,15 @@ def build_manifest(
 
 def load_manifest(path: Path) -> dict[str, Any]:
     manifest: dict[str, Any] = read_json(path)
-    if manifest.get("schema_version") != MANIFEST_SCHEMA_VERSION:
+    schema_version = manifest.get("schema_version")
+    if schema_version == 2:
+        from rag_evidence.data.manifest_v2 import validate_manifest_v2_structure
+
+        validate_manifest_v2_structure(manifest)
+        return manifest
+    if schema_version != MANIFEST_SCHEMA_VERSION:
         raise DataError(
-            f"manifest {path} has schema_version {manifest.get('schema_version')}, "
-            f"expected {MANIFEST_SCHEMA_VERSION}"
+            f"manifest {path} has schema_version {schema_version}, expected 1 or 2"
         )
     return manifest
 
@@ -141,8 +146,13 @@ def check_manifest_matches_config(
             f"config split_seed={seed} but committed manifest was built with "
             f"seed={manifest['seed']}; refusing to mix"
         )
+    configured_sizes = (
+        manifest["selection"]["requested_sizes"]
+        if manifest.get("schema_version") == 2
+        else {name: row["size"] for name, row in manifest["splits"].items()}
+    )
     for name, size in sizes.items():
-        actual = manifest["splits"][name]["size"]
+        actual = configured_sizes[name]
         if actual != size:
             raise ConfigError(
                 f"config split_sizes[{name}]={size} but manifest has {actual}; refusing to mix"
