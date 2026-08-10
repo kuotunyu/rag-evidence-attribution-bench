@@ -20,6 +20,7 @@ from rag_evidence.errors import ConfigError
 from rag_evidence.generation.run import generation_run_name
 from rag_evidence.metrics.attribution import prf_at_k, rank_passages
 from rag_evidence.metrics.retrieval import mrr, ndcg_at_k, percentiles, recall_at_k
+from rag_evidence.reporting.report import attribution_legacy_view
 from rag_evidence.reranking.experiment import arm_config
 from rag_evidence.storage.artifacts import (
     RECORDS_FILE,
@@ -778,7 +779,7 @@ def build_reranking_comparison(cfg: AppConfig) -> dict[str, Any]:
             namespace = entry.get("run_namespace")
             method = entry.get("method")
             if namespace and method:
-                arm_map[str(namespace)][str(method)] = entry
+                arm_map[str(namespace)][str(method)] = attribution_legacy_view(entry)
         attribution[mode] = dict(arm_map)
 
     errors, groups, stability = _write_error_analysis(

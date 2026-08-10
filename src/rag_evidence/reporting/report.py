@@ -40,6 +40,37 @@ def _is_real(entry: dict[str, Any]) -> bool:
     return bool(entry.get("execution_kind", "real") != "mock")
 
 
+def attribution_legacy_view(entry: dict[str, Any]) -> dict[str, Any]:
+    """Expose a flattened read-only view for schema-v1 report consumers."""
+    if entry.get("schema_version") != 2:
+        return entry
+    agreement = entry["agreement"]
+    causal = entry["causal_dependence"]
+    execution = entry["execution"]
+    legacy = dict(entry.get("legacy_v1") or {})
+    legacy.update(
+        {
+            "run": entry["run"],
+            "execution_kind": entry["execution_kind"],
+            "partial": entry["partial"],
+            "device": entry["device"],
+            "method": entry["method"],
+            "run_namespace": entry.get("run_namespace"),
+            "generation_run": entry.get("generation_run"),
+            "is_control": entry["is_control"],
+            "prf_at": agreement["prf_at"],
+            "auprc": agreement["mean_average_precision"],
+            "ndcg_at_10": agreement["ndcg_at_10"],
+            "n_agreement": agreement["n"],
+            "sufficiency": causal["sufficiency_mean"],
+            "comprehensiveness": causal["comprehensiveness_mean"],
+            "n_faithfulness": causal["n"],
+            **execution,
+        }
+    )
+    return legacy
+
+
 def _real_only(summary: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
     """Strip mock entries; return (filtered summary, list of excluded run paths)."""
     excluded: list[str] = []
@@ -135,7 +166,133 @@ def _generation_table(splits: dict[str, Any]) -> str:
     return "**Generation** (deterministic greedy)\n\n" + header + "\n" + "\n".join(rows)
 
 
+def _has_v2_attribution(splits: dict[str, Any]) -> bool:
+    return any(
+        isinstance(entry, dict) and entry.get("schema_version") == 2
+        for payload in splits.values()
+        for methods in payload.get("attribution", {}).values()
+        if isinstance(methods, dict)
+        for entry in methods.values()
+    )
+
+
+def _paired_comparison_table(methods: dict[str, Any]) -> str:
+    rows: list[str] = []
+    exclusion_order = (
+        "candidate_missing",
+        "comparator_missing",
+        "candidate_null",
+        "comparator_null",
+    )
+    for name, comparison in sorted((methods.get("paired_comparisons") or {}).items()):
+        for metric_name, metric in sorted(comparison.get("metrics", {}).items()):
+            effect = "—"
+            if metric.get("mean_delta") is not None:
+                effect = (
+                    f"{_fmt(metric['mean_delta'])} "
+                    f"[{_fmt(metric.get('ci_low'))}, {_fmt(metric.get('ci_high'))}]"
+                )
+            exclusions = metric.get("exclusions") or {}
+            exclusion_text = ", ".join(f"{key}={exclusions.get(key, 0)}" for key in exclusion_order)
+            rows.append(
+                f"| {name} | {comparison.get('analysis_tier')} | {metric_name} | "
+                f"{effect} | {metric.get('n_pairs')} | {exclusion_text} | "
+                f"{metric.get('favorable_direction')} |"
+            )
+    if not rows:
+        return "_Paired comparisons: **NOT RUN**._"
+    header = (
+        "| comparison | tier | metric | delta 95% CI | n_pairs | exclusions | favorable |\n"
+        "|---|---|---|---|---|---|---|"
+    )
+    return "**Paired comparisons**\n\n" + header + "\n" + "\n".join(rows)
+
+
+def _attribution_tables_v2(splits: dict[str, Any], primary_k: int) -> str:
+    blocks: list[str] = []
+    for split in _SPLIT_ORDER:
+        payload = splits.get(split)
+        if not payload:
+            continue
+        for mode in ("gold", "generated"):
+            methods = payload.get("attribution", {}).get(mode)
+            if not methods:
+                continue
+            title = (
+                f"**Attribution — mode A (teacher-forced gold answer), split `{split}`**"
+                if mode == "gold"
+                else f"**Attribution — mode B (generated answer), split `{split}`**"
+            )
+            subset_line = ""
+            subset = methods.get("subset")
+            if mode == "generated" and isinstance(subset, dict):
+                subset_line = (
+                    f"\n_Agreement metrics use the correct-answer subset: "
+                    f"n_correct={subset['n_correct']} of n_total={subset['n_total']} "
+                    f"(criterion: {subset['criterion']}; abstained: {subset['n_abstained']})._\n"
+                )
+            header = (
+                f"| method | F1@{primary_k} | MAP | nDCG@10 | sufficiency diagnostic ↓ | "
+                "comprehensiveness diagnostic ↑ | n agreement | n causal | s/sample | fail % |\n"
+                "|---|---|---|---|---|---|---|---|---|---|"
+            )
+            rows: list[str] = []
+            for name in sorted(
+                (
+                    name
+                    for name, entry in methods.items()
+                    if isinstance(entry, dict) and entry.get("schema_version") == 2
+                ),
+                key=lambda value: (bool(methods[value].get("is_control")), value),
+            ):
+                entry = methods[name]
+                agreement = entry["agreement"]
+                causal = entry["causal_dependence"]
+                execution = entry["execution"]
+                label = f"{name} _(control)_" if entry.get("is_control") else name
+                if entry.get("partial"):
+                    label += " ⚠partial"
+                prf = agreement["prf_at"].get(str(primary_k), {})
+                rows.append(
+                    f"| {label} | {_fmt(prf.get('f1'))} | "
+                    f"{_fmt(agreement['mean_average_precision'])} | "
+                    f"{_fmt(agreement['ndcg_at_10'])} | "
+                    f"{_fmt(causal['sufficiency_mean'])} | "
+                    f"{_fmt(causal['comprehensiveness_mean'])} | {agreement['n']} | "
+                    f"{causal['n']} | {_fmt(execution['seconds_per_sample'])} | "
+                    f"{_fmt(100 * execution['failure_rate'], 1)} |"
+                )
+            validation = methods.get("causal_validation") or {
+                "status": "not_run",
+                "missing_methods": [],
+            }
+            status = str(validation.get("status", "not_run")).replace("_", " ").upper()
+            missing = validation.get("missing_methods") or []
+            missing_text = f" Missing methods: {', '.join(missing)}." if missing else ""
+            validation_line = (
+                f"Causal-dependence validation: **{status}**.{missing_text} "
+                "Sufficiency and comprehensiveness remain diagnostics unless this status passes."
+            )
+            blocks.append(
+                title
+                + subset_line
+                + "\n"
+                + header
+                + "\n"
+                + "\n".join(rows)
+                + "\n\n"
+                + validation_line
+                + "\n\n"
+                + _paired_comparison_table(methods)
+            )
+    if not blocks:
+        return "_Attribution results: **PENDING**._"
+    return "\n\n".join(blocks)
+
+
 def _attribution_tables(splits: dict[str, Any], primary_k: int) -> str:
+    if _has_v2_attribution(splits):
+        return _attribution_tables_v2(splits, primary_k)
     blocks: list[str] = []
     for split in _SPLIT_ORDER:
         payload = splits.get(split)
@@ -201,9 +358,10 @@ def render_results_block(summary: dict[str, Any] | None, *, locale: str = "en") 
             "Run `notebooks/00_colab_smoke.ipynb` on Colab, then "
             "`python -m rag_evidence.cli import-results …`."
         )
+    source_snapshot = summary.get("source_snapshot_utc") or summary.get("generated_utc")
     footer = (
         f"_Generated by `report` from `results/derived/summary.json` at "
-        f"{summary.get('generated_utc')} (package {summary.get('package_version')}; "
+        f"source snapshot {source_snapshot} (package {summary.get('package_version')}; "
         f"dataset sha256:{str(summary.get('dataset_hash'))[:12]}…). Do not edit by hand._"
     )
     if locale == "zh-TW":
@@ -299,7 +457,10 @@ def _write_figures(cfg: AppConfig, summary: dict[str, Any]) -> list[Path]:
                 continue
             names = sorted(entries, key=lambda n: (n.startswith("control_"), n))
             f1s = [
-                entries[n]["prf_at"].get(str(summary.get("primary_k", 2)), {}).get("f1") or 0
+                attribution_legacy_view(entries[n])["prf_at"]
+                .get(str(summary.get("primary_k", 2)), {})
+                .get("f1")
+                or 0
                 for n in names
             ]
             fig, ax = plt.subplots(figsize=(6, 0.5 + 0.4 * len(names)))
