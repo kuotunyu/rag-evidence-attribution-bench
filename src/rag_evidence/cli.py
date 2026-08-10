@@ -3,6 +3,7 @@
 Fixed surface (do not change without updating README + tests):
 
     python -m rag_evidence.cli data prepare        --config configs/smoke.yaml
+    python -m rag_evidence.cli data challenge      --config configs/v2/eval.yaml
     python -m rag_evidence.cli retrieve
         --method bm25|dense|hybrid_rrf|hybrid_rrf_rerank --config …
     python -m rag_evidence.cli generate            --config …
@@ -105,6 +106,14 @@ def data_prepare(config: ConfigOpt) -> None:
     from rag_evidence.pipeline import run_data_prepare
 
     _run(run_data_prepare, config)
+
+
+@data_app.command("challenge")
+def data_challenge(config: ConfigOpt) -> None:
+    """Validate v2 source artifacts and build answerability challenge v1."""
+    from rag_evidence.pipeline import run_data_challenge
+
+    _run(run_data_challenge, config)
 
 
 @app.command()

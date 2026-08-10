@@ -58,6 +58,11 @@ def test_v2_export_preserves_versioned_canonical_paths(tiny_env: AppConfig, tmp_
     sample = cfg.results_raw_dir / cfg.split / "samples" / "records.jsonl"
     sample.parent.mkdir(parents=True)
     sample.write_text('{"question_id":"q"}\n', encoding="utf-8")
+    challenge_sample = cfg.results_raw_dir / cfg.split / "challenge" / "samples" / "records.jsonl"
+    challenge_sample.parent.mkdir(parents=True)
+    challenge_sample.write_text(
+        '{"challenge_id":"ch-000000000000000000000000"}\n', encoding="utf-8"
+    )
     write_json_atomic(cfg.manifest_file, {"schema_version": 2})
     out = tmp_path / "v2.zip"
 
@@ -66,6 +71,7 @@ def test_v2_export_preserves_versioned_canonical_paths(tiny_env: AppConfig, tmp_
     with zipfile.ZipFile(out) as zf:
         names = set(zf.namelist())
     assert "results/v2/raw/smoke/samples/records.jsonl" in names
+    assert "results/v2/raw/smoke/challenge/samples/records.jsonl" in names
     assert "data/manifests/split_manifest_v2.json" in names
     assert not any(name.startswith("results/raw/") for name in names)
 

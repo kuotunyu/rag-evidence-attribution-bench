@@ -16,6 +16,12 @@ def run_data_prepare(cfg: AppConfig) -> None:
     prepare_data(cfg)
 
 
+def run_data_challenge(cfg: AppConfig) -> None:
+    from rag_evidence.data.challenge_prepare import prepare_challenge
+
+    prepare_challenge(cfg)
+
+
 def run_retrieve(cfg: AppConfig, *, method: str, resume: bool, limit: int | None) -> None:
     from rag_evidence.retrieval.run import run_retrieval_stage
 

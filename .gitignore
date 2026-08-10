@@ -39,6 +39,7 @@ data/*
 data/manifests/*
 !data/manifests/split_manifest.json
 !data/manifests/split_manifest_v2.json
+!data/manifests/challenge_manifest_v1.json
 
 # heavy raw artifacts — committed raw results are JSONL/JSON only
 results/raw/**/embeddings/

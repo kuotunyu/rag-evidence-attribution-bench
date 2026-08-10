@@ -128,6 +128,28 @@ def test_v2_configs_pin_source_and_isolate_all_artifacts(repo_root: Path, name: 
     assert cfg.paths.results_raw == "results/v2/raw"
     assert cfg.paths.results_derived == "results/v2/derived"
     assert cfg.paths.assets_dir == "results/v2/assets"
+    assert cfg.challenge.schema_version == 1
+    assert cfg.challenge.seed == 20260810
+    assert cfg.challenge.transform_version == "challenge-v1"
+    assert cfg.challenge.manifest_path == "data/manifests/challenge_manifest_v1.json"
+    assert cfg.challenge.prepared_dir == "data/v2/challenge"
+
+
+@pytest.mark.parametrize(
+    "challenge",
+    [
+        "schema_version: 2",
+        "seed: 1",
+        "transform_version: challenge-v2",
+        "manifest_path: C:\\challenge.json",
+        "prepared_dir: /tmp/challenge",
+    ],
+)
+def test_challenge_protocol_and_paths_are_locked(tmp_path: Path, challenge: str) -> None:
+    text = MINIMAL + f"\nchallenge:\n  {challenge}\n"
+
+    with pytest.raises(ConfigError, match=r"challenge|repo-relative"):
+        load_config(_write(tmp_path, text))
 
 
 @pytest.mark.parametrize(

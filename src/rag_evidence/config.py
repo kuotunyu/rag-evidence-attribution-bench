@@ -72,6 +72,21 @@ class DataConfig(_StrictModel):
         return self
 
 
+class ChallengeConfig(_StrictModel):
+    schema_version: Literal[1] = 1
+    seed: int = 20260810
+    transform_version: Literal["challenge-v1"] = "challenge-v1"
+    manifest_path: str = "data/manifests/challenge_manifest_v1.json"
+    prepared_dir: str = "data/v2/challenge"
+
+    @field_validator("seed")
+    @classmethod
+    def _locked_seed(cls, value: int) -> int:
+        if value != 20260810:
+            raise ValueError("challenge seed is locked at 20260810")
+        return value
+
+
 class PathsConfig(_StrictModel):
     data_dir: str = "data"
     results_raw: str = "results/raw"
@@ -246,6 +261,7 @@ class AppConfig(_StrictModel):
     split: Literal["smoke", "dev", "eval"]
     seed: int = 42
     data: DataConfig = DataConfig()
+    challenge: ChallengeConfig = ChallengeConfig()
     paths: PathsConfig = PathsConfig()
     retrieval: RetrievalConfig = RetrievalConfig()
     generation: GenerationConfig = GenerationConfig()
@@ -310,6 +326,14 @@ class AppConfig(_StrictModel):
     def prepared_file(self) -> Path:
         return Path(self.data.prepared_dir) / f"{self.split}.jsonl"
 
+    @property
+    def challenge_manifest_file(self) -> Path:
+        return Path(self.challenge.manifest_path)
+
+    @property
+    def challenge_prepared_dir(self) -> Path:
+        return Path(self.challenge.prepared_dir)
+
 
 _ENV_OVERRIDES: dict[str, tuple[str, ...]] = {
     "RAG_EVIDENCE_HOST": ("serve", "host"),
@@ -330,6 +354,8 @@ def _apply_env_overrides(raw: dict[str, Any]) -> dict[str, Any]:
 _YAML_PATH_FIELDS: tuple[tuple[str, str], ...] = (
     ("data", "manifest_path"),
     ("data", "prepared_dir"),
+    ("challenge", "manifest_path"),
+    ("challenge", "prepared_dir"),
     ("paths", "data_dir"),
     ("paths", "results_raw"),
     ("paths", "results_derived"),
