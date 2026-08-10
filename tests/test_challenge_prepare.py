@@ -26,7 +26,15 @@ REVISION = "1908d6afbbead072334abe2965f91bd2709910ab"
 
 
 def test_data_challenge_cli_is_registered() -> None:
-    result = CliRunner().invoke(app, ["data", "challenge", "--help"])
+    # Rich may insert ANSI style sequences inside option names when the test
+    # runner is attached to a colour-capable terminal.  Keep this registration
+    # assertion about the CLI contract, not terminal rendering details.
+    result = CliRunner().invoke(
+        app,
+        ["data", "challenge", "--help"],
+        color=False,
+        terminal_width=120,
+    )
 
     assert result.exit_code == 0
     assert "--config" in result.stdout
