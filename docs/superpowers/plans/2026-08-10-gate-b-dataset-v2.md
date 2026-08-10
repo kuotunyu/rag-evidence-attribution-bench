@@ -257,8 +257,10 @@
 ### Task 5: Build and Audit the Real HotpotQA Manifest v2
 
 **Files:**
+- Modify: `.gitignore`
 - Create: `data/manifests/split_manifest_v2.json`
 - Create: `docs/DATASET_V2.md`
+- Create: `tests/test_repository_hygiene.py`
 - Generate locally: `data/v2/prepared/*.jsonl`
 - Generate: `results/v2/raw/{smoke,dev,eval}/samples/records.jsonl`
 
@@ -271,6 +273,8 @@
   Run: `python -m rag_evidence.cli data prepare --config configs/v2/eval.yaml`
 
   Expected: the resolved SHA exactly matches the requested SHA before normalization or writes.
+
+  Explicitly allow `data/manifests/split_manifest_v2.json` in `.gitignore` and test that repository contract so a release manifest cannot be silently omitted. Commit only the manifest and `results/v2/raw` samples; keep `data/v2/prepared` ignored.
 
 - [ ] **Step 2: Independently validate the generated manifest**
 
