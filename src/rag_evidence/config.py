@@ -63,8 +63,7 @@ class DataConfig(_StrictModel):
     @model_validator(mode="after")
     def _v2_requires_pinned_revision(self) -> DataConfig:
         if self.manifest_schema_version == 2 and (
-            self.hf_revision is None
-            or re.fullmatch(r"[0-9a-f]{40}", self.hf_revision) is None
+            self.hf_revision is None or re.fullmatch(r"[0-9a-f]{40}", self.hf_revision) is None
         ):
             raise ValueError(
                 "manifest schema v2 requires hf_revision to be an exact 40-character "

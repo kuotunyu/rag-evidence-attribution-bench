@@ -35,9 +35,7 @@ def test_allocator_is_order_independent_and_never_reuses_a_group() -> None:
     sizes = {"smoke": 2, "dev": 3, "eval": 4}
 
     result = allocate_split_groups(groups, requested_sizes=sizes, seed=17)
-    reversed_result = allocate_split_groups(
-        tuple(reversed(groups)), requested_sizes=sizes, seed=17
-    )
+    reversed_result = allocate_split_groups(tuple(reversed(groups)), requested_sizes=sizes, seed=17)
 
     assert result == reversed_result
     assert result.requested_sizes == sizes
@@ -106,9 +104,7 @@ def test_exact_search_stays_bounded_despite_a_giant_leakage_group() -> None:
         groups.append(_group(f"g{index:04}", size, (index * 7) % (size + 1)))
 
     started = time.perf_counter()
-    selected = _select_groups(
-        tuple(groups), requested_size=30, target_bridge_count=20, seed=17
-    )
+    selected = _select_groups(tuple(groups), requested_size=30, target_bridge_count=20, seed=17)
     elapsed = time.perf_counter() - started
 
     assert sum(group.size for group in selected) == 30
@@ -156,10 +152,7 @@ def test_bounded_search_matches_the_global_objective_on_small_pools() -> None:
             best_objective = min(
                 (
                     abs(sum(group.size for group in subset) - requested_size),
-                    abs(
-                        sum(group.bridge_count for group in subset)
-                        - target_bridge_count
-                    ),
+                    abs(sum(group.bridge_count for group in subset) - target_bridge_count),
                     sum(group.size for group in subset) > requested_size,
                 )
                 for subset in candidates

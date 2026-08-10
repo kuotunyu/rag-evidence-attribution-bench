@@ -38,9 +38,7 @@ def test_export_creates_manifest_with_canonical_paths(exported_env: tuple[AppCon
         assert "results/raw/smoke/generate/fake/records.jsonl" in names
 
 
-def test_v2_export_preserves_versioned_canonical_paths(
-    tiny_env: AppConfig, tmp_path: Path
-) -> None:
+def test_v2_export_preserves_versioned_canonical_paths(tiny_env: AppConfig, tmp_path: Path) -> None:
     data = tiny_env.data.model_copy(
         update={
             "manifest_schema_version": 2,

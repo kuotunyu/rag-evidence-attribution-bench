@@ -34,9 +34,7 @@ def verify_resolved_dataset_revision(repo_id: str, requested_revision: str) -> s
     try:
         from huggingface_hub import HfApi
     except ImportError as exc:
-        raise DataError(
-            "the `huggingface-hub` package is required for manifest schema v2"
-        ) from exc
+        raise DataError("the `huggingface-hub` package is required for manifest schema v2") from exc
 
     try:
         info = HfApi().dataset_info(repo_id=repo_id, revision=requested_revision)
@@ -217,9 +215,7 @@ def prepare_data(cfg: AppConfig) -> None:
     resolved_revision = cfg.data.hf_revision
     if cfg.data.manifest_schema_version == 2:
         assert cfg.data.hf_revision is not None  # enforced by DataConfig validation
-        resolved_revision = verify_resolved_dataset_revision(
-            cfg.data.hf_path, cfg.data.hf_revision
-        )
+        resolved_revision = verify_resolved_dataset_revision(cfg.data.hf_path, cfg.data.hf_revision)
     raw_examples = load_raw_examples(cfg)
     raw_by_qid = {r["question_id"]: r for r in raw_examples}
 

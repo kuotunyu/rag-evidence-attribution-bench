@@ -32,8 +32,8 @@ def _raw(
 
 
 def test_canonical_identifiers_normalize_only_declared_variation() -> None:
-    assert normalize_title("  \uFF23afé\tLAND  ") == "café land"
-    assert paragraph_fingerprint(["\uFF21 sentence. ", "Two\tspaces."]) == paragraph_fingerprint(
+    assert normalize_title("  \uff23afé\tLAND  ") == "café land"
+    assert paragraph_fingerprint(["\uff21 sentence. ", "Two\tspaces."]) == paragraph_fingerprint(
         ["A sentence.", "Two spaces."]
     )
     assert paragraph_fingerprint(["First.", "Second."]) != paragraph_fingerprint(

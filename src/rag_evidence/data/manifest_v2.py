@@ -41,9 +41,7 @@ def _validate_revisions(dataset: dict[str, Any]) -> None:
     if not isinstance(resolved, str) or not _REVISION_PATTERN.fullmatch(resolved):
         raise DataError("manifest v2 resolved revision must be an exact 40-character SHA")
     if requested != resolved:
-        raise DataError(
-            f"dataset revision mismatch: requested {requested}, resolved {resolved}"
-        )
+        raise DataError(f"dataset revision mismatch: requested {requested}, resolved {resolved}")
 
 
 def _eligible_pool(
@@ -79,9 +77,7 @@ def _overlap_audit(
     return {
         "question_id": sum(len(owners) > 1 for owners in qid_owners.values()),
         "normalized_title": sum(len(owners) > 1 for owners in title_owners.values()),
-        "canonical_paragraph": sum(
-            len(owners) > 1 for owners in paragraph_owners.values()
-        ),
+        "canonical_paragraph": sum(len(owners) > 1 for owners in paragraph_owners.values()),
     }
 
 
@@ -145,9 +141,7 @@ def build_manifest_v2(
         raise DataError("duplicate question IDs cannot enter manifest v2")
     eligible, exclusion_reasons, excluded_count = _eligible_pool(raws)
     groups = build_split_groups(eligible)
-    allocation = allocate_split_groups(
-        groups, requested_sizes=requested_sizes, seed=seed
-    )
+    allocation = allocate_split_groups(groups, requested_sizes=requested_sizes, seed=seed)
     raw_by_qid = {str(raw["question_id"]): raw for raw in raws}
     split_qids = {
         split: sorted(qid for group in allocation.groups[split] for qid in group.question_ids)
@@ -229,9 +223,7 @@ def build_manifest_v2(
     return manifest
 
 
-def validate_manifest_v2(
-    manifest: dict[str, Any], raw_examples: list[dict[str, Any]]
-) -> None:
+def validate_manifest_v2(manifest: dict[str, Any], raw_examples: list[dict[str, Any]]) -> None:
     """Recompute every source-dependent manifest-v2 invariant and fail closed."""
     validate_manifest_v2_structure(manifest)
     raws = sorted(raw_examples, key=lambda raw: str(raw["question_id"]))
@@ -280,9 +272,7 @@ def validate_manifest_v2(
     grouping = manifest["grouping"]
     if grouping["num_groups"] != len(groups):
         raise DataError("manifest v2 group count mismatch")
-    if grouping["largest_group_size"] != max(
-        (group.size for group in groups), default=0
-    ):
+    if grouping["largest_group_size"] != max((group.size for group in groups), default=0):
         raise DataError("manifest v2 largest group size mismatch")
     allocation = allocate_split_groups(
         groups,
@@ -311,18 +301,11 @@ def validate_manifest_v2(
         raise DataError("manifest v2 realized sizes mismatch")
     if manifest["selection"]["unselected_groups"] != allocation.unselected_group_count:
         raise DataError("manifest v2 selection unselected group count mismatch")
-    if (
-        manifest["selection"]["unselected_questions"]
-        != allocation.unselected_question_count
-    ):
+    if manifest["selection"]["unselected_questions"] != allocation.unselected_question_count:
         raise DataError("manifest v2 selection unselected question count mismatch")
-    if grouping["selected_groups"] != sum(
-        len(rows) for rows in allocation.groups.values()
-    ):
+    if grouping["selected_groups"] != sum(len(rows) for rows in allocation.groups.values()):
         raise DataError("manifest v2 selected group count mismatch")
-    split_qids = {
-        split: list(manifest["splits"][split]["question_ids"]) for split in _SPLIT_NAMES
-    }
+    split_qids = {split: list(manifest["splits"][split]["question_ids"]) for split in _SPLIT_NAMES}
     recomputed_overlap = _overlap_audit(split_qids, raw_by_qid)
     if manifest["overlap_audit"] != recomputed_overlap or any(recomputed_overlap.values()):
         raise DataError(

@@ -59,9 +59,7 @@ def _raws() -> list[dict[str, Any]]:
 
 
 def _manifest() -> dict[str, Any]:
-    return build_manifest_v2(
-        _raws(), seed=23, requested_sizes=SIZES, dataset_info=DATASET_INFO
-    )
+    return build_manifest_v2(_raws(), seed=23, requested_sizes=SIZES, dataset_info=DATASET_INFO)
 
 
 def test_manifest_v2_is_deterministic_and_records_the_full_audit_contract() -> None:
@@ -92,9 +90,7 @@ def test_manifest_v2_is_deterministic_and_records_the_full_audit_contract() -> N
         "normalized_title": 0,
         "canonical_paragraph": 0,
     }
-    selected_qids = [
-        qid for split in manifest["splits"].values() for qid in split["question_ids"]
-    ]
+    selected_qids = [qid for split in manifest["splits"].values() for qid in split["question_ids"]]
     assert len(selected_qids) == len(set(selected_qids)) == sum(SIZES.values())
     eligible = [raw for raw in _raws() if not supporting_fact_errors(raw)]
     groups = {group.group_id: set(group.question_ids) for group in build_split_groups(eligible)}
@@ -133,9 +129,7 @@ def test_load_manifest_accepts_valid_v2_and_rejects_bad_revision(tmp_path: Path)
         ("unselected", "selection"),
     ],
 )
-def test_manifest_v2_validation_fails_closed_on_corruption(
-    mutation: str, message: str
-) -> None:
+def test_manifest_v2_validation_fails_closed_on_corruption(mutation: str, message: str) -> None:
     manifest = _manifest()
     raws = _raws()
     if mutation == "fingerprint":
@@ -144,9 +138,9 @@ def test_manifest_v2_validation_fails_closed_on_corruption(
     elif mutation == "group":
         manifest["splits"]["eval"]["group_ids"][0] = "0" * 64
     elif mutation == "question":
-        manifest["splits"]["smoke"]["question_ids"][0] = manifest["splits"]["dev"][
-            "question_ids"
-        ][0]
+        manifest["splits"]["smoke"]["question_ids"][0] = manifest["splits"]["dev"]["question_ids"][
+            0
+        ]
     elif mutation == "overlap":
         manifest["overlap_audit"]["normalized_title"] = 1
     elif mutation == "supporting":

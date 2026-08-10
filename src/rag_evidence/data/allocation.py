@@ -49,9 +49,7 @@ def _seeded_groups(groups: tuple[SplitGroup, ...], seed: int) -> tuple[SplitGrou
     return tuple(
         sorted(
             groups,
-            key=lambda group: hashlib.sha256(
-                f"{seed}:{group.group_id}".encode()
-            ).hexdigest(),
+            key=lambda group: hashlib.sha256(f"{seed}:{group.group_id}".encode()).hexdigest(),
         )
     )
 
@@ -129,9 +127,9 @@ def allocate_split_groups(
     available = tuple(sorted(groups, key=lambda group: group.group_id))
     allocated: dict[str, tuple[SplitGroup, ...]] = {}
     for draw_index, split in enumerate(_DRAW_ORDER):
-        target_bridge_count = round(
-            requested_sizes[split] * pool_bridge_count / pool_size
-        ) if pool_size else 0
+        target_bridge_count = (
+            round(requested_sizes[split] * pool_bridge_count / pool_size) if pool_size else 0
+        )
         chosen = _select_groups(
             available,
             requested_size=requested_sizes[split],

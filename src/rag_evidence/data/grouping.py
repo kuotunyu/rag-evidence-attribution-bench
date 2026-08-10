@@ -132,9 +132,7 @@ def build_split_groups(raw_examples: Sequence[dict[str, Any]]) -> tuple[SplitGro
                 normalized_titles=group_titles,
                 paragraph_hashes=group_paragraphs,
                 bridge_count=sum(raws[index]["type"] == "bridge" for index in members),
-                comparison_count=sum(
-                    raws[index]["type"] == "comparison" for index in members
-                ),
+                comparison_count=sum(raws[index]["type"] == "comparison" for index in members),
             )
         )
     return tuple(sorted(groups, key=lambda group: group.question_ids))

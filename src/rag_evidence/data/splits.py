@@ -122,9 +122,7 @@ def load_manifest(path: Path) -> dict[str, Any]:
         validate_manifest_v2_structure(manifest)
         return manifest
     if schema_version != MANIFEST_SCHEMA_VERSION:
-        raise DataError(
-            f"manifest {path} has schema_version {schema_version}, expected 1 or 2"
-        )
+        raise DataError(f"manifest {path} has schema_version {schema_version}, expected 1 or 2")
     return manifest
 
 

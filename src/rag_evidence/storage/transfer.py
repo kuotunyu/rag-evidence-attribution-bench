@@ -38,6 +38,7 @@ def _collect_files(cfg: AppConfig) -> list[tuple[Path, str]]:
     configured in YAML (for example results/v2/raw/<split>/…) even when the live
     results dirs are absolute (Colab writes checkpoints to a Drive mount via
     RAG_EVIDENCE_RESULTS_* env overrides) — import always lands in the repo layout."""
+
     def canonical_root(configured: str, *, fallback: str) -> str:
         path = Path(configured)
         if not path.is_absolute():
@@ -50,9 +51,7 @@ def _collect_files(cfg: AppConfig) -> list[tuple[Path, str]]:
 
     pairs: list[tuple[Path, str]] = []
     raw_arc_root = canonical_root(cfg.paths.results_raw, fallback="results/raw")
-    derived_arc_root = canonical_root(
-        cfg.paths.results_derived, fallback="results/derived"
-    )
+    derived_arc_root = canonical_root(cfg.paths.results_derived, fallback="results/derived")
     raw_split = cfg.results_raw_dir / cfg.split
     if not raw_split.exists():
         raise ArtifactError(f"nothing to export: {raw_split} does not exist")
