@@ -56,17 +56,10 @@ def _seeded_groups(groups: tuple[SplitGroup, ...], seed: int) -> tuple[SplitGrou
     )
 
 
-def _select_groups(
-    available: tuple[SplitGroup, ...],
-    *,
-    requested_size: int,
-    target_bridge_count: int,
-    seed: int,
-) -> tuple[SplitGroup, ...]:
-    if not available:
-        return ()
-    ordered = _seeded_groups(available, seed)
-    size_cap = requested_size + max(group.size for group in ordered)
+def _build_states(
+    ordered: tuple[SplitGroup, ...], *, size_cap: int
+) -> tuple[list[_Node], dict[tuple[int, int], int]]:
+    """Build reachable (size, bridge-count) states up to an inclusive size cap."""
     nodes = [_Node(previous=None, group_index=None)]
     states: dict[tuple[int, int], int] = {(0, 0): 0}
     max_reachable_states = (size_cap + 1) * (size_cap + 2) // 2
@@ -79,6 +72,28 @@ def _select_groups(
             states[new_state] = len(nodes) - 1
         if len(states) == max_reachable_states:
             break
+    return nodes, states
+
+
+def _select_groups(
+    available: tuple[SplitGroup, ...],
+    *,
+    requested_size: int,
+    target_bridge_count: int,
+    seed: int,
+) -> tuple[SplitGroup, ...]:
+    if not available:
+        return ()
+    ordered = _seeded_groups(available, seed)
+    nodes, states = _build_states(ordered, size_cap=requested_size)
+    if not any(size == requested_size for size, _bridge_count in states):
+        reachable_under = [size for size, _bridge_count in states if size > 0]
+        if reachable_under:
+            nearest_under = max(reachable_under)
+            size_cap = requested_size + (requested_size - nearest_under)
+        else:
+            size_cap = min(group.size for group in ordered)
+        nodes, states = _build_states(ordered, size_cap=size_cap)
 
     nonempty_states = ((state, node) for state, node in states.items() if state[0] > 0)
     (_, _), terminal = min(

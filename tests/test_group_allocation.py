@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import itertools
+import time
+
 import pytest
 
-from rag_evidence.data.allocation import allocate_split_groups
+from rag_evidence.data.allocation import _select_groups, allocate_split_groups
 from rag_evidence.data.grouping import SplitGroup
 from rag_evidence.errors import DataError
 
@@ -94,6 +97,75 @@ def test_seed_breaks_objective_ties_without_breaking_determinism() -> None:
     }
 
     assert len(selections) > 1
+
+
+def test_exact_search_stays_bounded_despite_a_giant_leakage_group() -> None:
+    groups = [_group("giant", 300, 240)]
+    for index in range(500):
+        size = 1 + index % 10
+        groups.append(_group(f"g{index:04}", size, (index * 7) % (size + 1)))
+
+    started = time.perf_counter()
+    selected = _select_groups(
+        tuple(groups), requested_size=30, target_bridge_count=20, seed=17
+    )
+    elapsed = time.perf_counter() - started
+
+    assert sum(group.size for group in selected) == 30
+    assert sum(group.bridge_count for group in selected) == 20
+    assert elapsed < 1.0
+
+
+def test_equal_size_error_still_compares_oversized_bridge_distribution() -> None:
+    selected = _select_groups(
+        (_group("under", 2, 0), _group("over", 4, 3)),
+        requested_size=3,
+        target_bridge_count=3,
+        seed=17,
+    )
+
+    assert [group.group_id for group in selected] == ["over"]
+
+
+def test_bounded_search_matches_the_global_objective_on_small_pools() -> None:
+    groups = tuple(
+        _group(f"g{index}", size, bridge)
+        for index, (size, bridge) in enumerate(((1, 0), (2, 2), (3, 1), (5, 4)))
+    )
+
+    for requested_size in range(1, 8):
+        for target_bridge_count in range(requested_size + 1):
+            selected = _select_groups(
+                groups,
+                requested_size=requested_size,
+                target_bridge_count=target_bridge_count,
+                seed=23,
+            )
+            selected_size = sum(group.size for group in selected)
+            selected_bridge = sum(group.bridge_count for group in selected)
+            selected_objective = (
+                abs(selected_size - requested_size),
+                abs(selected_bridge - target_bridge_count),
+                selected_size > requested_size,
+            )
+            candidates = (
+                subset
+                for count in range(1, len(groups) + 1)
+                for subset in itertools.combinations(groups, count)
+            )
+            best_objective = min(
+                (
+                    abs(sum(group.size for group in subset) - requested_size),
+                    abs(
+                        sum(group.bridge_count for group in subset)
+                        - target_bridge_count
+                    ),
+                    sum(group.size for group in subset) > requested_size,
+                )
+                for subset in candidates
+            )
+
+            assert selected_objective == best_objective
 
 
 @pytest.mark.parametrize(
