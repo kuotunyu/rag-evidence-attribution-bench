@@ -32,6 +32,7 @@ def scripted_env(tiny_env: AppConfig, monkeypatch: pytest.MonkeyPatch) -> AppCon
     run_retrieval_stage(cfg, method="bm25", resume=False, limit=None)
     run_generation_stage(cfg, resume=False, limit=None)
     run_attribution_stage(cfg, method="leave_one_out", mode=None, resume=False, limit=None)
+    run_attribution_stage(cfg, method="control_lexical", mode=None, resume=False, limit=None)
     evaluate_all(cfg)
     return cfg
 
@@ -54,14 +55,17 @@ def test_agreement_restricted_to_correct_subset(scripted_env: AppConfig) -> None
     loo_generated = attribution["generated"]["leave_one_out"]
     # 2 non-abstained answers were attributed, but only the 1 correct one counts
     # toward agreement-with-supporting-facts metrics
-    assert loo_generated["n_success"] == 2
-    assert loo_generated["n_skipped"] == 1  # the abstained sample
-    assert loo_generated["n_agreement"] == 1
+    assert loo_generated["execution"]["n_success"] == 2
+    assert loo_generated["execution"]["n_skipped"] == 1  # the abstained sample
+    assert loo_generated["agreement"]["n"] == 1
     # faithfulness is ground-truth-free: aggregated over all attributed samples
-    assert loo_generated["n_faithfulness"] == 2
+    assert loo_generated["causal_dependence"]["n"] == 2
+    assert loo_generated["causal_dependence"]["validation_status"] == "not_run"
+    assert loo_generated["legacy_v1"]["n_agreement"] == 1
+    assert loo_generated["legacy_v1"]["n_faithfulness"] == 2
     # mode A qualifies every successfully attributed sample
     loo_gold = attribution["gold"]["leave_one_out"]
-    assert loo_gold["n_agreement"] == loo_gold["n_success"] == 3
+    assert loo_gold["agreement"]["n"] == loo_gold["execution"]["n_success"] == 3
 
 
 def test_per_sample_file_flags_exclusions(scripted_env: AppConfig) -> None:
@@ -80,3 +84,20 @@ def test_per_sample_file_flags_exclusions(scripted_env: AppConfig) -> None:
     assert by_flag == {True, False}
     excluded = next(r for r in rows if not r["in_agreement_subset"])
     assert excluded["exclusion_reason"] == "not_correct"
+
+
+def test_primary_comparison_uses_estimand_specific_pairs(scripted_env: AppConfig) -> None:
+    summary = read_json(Path(scripted_env.paths.results_derived) / "summary.json")
+    mode = summary["splits"]["smoke"]["attribution"]["generated"]
+    comparison = mode["paired_comparisons"]["leave_one_out__vs__control_lexical"]
+
+    assert comparison["analysis_tier"] == "confirmatory"
+    assert comparison["metrics"]["f1_at_2"]["n_pairs"] == 1
+    assert comparison["metrics"]["sufficiency"]["n_pairs"] == 2
+    assert comparison["metrics"]["sufficiency"]["resamples"] == 10_000
+    assert mode["causal_validation"]["status"] == "not_run"
+    assert mode["causal_validation"]["missing_methods"] == [
+        "control_answer_string",
+        "control_random",
+        "oracle_gold",
+    ]

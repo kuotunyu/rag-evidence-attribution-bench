@@ -24,6 +24,9 @@ from rag_evidence.data.hotpot import load_prepared_verified
 from rag_evidence.data.schema import Example
 from rag_evidence.data.splits import load_manifest
 from rag_evidence.errors import DataError, UpstreamMissingError
+from rag_evidence.evaluation.comparisons import compare_attribution_methods
+from rag_evidence.evaluation.construct import evaluate_construct_validation
+from rag_evidence.evaluation.schema import upgrade_attribution_metrics
 from rag_evidence.metrics.attribution import (
     attribution_ndcg,
     average_precision,
@@ -43,7 +46,7 @@ from rag_evidence.storage.artifacts import (
 
 logger = logging.getLogger(__name__)
 
-SUMMARY_SCHEMA_VERSION = 1
+SUMMARY_SCHEMA_VERSION = 2
 
 
 def _mean(values: Iterable[float]) -> float | None:
@@ -295,6 +298,8 @@ def evaluate_attribution(
             continue
         mode_out: dict[str, Any] = {}
         generated_subsets: dict[str, dict[str, Any]] = {}
+        legacy_by_run: dict[str, dict[str, Any]] = {}
+        per_sample_by_run: dict[str, dict[str, dict[str, Any]]] = {}
 
         for run_dir in methods:
             run_key = run_dir.name
@@ -373,6 +378,7 @@ def evaluate_attribution(
             secs: list[float] = []
             calls: list[float] = []
             n_agreement = 0
+            sample_rows: dict[str, dict[str, Any]] = {}
 
             for rec in ok:
                 example = examples[rec["question_id"]]
@@ -398,6 +404,7 @@ def evaluate_attribution(
                 sample_row["sufficiency"] = faith["sufficiency"] if faith else None
                 sample_row["comprehensiveness"] = faith["comprehensiveness"] if faith else None
                 append_record(per_sample_path, sample_row)
+                sample_rows[str(rec["question_id"])] = sample_row
 
                 if in_subset:  # agreement metrics only over the qualifying subset
                     n_agreement += 1
@@ -415,7 +422,7 @@ def evaluate_attribution(
                     secs.append(rec["latency_s"])
                 calls.append(rec.get("num_model_calls", 0))
 
-            mode_out[run_key] = {
+            legacy_metrics = {
                 "run": str(run_dir).replace("\\", "/"),
                 "execution_kind": meta.get("execution_kind", "real"),
                 "partial": partial,
@@ -424,7 +431,9 @@ def evaluate_attribution(
                 "run_namespace": namespace,
                 "generation_run": generation_run,
                 "subset": subset,
-                "is_control": actual_method.startswith("control_"),
+                "is_control": bool(
+                    scientific.get("is_control", actual_method.startswith("control_"))
+                ),
                 "n_attempted": len(ok) + len(failed),
                 "n_success": len(ok),
                 "n_failed": len(failed),
@@ -447,6 +456,64 @@ def evaluate_attribution(
                 "num_model_calls_mean": _mean(calls),
                 "peak_vram_mb": meta.get("run_peak_vram_mb"),
             }
+            legacy_by_run[run_key] = legacy_metrics
+            per_sample_by_run[run_key] = sample_rows
+
+        runs_by_method: dict[str, list[str]] = {}
+        for run_key, legacy in legacy_by_run.items():
+            runs_by_method.setdefault(str(legacy["method"]), []).append(run_key)
+        unique_run_by_method = {
+            method: run_keys[0] for method, run_keys in runs_by_method.items() if len(run_keys) == 1
+        }
+        per_sample_by_method = {
+            method: per_sample_by_run[run_key] for method, run_key in unique_run_by_method.items()
+        }
+        causal_validation = evaluate_construct_validation(
+            per_sample_by_method,
+            split=cfg.split,
+            mode=mode,
+            global_seed=cfg.seed,
+            resamples=10_000,
+            confidence=0.95,
+            tolerance=0.0,
+        )
+        agreement_subset = (
+            "all_successful_attributions"
+            if mode == "gold"
+            else (
+                "generated_exact_match"
+                if cfg.evaluation.correctness_criterion == "em"
+                else "generated_f1_at_least_0_5"
+            )
+        )
+        for run_key, legacy in legacy_by_run.items():
+            mode_out[run_key] = upgrade_attribution_metrics(
+                legacy,
+                agreement_subset=agreement_subset,
+                causal_validation_status=causal_validation["status"],
+            )
+
+        paired_comparisons: dict[str, Any] = {}
+        primary_candidate = unique_run_by_method.get("leave_one_out")
+        primary_comparator = unique_run_by_method.get("control_lexical")
+        if primary_candidate is not None and primary_comparator is not None:
+            comparison_key = "leave_one_out__vs__control_lexical"
+            paired_comparisons[comparison_key] = compare_attribution_methods(
+                per_sample_by_run[primary_candidate],
+                per_sample_by_run[primary_comparator],
+                split=cfg.split,
+                mode=mode,
+                candidate_method="leave_one_out",
+                comparator_method="control_lexical",
+                analysis_tier="confirmatory",
+                primary_k=cfg.evaluation.primary_k,
+                global_seed=cfg.seed,
+                resamples=10_000,
+                confidence=0.95,
+                tolerance=0.0,
+            )
+        mode_out["paired_comparisons"] = paired_comparisons
+        mode_out["causal_validation"] = causal_validation
         # Preserve the original summary shape bit-for-bit in meaning (and keep the
         # existing report renderer working) when every run shares one generation.
         if mode == "generated" and len(generated_subsets) == 1:

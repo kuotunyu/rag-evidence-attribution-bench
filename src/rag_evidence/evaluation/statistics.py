@@ -53,9 +53,7 @@ def paired_bootstrap_difference(
         "candidate_missing": sum(qid not in candidate for qid in all_ids),
         "comparator_missing": sum(qid not in comparator for qid in all_ids),
         "candidate_null": sum(qid in candidate and candidate[qid] is None for qid in all_ids),
-        "comparator_null": sum(
-            qid in comparator and comparator[qid] is None for qid in all_ids
-        ),
+        "comparator_null": sum(qid in comparator and comparator[qid] is None for qid in all_ids),
     }
     paired_ids = [
         qid
@@ -106,9 +104,7 @@ def paired_bootstrap_difference(
             "ci_high": ci_high,
             "ci_excludes_zero": bool(ci_low > tolerance or ci_high < -tolerance),
             "favorable": (
-                ci_low > tolerance
-                if favorable_direction == "higher"
-                else ci_high < -tolerance
+                ci_low > tolerance if favorable_direction == "higher" else ci_high < -tolerance
             ),
         }
     )
