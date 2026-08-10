@@ -159,8 +159,10 @@
 
   Assert one non-gold passage gains exactly one sentence, normalized answer tokens occur
   in the appended sentence, complete gold passage/sentence labels remain unchanged after
-  ID remapping, the review state is `not_required`, and a parent with no answer-free
-  non-gold passage raises `DataError`.
+  ID remapping, and the review state is `not_required`. When all non-gold passages already
+  contain the answer, require the same one-sentence intervention plus explicit
+  `salience_only` / `preexisting_answer_mention` provenance; only a parent with no non-gold
+  passage raises `DataError`.
 
 - [ ] **Step 4: Run answer-bearing RED, implement, and run GREEN**
 

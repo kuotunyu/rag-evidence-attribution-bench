@@ -188,10 +188,10 @@ def test_answer_bearing_distractor_adds_one_sentence_and_retains_all_evidence() 
     changed_passage = record.example.passages[source_slot]
     assert not source_passage.is_gold
     assert changed_passage.sentences[:-1] == source_passage.sentences
-    assert changed_passage.sentences[-1] == (
-        "Copper Hill has also been associated with Ada Vale."
-    )
+    assert changed_passage.sentences[-1] == ("Copper Hill has also been associated with Ada Vale.")
     assert record.provenance["inserted_sentence"] == changed_passage.sentences[-1]
+    assert record.provenance["selection_mode"] == "answer_free"
+    assert record.provenance["preexisting_answer_mention"] is False
     assert normalize_answer(parent.answer) in normalize_answer(changed_passage.sentences[-1])
     assert [passage.index for passage in record.example.passages if passage.is_gold] == [0, 1]
     assert record.example.supporting_fact_sentence_ids == (
@@ -201,14 +201,37 @@ def test_answer_bearing_distractor_adds_one_sentence_and_retains_all_evidence() 
     assert parent.to_json() == _parent_one().to_json()
 
 
-def test_answer_bearing_distractor_requires_an_answer_free_non_gold_passage() -> None:
+def test_answer_bearing_distractor_marks_saturated_answer_mentions() -> None:
     parent = _parent_one()
-    contaminated = replace(
-        parent.passages[2], sentences=("Ada Vale is already present here.",)
-    )
+    contaminated = replace(parent.passages[2], sentences=("Ada Vale is already present here.",))
     parent = replace(parent, passages=(*parent.passages[:2], contaminated))
 
-    with pytest.raises(DataError, match="answer-free"):
+    record = build_answer_bearing_distractor(
+        parent,
+        source_split="eval",
+        seed=20260810,
+        transform_version="challenge-v1",
+        parent_fingerprint="a" * 64,
+    )
+
+    source_slot = record.provenance["source_slot"]
+    assert record.provenance["selection_mode"] == "salience_only"
+    assert record.provenance["preexisting_answer_mention"] is True
+    assert record.example.passages[source_slot].sentences[:-1] == (
+        "Ada Vale is already present here.",
+    )
+    assert len(record.example.passages[source_slot].sentences) == 2
+
+
+def test_answer_bearing_distractor_requires_a_non_gold_passage() -> None:
+    parent = _parent_one()
+    parent = replace(
+        parent,
+        passages=tuple(replace(passage, is_gold=True) for passage in parent.passages),
+        gold_passage_ids=tuple(passage.passage_id for passage in parent.passages),
+    )
+
+    with pytest.raises(DataError, match="non-gold"):
         build_answer_bearing_distractor(
             parent,
             source_split="eval",
@@ -288,9 +311,7 @@ def test_evidence_swap_uses_a_recorded_surface_preserving_operator(
     assert record.example.supporting_fact_sentence_ids == ()
     assert record.example.gold_passage_ids == ()
     assert not record.example.passages[0].is_gold
-    assert parent.to_json() == _single_support_parent(
-        answer=answer, sentence=sentence
-    ).to_json()
+    assert parent.to_json() == _single_support_parent(answer=answer, sentence=sentence).to_json()
 
 
 def test_evidence_swap_retains_passage_gold_label_when_another_support_remains() -> None:
@@ -371,8 +392,6 @@ def test_collection_is_reorder_stable_and_emits_three_unique_records_per_parent(
             if record.parent_question_id == parent_id
         } == {"missing_hop", "answer_bearing_distractor", "evidence_swap"}
     assert sum(record.expected_answerability == "answerable" for record in records["eval"]) == 2
-    assert sum(
-        record.expected_answerability == "unanswerable" for record in records["eval"]
-    ) == 4
+    assert sum(record.expected_answerability == "unanswerable" for record in records["eval"]) == 4
     assert parents[0].to_json() == _parent_one().to_json()
     assert parents[1].to_json() == _parent_two().to_json()

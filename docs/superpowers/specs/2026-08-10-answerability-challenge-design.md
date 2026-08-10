@@ -129,6 +129,15 @@ is retained. The record is automatically confirmatory-eligible under Gate B3; Ga
 still includes at least 40 such cases in its broader human audit. The exact inserted text
 is stored, so its synthetic style remains visible and can be analyzed separately.
 
+Real-data saturation rule (added after fail-closed generation exposed the condition): if
+every non-gold passage already contains the normalized answer, select deterministically
+from all non-gold passages and apply the same one-sentence-only intervention. Record
+`selection_mode: salience_only` and `preexisting_answer_mention: true`; otherwise record
+`selection_mode: answer_free` and `preexisting_answer_mention: false`. Saturated rows stay
+in the complete three-per-parent artifact but must be excluded from, or separately
+reported in, any primary answer-presence sensitivity estimate. A parent with no non-gold
+passage still fails closed.
+
 ### Evidence swap
 
 1. Select one annotated supporting sentence by seeded order and one non-gold title from

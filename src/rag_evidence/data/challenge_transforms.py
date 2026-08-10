@@ -92,9 +92,7 @@ def _record(
         "parent_fingerprint": parent_fingerprint,
         "example": transformed.to_json(),
     }
-    return ChallengeRecord.from_json(
-        {**payload, "content_hash": record_content_hash(payload)}
-    )
+    return ChallengeRecord.from_json({**payload, "content_hash": record_content_hash(payload)})
 
 
 def build_missing_hop(
@@ -152,9 +150,7 @@ def build_missing_hop(
     transformed_passages = list(parent.passages)
     transformed_passages[replaced_slot] = donor
     remaining_gold = gold_slots - {replaced_slot}
-    remaining_support = {
-        slot for slot in supporting_slots if slot[0] != replaced_slot
-    }
+    remaining_support = {slot for slot in supporting_slots if slot[0] != replaced_slot}
     challenge_id = make_challenge_id(
         parent.question_id,
         source_split,
@@ -204,15 +200,16 @@ def build_answer_bearing_distractor(
 ) -> ChallengeRecord:
     """Append a controlled answer mention to one existing non-gold passage."""
     gold_slots, supporting_slots = _source_slots(parent)
-    candidates = [
-        (index, passage)
-        for index, passage in enumerate(parent.passages)
-        if not passage.is_gold and not _contains_normalized(passage.text, parent.answer)
+    non_gold = [
+        (index, passage) for index, passage in enumerate(parent.passages) if not passage.is_gold
     ]
-    if not candidates:
-        raise DataError(
-            f"no answer-free non-gold passage for parent {parent.question_id}"
-        )
+    if not non_gold:
+        raise DataError(f"no non-gold passage for parent {parent.question_id}")
+    answer_free = [
+        item for item in non_gold if not _contains_normalized(item[1].text, parent.answer)
+    ]
+    candidates = answer_free or non_gold
+    selection_mode = "answer_free" if answer_free else "salience_only"
     source_slot, source_passage = min(
         candidates,
         key=lambda item: _rank(
@@ -222,9 +219,7 @@ def build_answer_bearing_distractor(
             item[1].passage_id,
         ),
     )
-    inserted_sentence = (
-        f"{source_passage.title} has also been associated with {parent.answer}."
-    )
+    inserted_sentence = f"{source_passage.title} has also been associated with {parent.answer}."
     changed_passage = Passage(
         passage_id=source_passage.passage_id,
         index=source_passage.index,
@@ -260,6 +255,8 @@ def build_answer_bearing_distractor(
             "source_slot": source_slot,
             "source_passage_id": source_passage.passage_id,
             "inserted_sentence": inserted_sentence,
+            "selection_mode": selection_mode,
+            "preexisting_answer_mention": not bool(answer_free),
         },
         parent_fingerprint=parent_fingerprint,
         transformed=transformed,
@@ -282,9 +279,7 @@ def _edit_evidence_sentence(
     answer_match = re.search(re.escape(raw_answer), sentence, flags=re.IGNORECASE)
     if answer_match is not None:
         edited = (
-            sentence[: answer_match.start()]
-            + replacement_entity
-            + sentence[answer_match.end() :]
+            sentence[: answer_match.start()] + replacement_entity + sentence[answer_match.end() :]
         )
         return edited, "answer_substitution"
 
@@ -293,9 +288,7 @@ def _edit_evidence_sentence(
         auxiliary = auxiliary_match.group(1)
         replacement = auxiliary if auxiliary_match.group("negation") else auxiliary + " not"
         edited = (
-            sentence[: auxiliary_match.start()]
-            + replacement
-            + sentence[auxiliary_match.end() :]
+            sentence[: auxiliary_match.start()] + replacement + sentence[auxiliary_match.end() :]
         )
         return edited, "negation_toggle"
     return "It is not true that " + sentence, "negation_prefix"
@@ -319,9 +312,7 @@ def build_evidence_swap(
         and normalize_answer(passage.title) != normalize_answer(parent.answer)
     ]
     if not replacement_candidates:
-        raise DataError(
-            f"no non-gold replacement entity for parent {parent.question_id}"
-        )
+        raise DataError(f"no non-gold replacement entity for parent {parent.question_id}")
     replacement_source = min(
         replacement_candidates,
         key=lambda passage: _rank(
@@ -419,9 +410,7 @@ def build_challenge_records(
     """Build three deterministic challenge records for every supplied parent."""
     output: dict[str, tuple[ChallengeRecord, ...]] = {}
     for source_split in sorted(parents_by_split):
-        parents = tuple(
-            sorted(parents_by_split[source_split], key=lambda row: row.question_id)
-        )
+        parents = tuple(sorted(parents_by_split[source_split], key=lambda row: row.question_id))
         if len({parent.question_id for parent in parents}) != len(parents):
             raise DataError(f"duplicate challenge parent in split {source_split}")
         records: list[ChallengeRecord] = []
@@ -458,7 +447,5 @@ def build_challenge_records(
                     ),
                 )
             )
-        output[source_split] = tuple(
-            sorted(records, key=lambda record: record.challenge_id)
-        )
+        output[source_split] = tuple(sorted(records, key=lambda record: record.challenge_id))
     return output
