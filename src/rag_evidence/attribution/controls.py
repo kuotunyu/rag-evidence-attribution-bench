@@ -15,9 +15,11 @@ from collections.abc import Mapping, Sequence
 from typing import Any, ClassVar
 
 from rag_evidence.attribution.base import AttributionMethod, AttributionResult, ModelResources
+from rag_evidence.attribution.query import QueryConvention, compose_query
 from rag_evidence.attribution.registry import register
 from rag_evidence.data.schema import Passage
 from rag_evidence.errors import UpstreamMissingError
+from rag_evidence.metrics.text import normalize_answer
 from rag_evidence.retrieval.base import tokenize
 from rag_evidence.telemetry import derive_seed
 
@@ -113,6 +115,65 @@ class _Control(AttributionMethod):
 
 
 @register
+class OracleGoldAttribution(_Control):
+    """Positive control: rank annotated supporting passages first."""
+
+    name = "oracle_gold"
+
+    def attribute(
+        self,
+        question: str,
+        passages: Sequence[Passage],
+        target_answer: str,
+        model: ModelResources | None,
+        method_config: Mapping[str, Any],
+    ) -> AttributionResult:
+        return AttributionResult(
+            raw_scores={p.passage_id: float(p.is_gold) for p in passages},
+            metadata={"control_role": "positive_control"},
+        )
+
+
+def _contains_contiguous_tokens(haystack: Sequence[str], needle: Sequence[str]) -> bool:
+    if not needle or len(needle) > len(haystack):
+        return False
+    width = len(needle)
+    return any(
+        list(haystack[start : start + width]) == list(needle)
+        for start in range(len(haystack) - width + 1)
+    )
+
+
+@register
+class AnswerStringControl(_Control):
+    """Lexical negative control: rank passages containing the normalized answer."""
+
+    name = "control_answer_string"
+
+    def attribute(
+        self,
+        question: str,
+        passages: Sequence[Passage],
+        target_answer: str,
+        model: ModelResources | None,
+        method_config: Mapping[str, Any],
+    ) -> AttributionResult:
+        answer_tokens = normalize_answer(target_answer).split()
+        raw = {
+            p.passage_id: float(
+                _contains_contiguous_tokens(
+                    normalize_answer(f"{p.title} {p.text}").split(), answer_tokens
+                )
+            )
+            for p in passages
+        }
+        return AttributionResult(
+            raw_scores=raw,
+            metadata={"control_role": "lexical_negative_control"},
+        )
+
+
+@register
 class RandomControl(_Control):
     name = "control_random"
 
@@ -155,12 +216,11 @@ class RetrievalRankControl(_Control):
         )
 
 
-@register
-class LexicalOverlapControl(_Control):
+class _LexicalOverlapByQuery(_Control):
     """Token overlap between (question + answer) and the passage — same query-text
     convention as the embedding method, making the pair a lexical-vs-dense ablation."""
 
-    name = "control_lexical"
+    convention: ClassVar[QueryConvention]
 
     def attribute(
         self,
@@ -170,12 +230,42 @@ class LexicalOverlapControl(_Control):
         model: ModelResources | None,
         method_config: Mapping[str, Any],
     ) -> AttributionResult:
-        query_tokens = {t for t in tokenize(f"{question} {target_answer}") if t not in _STOPWORDS}
+        query = compose_query(question, target_answer, self.convention)
+        query_tokens = {t for t in tokenize(query) if t not in _STOPWORDS}
         raw: dict[str, float] = {}
         for p in passages:
             p_tokens = {t for t in tokenize(f"{p.title} {p.text}") if t not in _STOPWORDS}
             raw[p.passage_id] = len(query_tokens & p_tokens) / max(1, len(query_tokens))
-        return AttributionResult(raw_scores=raw)
+        return AttributionResult(
+            raw_scores=raw,
+            metadata={"query_text_convention": self.convention},
+        )
+
+
+@register
+class LexicalQuestionControl(_LexicalOverlapByQuery):
+    name = "control_lexical_question"
+    convention = "question"
+
+
+@register
+class LexicalAnswerControl(_LexicalOverlapByQuery):
+    name = "control_lexical_answer"
+    convention = "answer"
+
+
+@register
+class LexicalQuestionAnswerControl(_LexicalOverlapByQuery):
+    name = "control_lexical_question_answer"
+    convention = "question_answer"
+
+
+@register
+class LexicalOverlapControl(_LexicalOverlapByQuery):
+    """Schema-v1 compatibility alias for `control_lexical_question_answer`."""
+
+    name = "control_lexical"
+    convention = "question_answer"
 
 
 @register

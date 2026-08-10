@@ -333,6 +333,7 @@ def _run_one_mode(
         limit=limit,
         sci_extra={
             "method": method,
+            "is_control": method_obj.is_control,
             "mode": mode,
             "run_namespace": cfg.attribution.run_namespace,
             "generation_run": generation_run_name(cfg),

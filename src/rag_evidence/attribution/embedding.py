@@ -1,25 +1,19 @@
-"""Embedding-relevance attribution: cosine(query, passage) with Qwen3-Embedding.
-
-Query text is `"{question} {answer}"`: answer-only degenerates on HotpotQA's many
-yes/no and 1-3 token answers (embedding "yes" carries no evidence signal). The
-question-only ablation is visible in the same tables via the retrieval-rank control,
-so the answer's marginal contribution stays measurable.
-"""
+"""Embedding-relevance attribution under explicit query-source conventions."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any
+from typing import Any, ClassVar
 
 from rag_evidence.attribution.base import AttributionMethod, AttributionResult, ModelResources
+from rag_evidence.attribution.query import QueryConvention, compose_query
 from rag_evidence.attribution.registry import register
 from rag_evidence.data.schema import Passage
 from rag_evidence.errors import UpstreamMissingError
 
 
-@register
-class EmbeddingAttribution(AttributionMethod):
-    name = "embedding"
+class _EmbeddingByQuery(AttributionMethod):
+    convention: ClassVar[QueryConvention]
     requires_embedder = True
 
     def attribute(
@@ -34,7 +28,7 @@ class EmbeddingAttribution(AttributionMethod):
             raise UpstreamMissingError("embedding method needs an embedder")
         from rag_evidence.retrieval.dense import passage_embed_text
 
-        query = f"{question.strip()} {target_answer.strip()}".strip()
+        query = compose_query(question, target_answer, self.convention)
         texts = [passage_embed_text(p.title, p.text) for p in passages]
         keys = [p.passage_id for p in passages]
         if model.embedding_cache is not None:
@@ -48,6 +42,32 @@ class EmbeddingAttribution(AttributionMethod):
         raw = {pid: float(s) for pid, s in zip(keys, sims, strict=True)}
         return AttributionResult(
             raw_scores=raw,
-            metadata={"query_text_convention": "question + ' ' + answer"},
+            metadata={"query_text_convention": self.convention},
             num_model_calls=0,
         )
+
+
+@register
+class EmbeddingQuestion(_EmbeddingByQuery):
+    name = "embedding_question"
+    convention = "question"
+
+
+@register
+class EmbeddingAnswer(_EmbeddingByQuery):
+    name = "embedding_answer"
+    convention = "answer"
+
+
+@register
+class EmbeddingQuestionAnswer(_EmbeddingByQuery):
+    name = "embedding_question_answer"
+    convention = "question_answer"
+
+
+@register
+class EmbeddingAttribution(_EmbeddingByQuery):
+    """Schema-v1 compatibility alias for `embedding_question_answer`."""
+
+    name = "embedding"
+    convention = "question_answer"

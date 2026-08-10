@@ -16,10 +16,18 @@ from rag_evidence.storage.artifacts import read_json, read_records
 METHODS_ALL_MODES = [
     "leave_one_out",
     "embedding",
+    "embedding_question",
+    "embedding_answer",
+    "embedding_question_answer",
     "control_random",
     "control_retrieval",
     "control_lexical",
+    "control_lexical_question",
+    "control_lexical_answer",
+    "control_lexical_question_answer",
     "control_length",
+    "oracle_gold",
+    "control_answer_string",
     "control_shuffled",  # must run after leave_one_out (its source)
 ]
 
@@ -124,3 +132,12 @@ def test_execution_kind_is_mock_with_fake_backend(attributed_env: AppConfig) -> 
         / "run_meta.json"
     )
     assert meta["execution_kind"] == "mock"
+
+
+def test_run_metadata_preserves_method_control_role(attributed_env: AppConfig) -> None:
+    base = Path(attributed_env.paths.results_raw) / attributed_env.split / "attribute" / "gold"
+    oracle = read_json(base / "oracle_gold" / "run_meta.json")
+    embedding = read_json(base / "embedding" / "run_meta.json")
+
+    assert oracle["config_scientific"]["is_control"] is True
+    assert embedding["config_scientific"]["is_control"] is False
