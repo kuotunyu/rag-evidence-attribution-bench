@@ -1,6 +1,6 @@
 # Flagship Validity Promotion Design
 
-**Status:** approved in principle on 2026-08-10; written review gate pending
+**Status:** approved for implementation on 2026-08-10
 
 **Target release:** `1.0.0` only after every acceptance gate below passes
 
@@ -56,7 +56,11 @@ from earlier gates but may not silently alter them.
 
 ### Gate A: Metric, statistics, and report hardening
 
-Gate A requires no new model run and re-derives improved reports from committed raw data.
+Gate A requires no new real-model run. It re-derives improved reports from committed raw
+data, implements construct-validation machinery, and proves its intervention logic with
+the deterministic FakeLM. Historical cells without the required oracle and lexical
+negative-control runs are labeled `not_run` and remain unvalidated until Gate C executes
+the new model/dataset matrix.
 
 #### A1. Summary schema v2
 
@@ -133,6 +137,10 @@ lower sufficiency loss and higher comprehensiveness. Synthetic counterfactual fi
 pass exactly. Failed construct checks do not invalidate evidence-agreement metrics, but
 they prohibit describing that cell's sufficiency/comprehensiveness results as causal or
 faithfulness evidence.
+
+Gate A delivers this evaluator and the exact synthetic checks. Gate C supplies and validates
+the real `oracle_gold`, `control_random`, and `control_answer_string` artifacts for every
+generator/dataset cell before confirmatory causal claims are enabled.
 
 #### A4. Query-source ablations
 
