@@ -210,6 +210,7 @@
 - Adds: `DataConfig.manifest_schema_version: Literal[1, 2] = 1`.
 - Adds: `verify_resolved_dataset_revision(repo_id, requested_revision) -> str` at the data-loading boundary.
 - Historical configs remain schema 1; v2 configs use the pinned revision and versioned paths.
+- Transfer bundles retain configured v2 roots and filenames; v2 artifacts cannot be imported into historical `results/raw`, `results/derived`, or the v1 manifest path.
 
 - [ ] **Step 1: Write failing configuration tests**
 
@@ -233,7 +234,7 @@
 
 - [ ] **Step 5: Implement the pinned preparation path**
 
-  Resolve the dataset revision via `huggingface_hub.HfApi.dataset_info`; reject any resolved SHA unequal to the requested SHA. Dispatch to `build_manifest_v2` only for schema 2. Change transfer bundle paths to preserve the configured manifest filename instead of renaming v2 to the v1 filename.
+  Resolve the dataset revision via `huggingface_hub.HfApi.dataset_info`; reject any resolved SHA unequal to the requested SHA. Dispatch to `build_manifest_v2` only for schema 2. Change transfer bundle paths to preserve configured result roots and the manifest filename instead of mapping v2 artifacts onto v1 paths.
 
 - [ ] **Step 6: Verify GREEN and historical isolation**
 

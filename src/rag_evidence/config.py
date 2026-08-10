@@ -43,6 +43,7 @@ class DataConfig(_StrictModel):
     hf_config: str = "distractor"
     hf_split: str = "validation"
     hf_revision: str | None = None
+    manifest_schema_version: Literal[1, 2] = 1
     manifest_path: str = "data/manifests/split_manifest.json"
     prepared_dir: str = "data/prepared"
     split_seed: int = 20260718
@@ -58,6 +59,18 @@ class DataConfig(_StrictModel):
         if any(n <= 0 for n in v.values()):
             raise ValueError("split sizes must be positive")
         return v
+
+    @model_validator(mode="after")
+    def _v2_requires_pinned_revision(self) -> DataConfig:
+        if self.manifest_schema_version == 2 and (
+            self.hf_revision is None
+            or re.fullmatch(r"[0-9a-f]{40}", self.hf_revision) is None
+        ):
+            raise ValueError(
+                "manifest schema v2 requires hf_revision to be an exact 40-character "
+                "git commit hash"
+            )
+        return self
 
 
 class PathsConfig(_StrictModel):

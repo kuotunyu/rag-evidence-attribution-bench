@@ -91,6 +91,7 @@ def test_reranking_configs_preserve_original_scientific_settings(
 
 def test_minimal_config_defaults(tmp_path: Path) -> None:
     cfg = load_config(_write(tmp_path, MINIMAL))
+    assert cfg.data.manifest_schema_version == 1
     assert cfg.generation.model_id == "Qwen/Qwen3-4B-Instruct-2507"
     assert cfg.attribution.modes == ("gold", "generated")
     assert cfg.evaluation.bootstrap_resamples == 10_000
@@ -114,6 +115,38 @@ def test_v1_configs_read_historical_raw_and_write_versioned_derived(
     assert cfg.evaluation.bootstrap_tolerance == 0.0
     assert cfg.evaluation.confirmatory_method == "leave_one_out"
     assert cfg.evaluation.primary_comparator == "control_lexical"
+
+
+@pytest.mark.parametrize("name", ["smoke.yaml", "dev.yaml", "eval.yaml"])
+def test_v2_configs_pin_source_and_isolate_all_artifacts(repo_root: Path, name: str) -> None:
+    cfg = load_config(repo_root / "configs" / "v2" / name)
+
+    assert cfg.data.manifest_schema_version == 2
+    assert cfg.data.hf_revision == "1908d6afbbead072334abe2965f91bd2709910ab"
+    assert cfg.data.manifest_path == "data/manifests/split_manifest_v2.json"
+    assert cfg.data.prepared_dir == "data/v2/prepared"
+    assert cfg.paths.results_raw == "results/v2/raw"
+    assert cfg.paths.results_derived == "results/v2/derived"
+    assert cfg.paths.assets_dir == "results/v2/assets"
+
+
+@pytest.mark.parametrize(
+    "revision",
+    [None, "main", "1908d6afbbead072334abe2965f91bd2709910a!"],
+)
+def test_manifest_v2_requires_an_exact_commit_revision(
+    tmp_path: Path, revision: str | None
+) -> None:
+    revision_line = "null" if revision is None else revision
+    text = (
+        MINIMAL
+        + "\ndata:\n"
+        + "  manifest_schema_version: 2\n"
+        + f"  hf_revision: {revision_line}\n"
+    )
+
+    with pytest.raises(ConfigError, match=r"revision|40-character"):
+        load_config(_write(tmp_path, text))
 
 
 @pytest.mark.parametrize(

@@ -35,24 +35,38 @@ def _sha256_file(path: Path) -> str:
 
 def _collect_files(cfg: AppConfig) -> list[tuple[Path, str]]:
     """(file, canonical arcname) pairs. Arcnames are ALWAYS the repo-relative form
-    (results/raw/<split>/…, results/derived/…, data/manifests/…) even when the live
+    configured in YAML (for example results/v2/raw/<split>/…) even when the live
     results dirs are absolute (Colab writes checkpoints to a Drive mount via
     RAG_EVIDENCE_RESULTS_* env overrides) — import always lands in the repo layout."""
+    def canonical_root(configured: str, *, fallback: str) -> str:
+        path = Path(configured)
+        if not path.is_absolute():
+            return path.as_posix()
+        parts = list(path.parts)
+        result_indices = [index for index, part in enumerate(parts) if part == "results"]
+        if result_indices:
+            return "/".join(parts[result_indices[-1] :])
+        return fallback
+
     pairs: list[tuple[Path, str]] = []
+    raw_arc_root = canonical_root(cfg.paths.results_raw, fallback="results/raw")
+    derived_arc_root = canonical_root(
+        cfg.paths.results_derived, fallback="results/derived"
+    )
     raw_split = cfg.results_raw_dir / cfg.split
     if not raw_split.exists():
         raise ArtifactError(f"nothing to export: {raw_split} does not exist")
     for f in raw_split.rglob("*"):
         if f.is_file():
             rel = f.relative_to(raw_split).as_posix()
-            pairs.append((f, f"results/raw/{cfg.split}/{rel}"))
+            pairs.append((f, f"{raw_arc_root}/{cfg.split}/{rel}"))
     if cfg.results_derived_dir.exists():
         for f in cfg.results_derived_dir.rglob("*"):
             if f.is_file():
                 rel = f.relative_to(cfg.results_derived_dir).as_posix()
-                pairs.append((f, f"results/derived/{rel}"))
+                pairs.append((f, f"{derived_arc_root}/{rel}"))
     if cfg.manifest_file.exists():
-        pairs.append((cfg.manifest_file, "data/manifests/split_manifest.json"))
+        pairs.append((cfg.manifest_file, Path(cfg.data.manifest_path).as_posix()))
     return pairs
 
 

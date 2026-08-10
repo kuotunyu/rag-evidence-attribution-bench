@@ -11,6 +11,7 @@ from rag_evidence.config import AppConfig
 from rag_evidence.errors import ArtifactError
 from rag_evidence.generation.run import run_generation_stage
 from rag_evidence.retrieval.run import run_retrieval_stage
+from rag_evidence.storage.artifacts import write_json_atomic
 from rag_evidence.storage.transfer import export_results, import_results
 
 
@@ -35,6 +36,40 @@ def test_export_creates_manifest_with_canonical_paths(exported_env: tuple[AppCon
             for n in payload_names
         )
         assert "results/raw/smoke/generate/fake/records.jsonl" in names
+
+
+def test_v2_export_preserves_versioned_canonical_paths(
+    tiny_env: AppConfig, tmp_path: Path
+) -> None:
+    data = tiny_env.data.model_copy(
+        update={
+            "manifest_schema_version": 2,
+            "hf_revision": "1908d6afbbead072334abe2965f91bd2709910ab",
+            "manifest_path": "data/manifests/split_manifest_v2.json",
+            "prepared_dir": "data/v2/prepared",
+        }
+    )
+    paths = tiny_env.paths.model_copy(
+        update={
+            "results_raw": "results/v2/raw",
+            "results_derived": "results/v2/derived",
+            "assets_dir": "results/v2/assets",
+        }
+    )
+    cfg = tiny_env.model_copy(update={"data": data, "paths": paths})
+    sample = cfg.results_raw_dir / cfg.split / "samples" / "records.jsonl"
+    sample.parent.mkdir(parents=True)
+    sample.write_text('{"question_id":"q"}\n', encoding="utf-8")
+    write_json_atomic(cfg.manifest_file, {"schema_version": 2})
+    out = tmp_path / "v2.zip"
+
+    export_results(cfg, out=out)
+
+    with zipfile.ZipFile(out) as zf:
+        names = set(zf.namelist())
+    assert "results/v2/raw/smoke/samples/records.jsonl" in names
+    assert "data/manifests/split_manifest_v2.json" in names
+    assert not any(name.startswith("results/raw/") for name in names)
 
 
 def test_roundtrip_into_fresh_tree(

@@ -14,6 +14,7 @@ from typing import Any
 
 from rag_evidence.config import AppConfig
 from rag_evidence.data import ids
+from rag_evidence.data.manifest_v2 import build_manifest_v2, validate_manifest_v2
 from rag_evidence.data.schema import Example, Passage
 from rag_evidence.data.splits import (
     build_manifest,
@@ -26,6 +27,29 @@ from rag_evidence.errors import DataError
 from rag_evidence.storage.artifacts import append_record
 
 logger = logging.getLogger(__name__)
+
+
+def verify_resolved_dataset_revision(repo_id: str, requested_revision: str) -> str:
+    """Resolve a pinned Hub revision and reject any server-side mismatch."""
+    try:
+        from huggingface_hub import HfApi
+    except ImportError as exc:
+        raise DataError(
+            "the `huggingface-hub` package is required for manifest schema v2"
+        ) from exc
+
+    try:
+        info = HfApi().dataset_info(repo_id=repo_id, revision=requested_revision)
+    except Exception as exc:
+        raise DataError(f"failed to resolve dataset revision for {repo_id}: {exc}") from exc
+
+    resolved_revision = str(info.sha)
+    if resolved_revision != requested_revision:
+        raise DataError(
+            f"dataset revision mismatch for {repo_id}: "
+            f"requested {requested_revision}, resolved {resolved_revision}"
+        )
+    return resolved_revision
 
 
 def normalize_hf_example(row: dict[str, Any]) -> dict[str, Any]:
@@ -190,6 +214,12 @@ def load_prepared_verified(cfg: AppConfig) -> list[Example]:
 
 def prepare_data(cfg: AppConfig) -> None:
     """The `data prepare` stage. Idempotent; never regenerates an existing manifest."""
+    resolved_revision = cfg.data.hf_revision
+    if cfg.data.manifest_schema_version == 2:
+        assert cfg.data.hf_revision is not None  # enforced by DataConfig validation
+        resolved_revision = verify_resolved_dataset_revision(
+            cfg.data.hf_path, cfg.data.hf_revision
+        )
     raw_examples = load_raw_examples(cfg)
     raw_by_qid = {r["question_id"]: r for r in raw_examples}
 
@@ -199,20 +229,48 @@ def prepare_data(cfg: AppConfig) -> None:
         check_manifest_matches_config(
             manifest, seed=cfg.data.split_seed, sizes=dict(cfg.data.split_sizes)
         )
+        if cfg.data.manifest_schema_version != manifest["schema_version"]:
+            raise DataError(
+                f"config requests manifest schema {cfg.data.manifest_schema_version}, "
+                f"but {manifest_path} is schema {manifest['schema_version']}"
+            )
+        if manifest["schema_version"] == 2:
+            if manifest["dataset"]["requested_revision"] != cfg.data.hf_revision:
+                raise DataError("manifest v2 requested revision does not match config")
+            if manifest["dataset"]["resolved_revision"] != resolved_revision:
+                raise DataError("manifest v2 resolved revision does not match current source")
+            validate_manifest_v2(manifest, raw_examples)
         logger.info("using existing committed manifest %s", manifest_path)
     else:
-        manifest = build_manifest(
-            raw_examples,
-            seed=cfg.data.split_seed,
-            sizes=dict(cfg.data.split_sizes),
-            dataset_info={
-                "hf_path": cfg.data.hf_path,
-                "hf_config": cfg.data.hf_config,
-                "hf_split": cfg.data.hf_split,
-                "hf_revision": cfg.data.hf_revision,
-            },
-            created_utc=_dt.datetime.now(_dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        )
+        if cfg.data.manifest_schema_version == 2:
+            assert cfg.data.hf_revision is not None
+            assert resolved_revision is not None
+            manifest = build_manifest_v2(
+                raw_examples,
+                seed=cfg.data.split_seed,
+                requested_sizes=dict(cfg.data.split_sizes),
+                dataset_info={
+                    "hf_path": cfg.data.hf_path,
+                    "hf_config": cfg.data.hf_config,
+                    "hf_split": cfg.data.hf_split,
+                    "requested_revision": cfg.data.hf_revision,
+                    "resolved_revision": resolved_revision,
+                },
+            )
+            validate_manifest_v2(manifest, raw_examples)
+        else:
+            manifest = build_manifest(
+                raw_examples,
+                seed=cfg.data.split_seed,
+                sizes=dict(cfg.data.split_sizes),
+                dataset_info={
+                    "hf_path": cfg.data.hf_path,
+                    "hf_config": cfg.data.hf_config,
+                    "hf_split": cfg.data.hf_split,
+                    "hf_revision": cfg.data.hf_revision,
+                },
+                created_utc=_dt.datetime.now(_dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            )
         save_manifest(manifest_path, manifest)
         logger.info("wrote new split manifest %s — COMMIT THIS FILE", manifest_path)
 
