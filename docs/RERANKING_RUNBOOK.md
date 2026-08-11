@@ -55,7 +55,8 @@ Get-CimInstance Win32_Process |
 
 If SafeSynth or another declared owner is running, stop here. Do not kill, pause, or
 modify that process. This repository's Windows lock installs CPU-only torch by default;
-follow [TRANSFER.md](../TRANSFER.md) to opt into CUDA only after the GPU is free.
+use Colab unless a compatible CUDA wheel has been installed explicitly and both
+`torch.cuda.is_available()` and the reported device name have been verified.
 
 ## 3. Dev retrieval
 

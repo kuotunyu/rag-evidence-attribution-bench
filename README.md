@@ -3,10 +3,15 @@
 [![CI](https://github.com/kuotunyu/rag-evidence-attribution-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/kuotunyu/rag-evidence-attribution-bench/actions/workflows/ci.yml)
 ![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 [![Code license: MIT](https://img.shields.io/badge/Code%20license-MIT-yellow.svg)](LICENSE)
+[![Release](https://img.shields.io/badge/release-v0.1.0-blue.svg)](https://github.com/kuotunyu/rag-evidence-attribution-bench/releases/tag/v0.1.0)
 
 本專案是 **HotpotQA (distractor) 封閉候選脈絡歸因**的可重現 benchmark，比較 **Qwen3-4B-Instruct** 回答的 supporting-passage agreement、teacher-forced 依賴性診斷、Latency 與 Peak VRAM。目前證據不足以聲稱已測得 open-corpus evidence faithfulness 或因果歸因；SHA-256 用於變更偵測與可追溯重建，不會阻止具寫入權限者修改 repository。
 
 > English version: [README_en.md](README_en.md)
+
+`v0.1.0` 是已封存的歷史基線；`main` 上的 Dataset v2 與 Answerability Challenge
+仍屬尚未發布的 validity extension。只有通過既定研究與 release gates 後，才會升級為
+`v1.0.0`，目前不應把 candidate set 解讀為完成的 confirmatory benchmark。
 
 ---
 
@@ -760,6 +765,10 @@ docker compose up
 2. 上傳至 [notebooks/01_colab_run.ipynb](notebooks/01_colab_run.ipynb) 進行 A100 推理。
 3. 匯入結果至本機：`python -m rag_evidence.cli import-results <zip> --config <cfg>` 並執行 `evaluate` 與 `report`。
 
+Windows lock 預設使用 CPU 版 PyTorch。若要改在本機 CUDA 執行，必須自行安裝與目前
+專案版本相容的 CUDA wheel，並先以 `torch.cuda.is_available()` 與裝置名稱驗證；未驗證前
+請使用上述 Colab 路徑。不要在其他專案占用 RTX 4090 時啟動 GPU 階段。
+
 ---
 
 ## 命令列工具規格
@@ -783,4 +792,3 @@ python -m rag_evidence.cli import-results <zip> --config <cfg>
 - [DATA_CARD.md](DATA_CARD.md) — 資料集說明、Splits 拆分、SHA-256 簽章與授權
 - [MODEL_CARD.md](MODEL_CARD.md) — 模型規格、Decoding 政策與歸因演算法定義
 - [FAILURES.md](FAILURES.md) — 實測異常現象與 Fallback 分析
-- [TRANSFER.md](TRANSFER.md) — 硬體移機與 CUDA Opt-in 步驟

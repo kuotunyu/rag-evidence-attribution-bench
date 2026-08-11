@@ -1,5 +1,9 @@
 # rag-evidence-attribution-bench
 
+[![CI](https://github.com/kuotunyu/rag-evidence-attribution-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/kuotunyu/rag-evidence-attribution-bench/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/badge/release-v0.1.0-blue.svg)](https://github.com/kuotunyu/rag-evidence-attribution-bench/releases/tag/v0.1.0)
+[![Code license: MIT](https://img.shields.io/badge/Code%20license-MIT-yellow.svg)](LICENSE)
+
 Which context passages does a RAG answer *actually* depend on?
 
 A reproducible benchmark of **closed-candidate context attribution** on **HotpotQA
@@ -8,6 +12,11 @@ annotated supporting passages, teacher-forced dependency diagnostics, latency, a
 VRAM. It does **not** yet establish open-corpus evidence faithfulness or causal attribution.
 
 > 正體中文主版：[README.md](README.md)
+
+`v0.1.0` is the archived historical baseline. Dataset v2 and Answerability Challenge on
+`main` are unreleased validity extensions; they remain candidate material, not a completed
+confirmatory benchmark. Promotion to `v1.0.0` requires all documented research and release
+gates to pass.
 
 ## What's in the benchmark
 
@@ -776,9 +785,10 @@ everything downstream is CPU arithmetic:
    `python -m rag_evidence.cli import-results <zip> --config <cfg>` → `evaluate` →
    `report` regenerates every table in this README from the raw records.
 
-**Running the GPU stages locally instead of on Colab** (e.g. on a CUDA workstation):
-see [TRANSFER.md](TRANSFER.md) — the committed lock deliberately pins Windows torch to
-the **CPU** build, so a CUDA machine needs one documented opt-in step.
+The Windows lock deliberately selects a CPU PyTorch build. A local CUDA run therefore
+requires an explicitly installed CUDA wheel compatible with the project constraints and a
+successful `torch.cuda.is_available()` plus device-name check. Until that is verified, use
+the Colab path above. Do not start GPU stages while another project owns the RTX 4090.
 
 ## CLI
 
@@ -818,8 +828,6 @@ tests/                synthetic fixtures + deterministic FakeLM, fully offline
 - [DATA_CARD.md](DATA_CARD.md) — dataset, splits, fingerprinting, licensing
 - [MODEL_CARD.md](MODEL_CARD.md) — models, decoding, method inventory, determinism policy
 - [FAILURES.md](FAILURES.md) — observed failures and fallbacks (no speculation)
-- [TRANSFER.md](TRANSFER.md) — setting the repo up on another machine, incl. CUDA opt-in
-- [PROGRESS.md](PROGRESS.md) — milestone status, acceptance checklist, session log
 
 ## License
 
