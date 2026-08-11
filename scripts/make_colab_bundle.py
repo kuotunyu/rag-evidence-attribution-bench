@@ -1,8 +1,8 @@
 """Build reab_bundle.zip for Colab: all git-tracked files + the prepared data splits.
 
-The bundle exists because the repo has no GitHub remote yet — the user uploads ONE zip
-to Drive (MyDrive/reab/reab_bundle.zip). Shipping the prepared splits means Colab never
-downloads the HotpotQA dataset (fingerprints still verified at every stage start).
+The bundle packages the tracked source plus prepared splits for one-file upload to Colab.
+Shipping the prepared splits means Colab never downloads the HotpotQA dataset
+(fingerprints are still verified at every stage start).
 
 Usage: uv run python scripts/make_colab_bundle.py [output_zip]
 """
