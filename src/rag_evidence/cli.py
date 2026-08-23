@@ -439,15 +439,14 @@ def annotation_adjudicate(
     port: Annotated[int, typer.Option("--port", min=1, max=65535)] = 8002,
 ) -> None:
     """Serve the coordinator-only third-human disagreement console."""
-    import uvicorn
+    from rag_evidence.annotation.runtime import serve_adjudication
+    from rag_evidence.errors import RagEvidenceError
 
-    from rag_evidence.annotation.app import create_adjudication_app
-
-    uvicorn.run(
-        create_adjudication_app(manifest, effective, state),
-        host=host,
-        port=port,
-    )
+    try:
+        serve_adjudication(manifest, effective, state, host=host, port=port)
+    except RagEvidenceError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
 
 
 @annotation_app.command("finalize-pilot")
@@ -627,11 +626,14 @@ def annotation_serve(
     port: Annotated[int, typer.Option("--port", min=1, max=65535)] = 8001,
 ) -> None:
     """Serve one annotator package locally; state remains outside the clean package."""
-    import uvicorn
+    from rag_evidence.annotation.runtime import serve_annotation
+    from rag_evidence.errors import RagEvidenceError
 
-    from rag_evidence.annotation.app import create_annotation_app
-
-    uvicorn.run(create_annotation_app(package, state), host=host, port=port)
+    try:
+        serve_annotation(package, state, host=host, port=port)
+    except RagEvidenceError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
 
 
 @app.command()

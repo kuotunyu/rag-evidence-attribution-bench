@@ -46,7 +46,7 @@ $PrivateRoot = Join-Path $env:LOCALAPPDATA "reab-pilot-private"
 $VenvRoot = Join-Path $PrivateRoot "venv"
 $StateRoot = Join-Path $PrivateRoot "state"
 $ReturnRoot = Join-Path $PrivateRoot "return"
-$null = New-Item -ItemType Directory -Force -Path $PrivateRoot, $StateRoot, $ReturnRoot
+$null = New-Item -ItemType Directory -Force -Path $PrivateRoot
 py -3.11 -m venv $VenvRoot
 $Python = Join-Path $VenvRoot "Scripts/python.exe"
 $Wheels = @(Get-ChildItem -LiteralPath $KitRoot -Filter *.whl -File)
@@ -68,6 +68,7 @@ After all tasks are submitted, keep the server running and export both streams i
 PowerShell window:
 
 ```powershell
+$null = New-Item -ItemType Directory -Force -Path $ReturnRoot
 Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:8001/api/export/submissions.jsonl" -OutFile (Join-Path $ReturnRoot "submissions.jsonl")
 Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:8001/api/export/amendments.jsonl" -OutFile (Join-Path $ReturnRoot "amendments.jsonl")
 Get-ChildItem -LiteralPath $ReturnRoot -File | Where-Object Name -ne "SHA256SUMS" | Sort-Object Name | ForEach-Object {
@@ -96,7 +97,7 @@ PRIVATE_ROOT=${XDG_STATE_HOME:-"$HOME/.local/state"}/reab-pilot-private
 VENV_ROOT=$PRIVATE_ROOT/venv
 STATE_ROOT=$PRIVATE_ROOT/state
 RETURN_ROOT=$PRIVATE_ROOT/return
-mkdir -p -- "$PRIVATE_ROOT" "$STATE_ROOT" "$RETURN_ROOT"
+mkdir -p -- "$PRIVATE_ROOT"
 python3.11 -m venv "$VENV_ROOT"
 PYTHON=$VENV_ROOT/bin/python
 set -- "$KIT_ROOT"/*.whl
@@ -118,6 +119,7 @@ chmod u+x "$KIT_ROOT/start.sh"
 After all tasks are submitted, keep the server running and export in a second shell:
 
 ```sh
+mkdir -p -- "$RETURN_ROOT"
 curl --fail --silent --show-error "http://127.0.0.1:8001/api/export/submissions.jsonl" --output "$RETURN_ROOT/submissions.jsonl"
 curl --fail --silent --show-error "http://127.0.0.1:8001/api/export/amendments.jsonl" --output "$RETURN_ROOT/amendments.jsonl"
 (cd "$RETURN_ROOT" && sha256sum submissions.jsonl amendments.jsonl > SHA256SUMS)
