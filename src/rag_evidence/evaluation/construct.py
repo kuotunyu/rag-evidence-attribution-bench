@@ -1,10 +1,11 @@
-"""Construct checks for causal-dependence diagnostics."""
+"""Fail-closed construct checks for target-dependence diagnostics."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping
 from typing import Any
 
+from rag_evidence.evaluation.schema import ConstructValidationSummary
 from rag_evidence.evaluation.statistics import Direction, paired_bootstrap_difference
 
 _ORACLE = "oracle_gold"
@@ -21,6 +22,7 @@ def _metric_values(rows: Mapping[str, Mapping[str, Any]], metric: str) -> dict[s
 def evaluate_construct_validation(
     per_sample_by_method: Mapping[str, Mapping[str, Mapping[str, Any]]],
     *,
+    method_status: Mapping[str, Mapping[str, Any]] | None = None,
     split: str,
     mode: str,
     global_seed: int,
@@ -32,11 +34,30 @@ def evaluate_construct_validation(
     required = {_ORACLE, *_NEGATIVE_CONTROLS}
     missing = sorted(required - set(per_sample_by_method))
     if missing:
-        return {
-            "status": "not_run",
-            "missing_methods": missing,
-            "comparisons": {},
-        }
+        return ConstructValidationSummary(
+            status="not_run",
+            missing_methods=tuple(missing),
+            invalid_methods={},
+            comparisons={},
+        ).model_dump(mode="json")
+
+    invalid: dict[str, str] = {}
+    for method in sorted(required):
+        artifact_status = (method_status or {}).get(method, {})
+        if bool(artifact_status.get("partial")):
+            invalid[method] = "partial"
+        elif artifact_status.get("eligible") is False:
+            invalid[method] = "ineligible"
+        elif not per_sample_by_method[method]:
+            invalid[method] = "empty"
+    if invalid:
+        gate_status = "failed" if "partial" in invalid.values() else "not_run"
+        return ConstructValidationSummary(
+            status=gate_status,
+            missing_methods=(),
+            invalid_methods=invalid,
+            comparisons={},
+        ).model_dump(mode="json")
 
     metric_specs: tuple[tuple[str, Direction], ...] = (
         ("sufficiency", "lower"),
@@ -61,8 +82,9 @@ def evaluate_construct_validation(
             metrics[metric] = result
             all_favorable = all_favorable and result["favorable"] is True
         comparisons[f"{_ORACLE}__vs__{comparator}"] = metrics
-    return {
-        "status": "passed" if all_favorable else "failed",
-        "missing_methods": [],
-        "comparisons": comparisons,
-    }
+    return ConstructValidationSummary(
+        status="passed" if all_favorable else "failed",
+        missing_methods=(),
+        invalid_methods={},
+        comparisons=comparisons,
+    ).model_dump(mode="json")

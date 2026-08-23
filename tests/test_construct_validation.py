@@ -30,6 +30,22 @@ def _evaluate(methods: dict[str, dict[str, dict[str, float]]]) -> dict[str, obje
     )
 
 
+def _evaluate_with_status(
+    methods: dict[str, dict[str, dict[str, float]]],
+    statuses: dict[str, dict[str, object]],
+) -> dict[str, object]:
+    return evaluate_construct_validation(
+        methods,
+        method_status=statuses,
+        split="eval",
+        mode="gold",
+        global_seed=42,
+        resamples=1_000,
+        confidence=0.95,
+        tolerance=0.0,
+    )
+
+
 def test_construct_validation_is_not_run_when_required_artifacts_are_missing() -> None:
     result = _evaluate({"control_random": _rows(2.0, 2.0)})
 
@@ -69,3 +85,41 @@ def test_construct_validation_fails_on_wrong_direction() -> None:
     assert result["status"] == "failed"
     failed = result["comparisons"]["oracle_gold__vs__control_random"]
     assert failed["comprehensiveness"]["favorable"] is False
+
+
+def test_empty_or_ineligible_control_cannot_pass() -> None:
+    methods = {
+        "oracle_gold": _rows(1.0, 4.0),
+        "control_random": {},
+        "control_answer_string": _rows(3.0, 1.0),
+    }
+    result = _evaluate_with_status(
+        methods,
+        {
+            "oracle_gold": {"eligible": True, "partial": False},
+            "control_random": {"eligible": True, "partial": False},
+            "control_answer_string": {"eligible": False, "partial": False},
+        },
+    )
+
+    assert result["status"] == "not_run"
+    assert result["invalid_methods"] == {
+        "control_answer_string": "ineligible",
+        "control_random": "empty",
+    }
+
+
+def test_partial_control_is_a_failed_construct_gate() -> None:
+    methods = {
+        "oracle_gold": _rows(1.0, 4.0),
+        "control_random": _rows(2.0, 2.0),
+        "control_answer_string": _rows(3.0, 1.0),
+    }
+    result = _evaluate_with_status(
+        methods,
+        {name: {"eligible": True, "partial": name == "control_random"} for name in methods},
+    )
+
+    assert result["status"] == "failed"
+    assert result["invalid_methods"] == {"control_random": "partial"}
+    assert result["comparisons"] == {}

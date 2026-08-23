@@ -262,16 +262,28 @@ def _attribution_tables_v2(splits: dict[str, Any], primary_k: int) -> str:
                     f"{causal['n']} | {_fmt(execution['seconds_per_sample'])} | "
                     f"{_fmt(100 * execution['failure_rate'], 1)} |"
                 )
-            validation = methods.get("causal_validation") or {
-                "status": "not_run",
-                "missing_methods": [],
-            }
+            validation = (
+                methods.get("construct_validation")
+                or methods.get("causal_validation")
+                or {
+                    "status": "not_run",
+                    "missing_methods": [],
+                }
+            )
             status = str(validation.get("status", "not_run")).replace("_", " ").upper()
             missing = validation.get("missing_methods") or []
             missing_text = f" Missing methods: {', '.join(missing)}." if missing else ""
+            invalid = validation.get("invalid_methods") or {}
+            invalid_text = (
+                " Invalid methods: "
+                + ", ".join(f"{name}={reason}" for name, reason in sorted(invalid.items()))
+                + "."
+                if invalid
+                else ""
+            )
             validation_line = (
-                f"Construct validation: **{status}**.{missing_text} "
-                "Sufficiency and comprehensiveness remain diagnostics unless this status passes."
+                f"Construct validation: **{status}**.{missing_text}{invalid_text} "
+                "Sufficiency and comprehensiveness are diagnostics, not causal-effect estimates."
             )
             blocks.append(
                 title

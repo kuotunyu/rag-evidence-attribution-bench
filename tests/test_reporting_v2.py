@@ -83,7 +83,7 @@ def _summary() -> dict[str, object]:
                                 "metrics": {"f1_at_2": comparison_metric},
                             }
                         },
-                        "causal_validation": {
+                        "construct_validation": {
                             "status": "not_run",
                             "missing_methods": ["oracle_gold"],
                             "comparisons": {},
@@ -111,9 +111,22 @@ def test_v2_report_names_estimands_denominators_and_paired_interval() -> None:
     assert "95% CI" in block
     assert "n_pairs" in block
     assert "0.140 [0.080, 0.200]" in block
-    assert "Causal-dependence validation: **NOT RUN**" in block
+    assert "Construct validation: **NOT RUN**" in block
     assert "AUPRC" not in block
     assert "faithfulness improvement" not in block.lower()
+
+
+def test_construct_status_never_upgrades_diagnostics_to_faithfulness_claims() -> None:
+    summary = _summary()
+    validation = summary["splits"]["eval"]["attribution"]["generated"]["construct_validation"]
+    validation["status"] = "passed"
+
+    block = render_results_block(summary)
+
+    assert "Construct validation: **PASSED**" in block
+    assert "sufficiency diagnostic" in block
+    assert "comprehensiveness diagnostic" in block
+    assert "causal effect" not in block.casefold()
 
 
 def test_v2_report_exposes_pair_exclusions() -> None:

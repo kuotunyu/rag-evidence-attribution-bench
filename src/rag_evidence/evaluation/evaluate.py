@@ -521,8 +521,19 @@ def evaluate_attribution(
         per_sample_by_method = {
             method: per_sample_by_run[run_key] for method, run_key in unique_run_by_method.items()
         }
-        causal_validation = evaluate_construct_validation(
+        method_status = {
+            method: {
+                "partial": bool(legacy_by_run[run_key]["partial"]),
+                "eligible": bool(
+                    legacy_by_run[run_key]["execution_kind"] != "mock"
+                    and legacy_by_run[run_key]["n_success"] > 0
+                ),
+            }
+            for method, run_key in unique_run_by_method.items()
+        }
+        construct_validation = evaluate_construct_validation(
             per_sample_by_method,
+            method_status=method_status,
             split=cfg.split,
             mode=mode,
             global_seed=cfg.seed,
@@ -543,7 +554,7 @@ def evaluate_attribution(
             mode_out[run_key] = upgrade_attribution_metrics(
                 legacy,
                 agreement_subset=agreement_subset,
-                causal_validation_status=causal_validation["status"],
+                causal_validation_status=construct_validation["status"],
             )
 
         paired_comparisons: dict[str, Any] = {}
@@ -583,7 +594,7 @@ def evaluate_attribution(
                     tolerance=cfg.evaluation.bootstrap_tolerance,
                 )
         mode_out["paired_comparisons"] = paired_comparisons
-        mode_out["causal_validation"] = causal_validation
+        mode_out["construct_validation"] = construct_validation
         # Preserve the original summary shape bit-for-bit in meaning (and keep the
         # existing report renderer working) when every run shares one generation.
         if mode == "generated" and len(generated_subsets) == 1:
