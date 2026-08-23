@@ -10,9 +10,12 @@ from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import ValidationError
 
-from rag_evidence.annotation.assignment import AssignmentPackage
+from rag_evidence.annotation.assignment import AssignmentManifest, AssignmentPackage
+from rag_evidence.annotation.models import AnswerabilityAnnotation
 from rag_evidence.annotation.store import AnnotationStore
+from rag_evidence.annotation.workflow import AdjudicationStore
 from rag_evidence.errors import ArtifactError
+from rag_evidence.storage.artifacts import read_records
 
 
 def _load_package(path: Path) -> AssignmentPackage:
@@ -123,5 +126,66 @@ def create_annotation_app(package_path: Path, state_dir: Path) -> FastAPI:
     ) -> list[dict[str, Any]]:
         no_store(response)
         return store.export_records(kind)
+
+    return app
+
+
+def create_adjudication_app(
+    manifest_path: Path,
+    submissions_path: Path,
+    state_dir: Path,
+) -> FastAPI:
+    try:
+        manifest = AssignmentManifest.model_validate(
+            json.loads(manifest_path.read_text(encoding="utf-8"))
+        )
+    except (OSError, json.JSONDecodeError, ValidationError) as exc:
+        raise ArtifactError(f"failed to load assignment manifest {manifest_path}: {exc}") from exc
+    submissions = tuple(
+        AnswerabilityAnnotation.model_validate(payload)
+        for payload in read_records(submissions_path)
+    )
+    store = AdjudicationStore(state_dir, manifest, submissions)
+    tasks = {
+        task.annotation_task_id: task for package in manifest.packages for task in package.tasks
+    }
+    app = FastAPI(
+        title="RAG evidence adjudication console",
+        description="Offline third-human disagreement resolution.",
+        version="adjudication-ui-v1",
+    )
+    app.state.adjudication_store = store
+
+    @app.get("/", response_class=HTMLResponse, include_in_schema=False)
+    def index(response: Response) -> str:
+        response.headers["Cache-Control"] = "no-store"
+        return Path(__file__).with_name("adjudicator_ui.html").read_text(encoding="utf-8")
+
+    @app.get("/api/disagreements")
+    def disagreements(response: Response) -> list[dict[str, Any]]:
+        response.headers["Cache-Control"] = "no-store"
+        return [
+            {
+                **case.model_dump(mode="json"),
+                "task": tasks[case.annotation_task_id].model_dump(mode="json"),
+            }
+            for case in store.cases.values()
+        ]
+
+    @app.get("/api/adjudications")
+    def adjudications(response: Response) -> list[dict[str, Any]]:
+        response.headers["Cache-Control"] = "no-store"
+        return [record.model_dump(mode="json") for record in store.records()]
+
+    @app.post("/api/adjudications", status_code=status.HTTP_201_CREATED)
+    def submit_adjudication(payload: dict[str, Any], response: Response) -> dict[str, Any]:
+        response.headers["Cache-Control"] = "no-store"
+        try:
+            return store.submit(payload).model_dump(mode="json")
+        except ValidationError as exc:
+            raise HTTPException(status_code=422, detail=exc.errors(include_url=False)) from exc
+        except ArtifactError as exc:
+            code = 409 if "already adjudicated" in str(exc) else 400
+            raise HTTPException(status_code=code, detail=str(exc)) from exc
 
     return app

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Adjudication desk · evidence ledger</title>
+  <style>
+    :root { --ink:#171d1a; --paper:#f2eddf; --card:#fffdf7; --red:#a83b2e; --teal:#285c55; --line:#b9b19f; --gold:#dca62e; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:repeating-linear-gradient(0deg,var(--paper),var(--paper) 31px,#dcd5c5 32px); font:16px/1.55 Charter,"Iowan Old Style",Georgia,serif; }
+    header { padding:28px clamp(22px,5vw,70px); color:white; background:var(--ink); border-bottom:6px solid var(--red); }
+    header p { margin:4px 0 0; color:#c4d2cc; }
+    main { max-width:1240px; margin:auto; padding:34px clamp(20px,4vw,58px) 80px; }
+    h1,h2,h3 { font-weight:600; }
+    .case-nav { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 24px; }
+    button { font:inherit; cursor:pointer; }
+    .case-nav button,.secondary { padding:8px 12px; border:1px solid var(--ink); background:transparent; }
+    .case-nav button.active { color:white; background:var(--teal); }
+    .question { font-size:clamp(24px,3vw,38px); line-height:1.2; }
+    .passages { display:grid; gap:12px; }
+    article { background:var(--card); border:1px solid var(--line); }
+    article h3 { margin:0; padding:9px 13px; color:white; background:var(--teal); font:700 13px ui-monospace,monospace; }
+    article p { margin:0; padding:10px 13px; border-top:1px dashed var(--line); }
+    .alias { color:var(--red); font:700 12px ui-monospace,monospace; }
+    .originals { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:24px 0; }
+    .original { padding:18px; background:var(--card); border-top:5px solid var(--gold); box-shadow:0 10px 24px rgb(20 30 25 / 9%); }
+    .original dl { display:grid; grid-template-columns:130px 1fr; margin:0; }
+    .original dt,.original dd { padding:6px 0; border-bottom:1px solid #ddd5c4; }
+    .original dt { font-weight:700; }
+    .panel { padding:22px; background:#e7e0d0; border:1px solid var(--line); }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    label { display:grid; gap:5px; font-weight:700; }
+    label.full { grid-column:1/-1; }
+    input,select,textarea { width:100%; padding:10px; border:1px solid #837c6d; background:var(--card); font:inherit; }
+    textarea { min-height:88px; }
+    .primary { margin-top:16px; padding:11px 17px; color:white; border:0; background:var(--red); }
+    .notice { padding:10px 13px; border-left:5px solid var(--gold); background:#fff8dc; }
+    .error { color:#8b1c15; font-weight:700; }
+    @media(max-width:760px){.originals,.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header><h1>Adjudication desk</h1><p>Preserve both originals. Resolve from visible evidence only.</p></header>
+  <main>
+    <p class="notice">This console contains no transformation or expected label. The adjudicator must be a third independent human.</p>
+    <nav id="case-nav" class="case-nav" aria-label="Disagreement cases"></nav>
+    <section id="case"></section>
+    <form id="form" class="panel">
+      <h2>Independent final review</h2>
+      <div class="grid">
+        <label>Adjudicator pseudonym<input id="adjudicator" required pattern="ann-[a-z0-9-]+"></label>
+        <label>Final answerability<select id="decision" required><option value="">Choose…</option><option>answerable</option><option>unanswerable</option><option>unclear</option></select></label>
+        <label>Answer text<input id="answer"></label>
+        <label>Evidence sets <small>one set per line, aliases comma-separated</small><textarea id="sets"></textarea></label>
+        <label><span>Evidence exhaustive</span><select id="exhaustive"><option value="true">Yes</option><option value="false">No</option></select></label>
+        <label><span>Exclude</span><select id="excluded"><option value="false">No</option><option value="true">Yes</option></select></label>
+        <label class="full">Exclusion reason<input id="exclusion-reason"></label>
+        <label class="full">Rationale<textarea id="rationale" required></textarea></label>
+      </div>
+      <button class="primary" type="submit">Submit immutable adjudication</button>
+      <p id="error" class="error" role="alert"></p>
+    </form>
+  </main>
+  <script>
+    "use strict";
+    const state={cases:[],index:0}; const el=id=>document.getElementById(id); const esc=value=>{const n=document.createElement("span");n.textContent=value;return n.innerHTML};
+    async function api(path,options={}){const r=await fetch(path,{headers:{"Content-Type":"application/json"},...options});if(!r.ok){const b=await r.json().catch(()=>({}));throw new Error(JSON.stringify(b.detail||r.status))}return r.json()}
+    function hexId(){const bytes=new Uint8Array(12);crypto.getRandomValues(bytes);return [...bytes].map(b=>b.toString(16).padStart(2,"0")).join("")}
+    function original(record){return `<div class="original"><h3>${record.annotator_pseudonym}</h3><dl><dt>Decision</dt><dd>${record.answerability}</dd><dt>Answer</dt><dd>${esc(record.answer_text||"—")}</dd><dt>Evidence</dt><dd>${record.minimal_sufficient_evidence_sets.map(s=>s.join(", ")).join(" / ")||"—"}</dd><dt>Confidence</dt><dd>${record.confidence}</dd><dt>Rationale</dt><dd>${esc(record.rationale)}</dd></dl></div>`}
+    function show(i){state.index=i;const c=state.cases[i];el("case-nav").querySelectorAll("button").forEach((b,j)=>b.classList.toggle("active",i===j));el("case").innerHTML=`<p class="alias">${c.annotation_task_id}</p><h2 class="question">${esc(c.task.question)}</h2><div class="passages">${c.task.passages.map(p=>`<article><h3>${p.alias} · ${esc(p.title)}</h3>${p.sentences.map(s=>`<p><span class="alias">${s.alias}</span> ${esc(s.text)}</p>`).join("")}</article>`).join("")}</div><h2>Original judgments · ${c.reasons.join(", ")}</h2><div class="originals">${original(c.left)}${original(c.right)}</div>`}
+    }
+    el("form").onsubmit=async event=>{event.preventDefault();const c=state.cases[state.index],decision=el("decision").value,excluded=el("excluded").value==="true",answerable=decision==="answerable";const sets=el("sets").value.split(/\n+/).map(line=>line.split(",").map(x=>x.trim()).filter(Boolean)).filter(s=>s.length);const payload={schema_version:"adjudication-v1",adjudication_id:`adj-${hexId()}`,annotation_task_id:c.annotation_task_id,challenge_id:c.challenge_id,blinded_parent_group:c.blinded_parent_group,adjudicator_pseudonym:el("adjudicator").value,left:c.left,right:c.right,final_answerability:decision,answer_text:answerable?el("answer").value:null,minimal_sufficient_evidence_sets:answerable?sets:[],evidence_exhaustive:answerable?el("exhaustive").value==="true":null,excluded,exclusion_reason:excluded?el("exclusion-reason").value:null,rationale:el("rationale").value,created_at:new Date().toISOString().replace(/\.\d{3}Z$/,"Z")};try{await api("/api/adjudications",{method:"POST",body:JSON.stringify(payload)});el("error").textContent="Adjudication stored immutably."}catch(error){el("error").textContent=error.message}}
+    ;(async()=>{state.cases=await api("/api/disagreements");el("case-nav").innerHTML=state.cases.map((c,i)=>`<button type="button" data-i="${i}">${i+1} · ${c.annotation_task_id.slice(-6)}</button>`).join("");el("case-nav").querySelectorAll("button").forEach(b=>b.onclick=()=>show(Number(b.dataset.i)));if(state.cases.length)show(0)})().catch(error=>el("error").textContent=error.message)
+  </script>
+</body>
+</html>

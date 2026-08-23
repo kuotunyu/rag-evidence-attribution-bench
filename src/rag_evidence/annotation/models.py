@@ -362,11 +362,10 @@ class EligibilityRecord(_StrictModel):
         if len(set(self.source_annotation_hashes)) != 2:
             raise ValueError("eligibility requires two distinct annotation hashes")
         disagreement = self.source_answerabilities[0] != self.source_answerabilities[1]
-        unresolved = "unclear" in self.source_answerabilities
         final_changed = any(
             value != self.final_answerability for value in self.source_answerabilities
         )
-        if (disagreement or unresolved or final_changed) and self.adjudication_hash is None:
+        if (disagreement or final_changed) and self.adjudication_hash is None:
             raise ValueError("disagreement or unclear decision requires adjudication")
         if self.eligible:
             if self.final_answerability == "unclear":
