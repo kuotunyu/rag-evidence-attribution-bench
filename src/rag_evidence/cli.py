@@ -420,6 +420,32 @@ def annotation_collect(
         raise typer.Exit(code=2)
 
 
+@annotation_app.command("adjudicate")
+def annotation_adjudicate(
+    manifest: Annotated[
+        Path,
+        typer.Option("--manifest", exists=True, dir_okay=False, readable=True),
+    ],
+    effective: Annotated[
+        Path,
+        typer.Option("--effective", exists=True, dir_okay=False, readable=True),
+    ],
+    state: Annotated[Path, typer.Option("--state", file_okay=False)],
+    host: Annotated[str, typer.Option("--host")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port", min=1, max=65535)] = 8002,
+) -> None:
+    """Serve the coordinator-only third-human disagreement console."""
+    import uvicorn
+
+    from rag_evidence.annotation.app import create_adjudication_app
+
+    uvicorn.run(
+        create_adjudication_app(manifest, effective, state),
+        host=host,
+        port=port,
+    )
+
+
 @annotation_app.command("package-pilot")
 def annotation_package_pilot(
     config: ConfigOpt,

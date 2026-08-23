@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -18,6 +19,7 @@ from rag_evidence.annotation.models import (
     EligibilityRecord,
     artifact_hash,
 )
+from rag_evidence.annotation.privacy import scan_private_payload
 from rag_evidence.errors import ArtifactError, DataError
 from rag_evidence.storage.artifacts import append_record, read_records
 
@@ -328,7 +330,35 @@ class AdjudicationStore:
             AdjudicationRecord.model_validate(payload) for payload in read_records(self.path)
         )
 
+    def status(self) -> dict[str, int | bool]:
+        adjudicated = len(self.records())
+        total = len(self.cases)
+        return {
+            "total": total,
+            "adjudicated": adjudicated,
+            "remaining": total - adjudicated,
+            "complete": adjudicated == total,
+        }
+
+    def export_jsonl(self) -> str:
+        payload = [record.model_dump(mode="json") for record in self.records()]
+        violations = scan_private_payload(payload)
+        if violations:
+            raise ArtifactError("adjudication privacy violation: " + "; ".join(violations))
+        if not payload:
+            return ""
+        return (
+            "\n".join(
+                json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+                for record in payload
+            )
+            + "\n"
+        )
+
     def submit(self, payload: Mapping[str, Any]) -> AdjudicationRecord:
+        violations = scan_private_payload(payload)
+        if violations:
+            raise ArtifactError("adjudication privacy violation: " + "; ".join(violations))
         record = AdjudicationRecord.model_validate(payload)
         case = self.cases.get(record.annotation_task_id)
         if case is None:

@@ -11,10 +11,14 @@ from rag_evidence.annotation.app import create_adjudication_app
 from test_annotation_workflow import _adjudication, _annotation, _answerable, _manifest
 
 
-def _client(tmp_path: Path):
+def _client(tmp_path: Path, *, disagree: bool = True):
     manifest = _manifest()
     left = _answerable(manifest, "ann-r7")
-    right = _annotation(manifest, "ann-k2", answerability="unanswerable", exhaustive=None)
+    right = (
+        _annotation(manifest, "ann-k2", answerability="unanswerable", exhaustive=None)
+        if disagree
+        else _answerable(manifest, "ann-k2")
+    )
     manifest_path = tmp_path / "assignment-manifest.json"
     manifest_path.write_text(
         json.dumps(manifest.model_dump(mode="json"), ensure_ascii=False), encoding="utf-8"
@@ -68,3 +72,68 @@ def test_adjudication_submission_is_immutable(tmp_path: Path) -> None:
     exported = client.get("/api/adjudications").json()
     assert len(exported) == 1
     assert exported[0]["left"]["rationale"] == left.rationale
+
+
+def test_adjudication_status_tracks_append_only_completion(tmp_path: Path) -> None:
+    client, left, right = _client(tmp_path)
+
+    assert client.get("/api/status").json() == {
+        "total": 1,
+        "adjudicated": 0,
+        "remaining": 1,
+        "complete": False,
+    }
+    client.post("/api/adjudications", json=_adjudication(left, right).model_dump(mode="json"))
+    assert client.get("/api/status").json() == {
+        "total": 1,
+        "adjudicated": 1,
+        "remaining": 0,
+        "complete": True,
+    }
+
+
+def test_zero_disagreement_status_and_export_are_complete(tmp_path: Path) -> None:
+    client, _left, _right = _client(tmp_path, disagree=False)
+
+    assert client.get("/api/status").json() == {
+        "total": 0,
+        "adjudicated": 0,
+        "remaining": 0,
+        "complete": True,
+    }
+    response = client.get("/api/export/adjudications.jsonl")
+    assert response.status_code == 200
+    assert response.text == ""
+    assert response.headers["cache-control"] == "no-store"
+
+
+def test_adjudication_export_is_canonical_jsonl(tmp_path: Path) -> None:
+    client, left, right = _client(tmp_path)
+    payload = _adjudication(left, right).model_dump(mode="json")
+    client.post("/api/adjudications", json=payload)
+
+    response = client.get("/api/export/adjudications.jsonl")
+
+    assert response.status_code == 200
+    assert response.text == json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ) + "\n"
+
+
+def test_adjudication_rejects_private_data_and_has_no_correction_endpoint(
+    tmp_path: Path,
+) -> None:
+    client, left, right = _client(tmp_path)
+    payload = _adjudication(left, right).model_dump(mode="json")
+    payload["rationale"] = "Contact reviewer@example.com before deciding."
+
+    response = client.post("/api/adjudications", json=payload)
+
+    assert response.status_code == 400
+    assert "privacy" in response.json()["detail"]
+    assert client.put("/api/adjudications", json=payload).status_code == 405
+    assert client.delete("/api/adjudications").status_code == 405
+    assert client.get("/api/adjudications").json() == []

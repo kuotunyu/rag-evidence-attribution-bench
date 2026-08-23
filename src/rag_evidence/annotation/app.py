@@ -177,6 +177,19 @@ def create_adjudication_app(
         response.headers["Cache-Control"] = "no-store"
         return [record.model_dump(mode="json") for record in store.records()]
 
+    @app.get("/api/status")
+    def adjudication_status(response: Response) -> dict[str, int | bool]:
+        response.headers["Cache-Control"] = "no-store"
+        return store.status()
+
+    @app.get("/api/export/adjudications.jsonl", response_class=PlainTextResponse)
+    def export_adjudications_jsonl(response: Response) -> str:
+        response.headers["Cache-Control"] = "no-store"
+        try:
+            return store.export_jsonl()
+        except ArtifactError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     @app.post("/api/adjudications", status_code=status.HTTP_201_CREATED)
     def submit_adjudication(payload: dict[str, Any], response: Response) -> dict[str, Any]:
         response.headers["Cache-Control"] = "no-store"
