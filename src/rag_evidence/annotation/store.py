@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import datetime as dt
-import re
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, Literal
@@ -15,6 +14,7 @@ from rag_evidence.annotation.models import (
     BlindTask,
     artifact_hash,
 )
+from rag_evidence.annotation.privacy import scan_private_payload
 from rag_evidence.errors import ArtifactError
 from rag_evidence.storage.artifacts import (
     append_record,
@@ -22,54 +22,6 @@ from rag_evidence.storage.artifacts import (
     read_records,
     write_json_atomic,
 )
-
-_PRIVATE_KEYS = frozenset(
-    {
-        "transformation",
-        "transform_version",
-        "expected_answerability",
-        "changed_fields",
-        "provenance",
-        "parent_question_id",
-        "parent_fingerprint",
-        "gold_adjudicated_label",
-        "gold_passage_ids",
-        "supporting_fact_sentence_ids",
-        "is_gold",
-        "model_name",
-        "method_name",
-        "score",
-        "scores",
-        "abstention_expectation",
-    }
-)
-_EMAIL_RE = re.compile(r"\b[^\s@]+@[^\s@]+\.[^\s@]+\b")
-_WINDOWS_PATH_RE = re.compile(r"(?:^|\s)[A-Za-z]:[\\/]")
-
-
-def _privacy_violations(payload: object) -> tuple[str, ...]:
-    violations: list[str] = []
-
-    def visit(value: object, path: str) -> None:
-        if isinstance(value, Mapping):
-            for raw_key, child in value.items():
-                key = str(raw_key).casefold()
-                if key in _PRIVATE_KEYS or key.startswith(("expected_", "gold_")):
-                    violations.append(f"{path}.{raw_key}: forbidden source metadata")
-                visit(child, f"{path}.{raw_key}")
-            return
-        if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
-            for index, child in enumerate(value):
-                visit(child, f"{path}[{index}]")
-            return
-        if isinstance(value, str):
-            if _EMAIL_RE.search(value):
-                violations.append(f"{path}: PII-like email")
-            if _WINDOWS_PATH_RE.search(value):
-                violations.append(f"{path}: private filesystem path")
-
-    visit(payload, "$")
-    return tuple(sorted(set(violations)))
 
 
 class AnnotationStore:
@@ -89,7 +41,7 @@ class AnnotationStore:
             raise ArtifactError(f"task {task_id} is not assigned in this package") from exc
 
     def _scan(self, payload: object) -> None:
-        violations = _privacy_violations(payload)
+        violations = scan_private_payload(payload)
         if violations:
             raise ArtifactError("annotation privacy violation: " + "; ".join(violations))
 

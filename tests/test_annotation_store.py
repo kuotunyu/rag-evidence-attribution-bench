@@ -13,6 +13,7 @@ from rag_evidence.annotation.models import (
     AnswerabilityAnnotation,
     artifact_hash,
 )
+from rag_evidence.annotation.privacy import scan_private_payload
 from rag_evidence.annotation.store import AnnotationStore
 from rag_evidence.errors import ArtifactError
 from test_annotation_blinding import challenge_record
@@ -149,3 +150,10 @@ def test_state_rejects_hidden_source_metadata_and_email_pii(tmp_path: Path) -> N
         store.save_draft(task_id, {"transformation": "missing_hop"})
     with pytest.raises(ArtifactError, match="PII"):
         store.save_draft(task_id, {"feedback": "contact person@example.com"})
+
+
+def test_public_privacy_scanner_rejects_private_posix_and_windows_paths() -> None:
+    assert scan_private_payload({"feedback": "/Users/alice/private/state.json"})
+    assert scan_private_payload({"feedback": "/home/alice/private/state.json"})
+    assert scan_private_payload({"feedback": r"C:\Users\alice\private\state.json"})
+    assert scan_private_payload({"feedback": "ordinary annotation rationale"}) == ()

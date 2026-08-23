@@ -10,6 +10,7 @@ from rag_evidence.annotation.assignment import AssignmentManifest, build_dual_as
 from rag_evidence.annotation.blinding import project_challenge
 from rag_evidence.annotation.models import (
     AdjudicationRecord,
+    AnnotationAmendment,
     AnswerabilityAnnotation,
     artifact_hash,
 )
@@ -43,6 +44,7 @@ def _annotation(
     dataset_defect: bool = False,
     exhaustive: bool | None = True,
     rationale: str = "The two visible sentences form the answer chain.",
+    submitted_at: str = "2026-08-23T01:05:00Z",
 ) -> AnswerabilityAnnotation:
     task = manifest.packages[0].tasks[0]
     is_answerable = answerability == "answerable"
@@ -67,7 +69,7 @@ def _annotation(
             "confidence": 4,
             "rationale": rationale,
             "started_at": "2026-08-23T01:00:00Z",
-            "submitted_at": "2026-08-23T01:05:00Z",
+            "submitted_at": submitted_at,
         }
     )
 
@@ -257,6 +259,51 @@ def test_unclear_and_dataset_defects_are_excluded_not_coerced() -> None:
     assert result.flow.eligible == 0
     assert result.eligibility.records[0].final_answerability == "unclear"
     assert "unclear" in (result.eligibility.records[0].exclusion_reason or "")
+
+
+def test_workflow_uses_effective_amendment_tip() -> None:
+    manifest = _manifest()
+    left = _answerable(manifest, "ann-r7")
+    right = _annotation(manifest, "ann-k2", answerability="unanswerable", exhaustive=None)
+    replacement = _answerable(
+        manifest,
+        "ann-k2",
+        submitted_at="2026-08-23T01:07:00Z",
+        rationale="Correction after rereading the visible evidence.",
+    )
+    amendment = AnnotationAmendment.model_validate(
+        {
+            "schema_version": "annotation-amendment-v1",
+            "amendment_id": "amend-0123456789abcdef01234567",
+            "original_annotation_hash": artifact_hash(right),
+            "previous_amendment_hash": None,
+            "annotator_pseudonym": "ann-k2",
+            "reason": "The visible chain does answer the question.",
+            "replacement": replacement.model_dump(mode="json"),
+            "created_at": "2026-08-23T01:08:00Z",
+        }
+    )
+
+    result = build_workflow_result(
+        manifest,
+        [left, right],
+        amendments=[amendment],
+        adjudications=[],
+        phase="pilot",
+        protocol_version="pilot-v0.2.1-draft",
+        protocol_hash="8" * 64,
+        generated_at="2026-08-23T03:00:00Z",
+    )
+
+    assert result.flow.disagreed == 0
+    assert result.flow.eligible == 1
+    expected = tuple(
+        artifact_hash(record)
+        for record in sorted(
+            [replacement, left], key=lambda item: item.annotator_pseudonym
+        )
+    )
+    assert result.eligibility.records[0].source_annotation_hashes == expected
 
 
 def test_adjudication_store_is_append_only_and_queue_bound(tmp_path: Path) -> None:

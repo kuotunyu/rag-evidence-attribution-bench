@@ -382,6 +382,44 @@ def challenge_report(
     )
 
 
+@annotation_app.command("collect")
+def annotation_collect(
+    manifest: Annotated[
+        Path,
+        typer.Option("--manifest", exists=True, dir_okay=False, readable=True),
+    ],
+    submission: Annotated[
+        list[Path],
+        typer.Option("--submission", exists=True, dir_okay=False, readable=True),
+    ],
+    amendment: Annotated[
+        list[Path],
+        typer.Option("--amendment", exists=True, dir_okay=False, readable=True),
+    ],
+    out: Annotated[Path, typer.Option("--out", file_okay=False)],
+) -> None:
+    """Collect two paired human streams and resolve append-only amendments."""
+    from rag_evidence.annotation.coordinator import collect_annotation_streams
+    from rag_evidence.errors import RagEvidenceError
+
+    try:
+        result = collect_annotation_streams(manifest, submission, amendment, out)
+    except RagEvidenceError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(
+        f"collected {result.completed_tasks}/{result.assigned_tasks} tasks into "
+        f"{result.output_dir}"
+    )
+    if not result.complete:
+        typer.secho(
+            "blocked: collection is incomplete; no disagreement queue was created",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+
 @annotation_app.command("package-pilot")
 def annotation_package_pilot(
     config: ConfigOpt,

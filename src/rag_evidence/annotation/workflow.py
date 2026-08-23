@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from rag_evidence.annotation.assignment import AssignmentManifest, TaskAssignment
 from rag_evidence.annotation.models import (
     AdjudicationRecord,
+    AnnotationAmendment,
     AnswerabilityAnnotation,
     EligibilityArtifact,
     EligibilityRecord,
@@ -78,7 +79,7 @@ def _task_map(manifest: AssignmentManifest) -> dict[str, object]:
     return tasks
 
 
-def _index_submissions(
+def index_submissions(
     manifest: AssignmentManifest,
     submissions: Sequence[AnswerabilityAnnotation],
 ) -> dict[str, dict[str, AnswerabilityAnnotation]]:
@@ -164,7 +165,7 @@ def build_disagreement_queue(
     manifest: AssignmentManifest,
     submissions: Sequence[AnswerabilityAnnotation],
 ) -> tuple[DisagreementCase, ...]:
-    indexed = _index_submissions(manifest, submissions)
+    indexed = index_submissions(manifest, submissions)
     cases: list[DisagreementCase] = []
     for assignment in manifest.task_assignments:
         by_annotator = indexed.get(assignment.annotation_task_id, {})
@@ -207,12 +208,18 @@ def build_workflow_result(
     submissions: Sequence[AnswerabilityAnnotation],
     *,
     adjudications: Sequence[AdjudicationRecord],
+    amendments: Sequence[AnnotationAmendment] = (),
     phase: Literal["pilot", "confirmatory"],
     protocol_version: str,
     protocol_hash: str,
     generated_at: str,
 ) -> WorkflowResult:
-    indexed = _index_submissions(manifest, submissions)
+    effective_submissions = tuple(submissions)
+    if amendments:
+        from rag_evidence.annotation.coordinator import resolve_amendments
+
+        effective_submissions = resolve_amendments(manifest, submissions, amendments)
+    indexed = index_submissions(manifest, effective_submissions)
     adjudication_by_task: dict[str, AdjudicationRecord] = {}
     for record in adjudications:
         if record.annotation_task_id in adjudication_by_task:
