@@ -51,13 +51,25 @@ These identities are deliberately independent. No value below implies a Git tag 
 | Handoff manifest/spec/builder | `handoff-manifest-v2`, `handoff-spec-v2`, `handoff-builder-v2` | Source-controlled handoff contract |
 | Platform verification receipt | `platform-verification-receipt-v2` | Verifier-generated Windows or Linux execution evidence |
 | External handoff receipt | `handoff-receipt-v2` | Final source/wheel/platform-bound coordinator evidence |
-| Python distribution | `0.1.0` until separately approved | Wheel metadata version; not the pilot protocol version |
+| Python distribution | `0.2.0.dev0` | Private breaking-v2 engineering wheel identity; not the pilot protocol or schema version |
 | Git tag/release | none | A future owner decision, outside B0.1 |
 
 All v1 annotation, package, manifest, amendment, adjudication, eligibility, collection, pilot-output,
 and handoff schemas are invalid inputs to the v0.2.2 pipeline. Loaders fail closed on a v1 literal;
 there is no migration or compatibility branch because no real human v1 data exists. The generic
 Dataset v2 and historical v0.1 result formats are separate systems and are not renamed by this work.
+
+The public historical baseline already owns Python distribution identity `0.1.0`. The breaking-v2
+pilot wheel therefore uses `0.2.0.dev0`, and future implementation must keep that exact value
+synchronized across `pyproject.toml`, `src/rag_evidence/__init__.py`, wheel `METADATA`, CLI version
+output, tests, the handoff spec and external handoff receipt, and both platform receipts. The pilot
+protocol `pilot-v0.2.2-draft`, all `*-v2` schema identities, Python distribution `0.2.0.dev0`, and
+any future Git tag or release are distinct namespaces and must never be inferred from one another.
+
+`0.2.0.dev0` authorizes neither a Git tag, GitHub Release, nor public package publication. A future
+change to final distribution version `0.2.0` requires separate owner approval and a new exact-source
+evidence build; no wheel, receipt, platform receipt, or checksum generated for `0.2.0.dev0` may be
+relabelled or reused as final `0.2.0` evidence.
 
 ## Audience and artifact boundary
 
@@ -254,28 +266,51 @@ kit or human UI carries v2 group-free records.
 
 `handoff-builder-v2` receives two distinct checkout roots, two wheel paths, the committed
 `handoff-manifest-v2`, the requested source commit, one Windows platform receipt, one Linux platform
-receipt, and a new external output directory.
+receipt, and a new external output directory. Final evidence may use only two newly created,
+disposable, detached checkouts at the exact candidate commit. Both checkout roots must be in an
+external temporary location, not the active development worktree or any reused checkout.
 
-For each checkout, the builder executes Git without a shell and fails unless:
+For each checkout, the builder executes Git without a shell and fails unless all identity checks and
+both the pre-build and post-build cleanliness gates pass:
 
 1. `git rev-parse --verify <requested>^{commit}` resolves to the exact requested 40-character SHA.
 2. `git rev-parse HEAD` equals that SHA.
 3. `git rev-parse <SHA>^{tree}` produces the same tree SHA in both checkouts.
-4. `git status --porcelain=v1 --untracked-files=all` is empty.
-5. The handoff manifest and every `source_paths` entry are tracked blobs at that commit.
-6. Each working-tree file's bytes equal `git cat-file blob <SHA>:<normalized-path>` bytes.
-7. The source path remains inside its checkout, is a regular file, and its SHA-256 equals the
+4. `git status --porcelain=v1 --untracked-files=all -z` produces zero bytes, proving that tracked
+   status and the complete untracked-file set are both empty.
+5. `git ls-files --others --ignored --exclude-standard -z` produces zero bytes, proving that the
+   ignored-file set is empty.
+6. The handoff manifest and every `source_paths` entry are tracked blobs at that commit.
+7. Each working-tree file's bytes equal `git cat-file blob <SHA>:<normalized-path>` bytes.
+8. The source path remains inside its checkout, is a regular file, and its SHA-256 equals the
    committed handoff manifest value.
 
 A syntactically valid but nonexistent SHA, a detached checkout at another commit, staged or
-unstaged changes, ignored exceptions to the clean rule, and any untracked file all stop the build.
-The two checkout paths and two wheel paths must be distinct.
+unstaged changes, any untracked file, or any ignored path all stop the build. Ignored paths have no
+exception: `.venv`, bytecode or tool caches, `build/`, `dist/`, generated package bytes, ignored
+configuration, and ignored source overlays are all failures. The two checkout paths and two wheel
+paths must be distinct.
+
+The two Git commands above run immediately before and immediately after every candidate or replay
+build. The handoff receipt and its retained command transcript record each check's exact argv,
+logical checkout label, execution phase, exit code, output byte count, and output SHA-256. Both the
+pre-build and post-build outputs must remain exactly zero bytes.
+
+The builder is a verifier: it refuses a non-clean checkout and never runs `git clean`, deletes a
+path, or repairs a checkout. Python environments, build trees, bytecode and tool caches, temporary
+files, wheel output, and replay output all live outside the checkouts. The build environment sets
+bytecode/cache/output controls, including `PYTHONDONTWRITEBYTECODE=1` or an external
+`PYTHONPYCACHEPREFIX`, so importing or building cannot intentionally create `__pycache__` in a
+checkout. If a build nevertheless creates an ignored file, the post-build gate fails closed and the
+builder preserves the evidence for owner review rather than removing it.
 
 ### Wheel verification
 
 Both wheels are built with the exact command and `SOURCE_DATE_EPOCH` recorded by the committed
-spec. The builder removes the prior fallback and accepts only `byte-identical-required`. It compares
-file bytes, filename, size, and SHA-256 and stops if any differ.
+spec. Their environments, caches, build trees, and outputs are in distinct Git-external directories,
+and each build is bracketed by the pre-build and post-build gates above. The builder removes the
+prior fallback and accepts only `byte-identical-required`. It compares file bytes, filename, size,
+and SHA-256 and stops if any differ.
 
 The builder then replays the committed build command in both validated checkouts into two fresh,
 Git-external verification directories. It records the actual argv, environment value, exit code,
@@ -287,16 +322,17 @@ For each wheel, the builder also:
 
 - parses it as a wheel ZIP rather than accepting arbitrary bytes;
 - verifies every `RECORD` hash and size;
-- verifies normalized project name and Python package version from `METADATA`;
+- verifies normalized project name and exact Python package version `0.2.0.dev0` from `METADATA`;
 - compares the packaged `rag_evidence` source and package-data bytes with the corresponding tracked
   blobs at the source commit;
 - rejects missing source payload, unexpected package payload, stale protocol/package/schema bytes,
   duplicate ZIP entries, unsafe paths, and malformed metadata.
 
-The final wheel identity is bound in `handoff-receipt-v2` to source commit SHA, Git tree SHA,
-package version, wheel filename/size/SHA-256, `SOURCE_DATE_EPOCH`, exact build command, annotation
-requirements-lock SHA-256, protocol hash, handoff spec/schema hashes, builder hash, and canonical
-A/B package hashes. The committed handoff manifest still contains no predicted wheel hash.
+The final wheel identity is bound in `handoff-receipt-v2` to source commit SHA, Git tree SHA, exact
+package version `0.2.0.dev0`, wheel filename/size/SHA-256, `SOURCE_DATE_EPOCH`, exact build command,
+annotation requirements-lock SHA-256, protocol hash, handoff spec/schema hashes, builder hash, and
+canonical A/B package hashes. The committed handoff manifest still contains no predicted wheel
+hash.
 The executing builder module's bytes must also match the builder blob/hash in the candidate; a stale
 installed builder cannot attest a newer source tree.
 
@@ -318,7 +354,10 @@ Each Windows and Linux receipt contains:
 - annotation requirements-lock SHA-256;
 - protocol, handoff-spec, and schema hashes;
 - exact Python version, OS version, and architecture;
-- exact dependency-install and `--no-deps` wheel-install commands and results;
+- exact pip version and the non-secret portion of index configuration used for bootstrap;
+- exact binary-only dependency-bootstrap argv and result;
+- exact `--no-deps` wheel-install argv and result;
+- resolved installed distribution names and versions after installation;
 - CLI-help, app creation, kit-specific launcher, runtime probe, empty export, loopback acceptance,
   and non-loopback rejection commands and results;
 - hashes of every generated smoke artifact;
@@ -327,8 +366,10 @@ Each Windows and Linux receipt contains:
 
 Recorded commands use argv arrays, a logical working-directory label, and relative artifact names;
 they do not embed a user name, home directory, absolute private path, credential, or environment
-secret. The verifier separately records only allowlisted environment values needed to reproduce the
-build/runtime policy.
+secret. Index configuration records only normalized non-secret index locations and trusted-host
+policy; credentials, access tokens, embedded user information, and secret environment values are
+forbidden. The verifier separately records only allowlisted environment values needed to reproduce
+the build/runtime policy. Each receipt also binds Python distribution version `0.2.0.dev0`.
 
 The builder requires exactly one receipt whose OS is Windows and one whose OS is Linux. It verifies
 that both bind the same source/tree/wheel/lock/protocol/spec identities, that every mandatory command
@@ -350,9 +391,13 @@ The only valid order is:
    bytes; commit them without any wheel or generated receipt.
 2. Push that exact commit to the existing open PR and identify it as the candidate. No later source
    edit may reuse its evidence; pushing does not modify the commit.
-3. Create two distinct clean checkouts at the exact candidate and regenerate the external private
-   coordinator manifest; verify its package hashes against the committed A/B files.
-4. Build one wheel in each checkout with the fixed `SOURCE_DATE_EPOCH` and exact build command.
+3. In two distinct external temporary locations, create new disposable detached checkouts at the
+   exact candidate and regenerate the external private coordinator manifest; verify its package
+   hashes against the committed A/B files.
+4. Run both pre-build cleanliness commands in each checkout. Build one wheel per checkout with the
+   fixed `SOURCE_DATE_EPOCH`, exact build command, and Git-external environment, cache, build, and
+   output directories. Run both cleanliness commands again after each build and require zero-byte
+   outputs at both phases.
 5. Require byte-identical wheels and validate both wheel payloads against the candidate Git blobs.
 6. On each platform, stage a disposable verification kit from the committed package, requirements
    lock, docs, platform launcher, and verified wheel. Run the committed verifier against that kit
@@ -374,20 +419,40 @@ exists.
 The project adds a minimal `annotation` optional-dependency extra containing only the web/runtime
 packages needed by the annotation and adjudication consoles. It does not include the ML/GPU extra,
 transformers, datasets, model weights, or the Gradio explorer dependency. Project base dependencies
-remain governed by `uv.lock`; the annotation lock is the exact transitive environment needed to
-install the project wheel with `--no-deps` and run the annotation CLIs.
+remain governed by `uv.lock`; the annotation lock is the exact third-party transitive runtime
+environment needed to install the project wheel with `--no-deps` and run the annotation CLIs.
 
 The committed `pilot/v0.2/annotation-requirements-py311.lock` is mechanically generated from the
 frozen `uv.lock` for Python 3.11, Windows, and Linux. It retains all distribution SHA-256 hashes and
-platform markers. CI regenerates it and fails on a byte difference.
+platform markers. It contains third-party runtime distributions only: no root project, editable
+requirement, local path, VCS dependency, unpinned requirement, or dependency resolved from an sdist
+is allowed. Every selected requirement is version-pinned and hash-locked. CI regenerates the lock,
+checks those structural exclusions, and fails on a byte difference.
 
 Bootstrap is explicitly online and occurs before state creation:
 
 ```text
 python -m venv <external-venv>
-<venv-python> -m pip install --require-hashes -r annotation-requirements-py311.lock
-<venv-python> -m pip install --no-deps <verified-wheel>
+python -m pip install \
+  --require-hashes \
+  --only-binary=:all: \
+  -r annotation-requirements-py311.lock
+python -m pip install --no-deps <verified-wheel>
 ```
+
+Here both `python` commands after environment creation mean that external virtual environment's
+interpreter. The dependency command is exact: neither operator nor platform adapter may remove
+`--only-binary=:all:` or allow pip to enter an sdist/PEP 517 build-isolation path. The root project
+is installed only from the already verified wheel by the separate `--no-deps` command.
+
+Every locked distribution selected on the required Windows and Linux Python 3.11 verification
+platforms must have a compatible binary wheel. Platform CI and the committed verifier exercise that
+constraint.
+If either platform lacks a compatible binary wheel, bootstrap feasibility fails and work stops for
+owner review; the builder, verifier, runbook, and operator must not remove the binary-only rule,
+substitute an sdist, or weaken the lock. The platform receipt records the exact pip version,
+sanitized non-secret index configuration, exact bootstrap argv, and resolved installed
+distributions and versions so the result is inspectable without exposing credentials.
 
 There is no `pip install --upgrade pip`, no wheel extra resolution, and no unpinned install. The
 operator may need a package index during the first command. Only after all hashes, installation,
@@ -451,11 +516,25 @@ Source/build tests:
 
 - nonexistent commit, fake forty-character commit, wrong HEAD, differing tree, staged change,
   unstaged change, untracked file, untracked replacement source, untracked modified handoff source,
-  missing tracked blob, source/blob byte mismatch, stale instruction/package/schema hash, arbitrary
-  wheel bytes, malformed wheel, mismatched wheel bytes/hash, receipt for another commit, receipt for
-  another wheel/lock, duplicate platform, and handwritten boolean receipt all fail closed;
-- two exact clean checkouts and two byte-identical source-bound wheels pass;
+  ignored source overlay, ignored build configuration, ignored `.venv` or cache, an ignored file
+  created only during the build, missing tracked blob, source/blob byte mismatch, stale
+  instruction/package/schema/distribution identity, arbitrary wheel bytes, malformed wheel,
+  mismatched wheel bytes/hash, receipt for another commit, receipt for another wheel/lock, duplicate
+  platform, and handwritten boolean receipt all fail closed;
+- two newly created external disposable detached checkouts with zero-byte pre-build and post-build
+  tracked/untracked and ignored outputs, and two byte-identical source-bound wheels, pass;
 - no per-build fallback exists.
+
+Dependency-bootstrap tests:
+
+- the lock contains only pinned, hashed third-party runtime distributions and rejects the root
+  project, editable requirements, local paths, VCS dependencies, and unpinned entries;
+- clean Windows and Linux Python 3.11 environments install the lock with both `--require-hashes`
+  and `--only-binary=:all:`, then install the verified project wheel with `--no-deps`;
+- a selected dependency without a compatible platform wheel fails as a feasibility error without
+  an sdist or build-isolation fallback;
+- each platform receipt records the pip version, sanitized index configuration, exact bootstrap
+  argv, and resolved installed distribution names and versions.
 
 Workflow regressions:
 
@@ -501,11 +580,19 @@ The terminal state of the future implementation remains:
 - **Placeholder check:** The spec contains no deferred field, unnamed component, or incomplete
   acceptance condition.
 - **Contradiction check:** Online bootstrap is separated in time from state creation and the
-  loopback-only runtime; no offline-install or air-gap claim remains.
+  loopback-only runtime; no offline-install, air-gap, or sdist fallback claim remains.
 - **Ambiguity check:** The visible/private artifact split, v1 rejection, exact accepted hosts, two
   required platforms, and fail-closed wheel policy are explicit.
-- **Version mapping check:** Protocol, schema, UI, verifier, handoff, Python package, and future Git
-  tag identities are separately named.
+- **Identity check:** Historical public `v0.1.0`, protocol `pilot-v0.2.2-draft`, all v2 schemas,
+  Python distribution `0.2.0.dev0`, and any future final `0.2.0` or Git tag are separately named;
+  dev0 evidence cannot be reused after an identity change.
+- **Build-cleanliness check:** Both final checkouts are new, external, disposable, and detached;
+  tracked/untracked status and ignored paths are checked before and after every build, while every
+  environment, cache, build tree, and wheel output stays outside the checkout. The builder rejects
+  but never cleans a failure.
+- **Dependency-bootstrap check:** The lock contains pinned, hashed third-party runtime dependencies
+  only; Windows and Linux must both succeed with `--require-hashes --only-binary=:all:`, and a
+  missing binary wheel is a feasibility stop rather than permission to use an sdist.
 - **Privacy-claim check:** Metadata blinding is claimed; semantic sibling unlinkability and
   independent sibling perception are explicitly disclaimed.
 - **Build-cycle check:** The source commit precedes wheels and receipts; external receipts are never
