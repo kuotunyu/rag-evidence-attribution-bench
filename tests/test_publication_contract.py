@@ -38,3 +38,21 @@ def test_readmes_link_to_the_versioned_baseline_release() -> None:
     for readme_name in ("README.md", "README_en.md"):
         readme = (REPO_ROOT / readme_name).read_text(encoding="utf-8")
         assert release_url in readme
+
+
+def test_b01_docs_mark_old_packages_obsolete_and_do_not_authorize_execution() -> None:
+    operational_files = (
+        REPO_ROOT / "PILOT_PROTOCOL.md",
+        REPO_ROOT / "pilot" / "v0.2" / "README.md",
+        REPO_ROOT / "pilot" / "v0.2" / "COMPLETION_CHECKLIST.md",
+    )
+    combined = "\n".join(path.read_text(encoding="utf-8") for path in operational_files)
+
+    assert "pilot-v0.2.1-draft" in combined
+    assert "372096b" in combined
+    assert "obsolete" in combined.casefold()
+    assert "rag-evidence annotation collect" in combined
+    assert "rag-evidence annotation adjudicate" in combined
+    assert "rag-evidence annotation finalize-pilot" in combined
+    assert "both Cohen's kappa and nominal Krippendorff's alpha" in combined
+    assert "does not authorize the human pilot" in combined

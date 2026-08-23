@@ -286,3 +286,6 @@ see [DATA_CARD.md](DATA_CARD.md) and [MODEL_CARD.md](MODEL_CARD.md) for boundari
 `v0.1.0` remains the historical release. The v0.2 branch is annotation-readiness
 engineering only. Human pilot, protocol freeze, confirmatory sampling, real model execution,
 formal statistics, tagging, release, and v1.0 claims all require separate approval.
+The `372096b` pilot packages are obsolete; current canonical sources use
+`pilot-v0.2.1-draft`. Even an operational `READY_FOR_HUMAN_FREEZE_REVIEW` verdict does not
+authorize the human pilot or any confirmatory/model stage.

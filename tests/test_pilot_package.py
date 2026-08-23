@@ -67,7 +67,7 @@ def test_pilot_package_is_byte_deterministic_and_bound_to_protocol_hash(
     package = AssignmentPackage.model_validate(
         json.loads((first / "ann-pilot-a.json").read_text(encoding="utf-8"))
     )
-    assert package.instruction_version == "pilot-v0.2-draft"
+    assert package.instruction_version == "pilot-v0.2.1-draft"
     assert (
         package.instruction_hash
         == hashlib.sha256(Path("PILOT_PROTOCOL.md").read_bytes()).hexdigest()
@@ -76,3 +76,15 @@ def test_pilot_package_is_byte_deterministic_and_bound_to_protocol_hash(
         json.loads((first / "manifest.json").read_text(encoding="utf-8"))
     )
     assert saved == build_pilot_package(cfg, tmp_path / "third")
+
+
+def test_committed_packages_share_current_full_protocol_hash(repo_root: Path) -> None:
+    protocol_hash = hashlib.sha256((repo_root / "PILOT_PROTOCOL.md").read_bytes()).hexdigest()
+    package_root = repo_root / "pilot" / "v0.2" / "packages"
+
+    for name in ("ann-pilot-a.json", "ann-pilot-b.json"):
+        package = AssignmentPackage.model_validate(
+            json.loads((package_root / name).read_text(encoding="utf-8"))
+        )
+        assert package.instruction_version == "pilot-v0.2.1-draft"
+        assert package.instruction_hash == protocol_hash

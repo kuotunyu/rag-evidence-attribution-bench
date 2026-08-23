@@ -20,7 +20,7 @@ from rag_evidence.data.challenge_schema import ChallengeRecord
 from rag_evidence.errors import DataError
 from rag_evidence.storage.artifacts import read_json, read_records, write_json_atomic
 
-PILOT_INSTRUCTION_VERSION = "pilot-v0.2-draft"
+PILOT_INSTRUCTION_VERSION = "pilot-v0.2.1-draft"
 PILOT_BATCH = "pilot-v0.2-smoke"
 PILOT_NAMESPACE = "pilot-v0.2-smoke"
 PILOT_ASSIGNMENT_SEED = 20260823

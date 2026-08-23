@@ -1,7 +1,11 @@
 # Annotator Onboarding
 
+This onboarding is bound to instruction version `pilot-v0.2.1-draft` and the full-file
+SHA-256 recorded in your package and kit checksum. Stop before annotation if either value
+differs from the verified handoff receipt.
+
 You are evaluating only whether the supplied passages answer the visible question. Do not
-guess how a task was created and do not search the web or repository.
+guess how a task was created and do not search the web or access the repository.
 
 1. Confirm the UI shows your opaque `ann-*` pseudonym and the instruction hash printed in
    `PILOT_PROTOCOL.md`-bound package metadata.
@@ -18,3 +22,6 @@ guess how a task was created and do not search the web or repository.
 Stop and contact the coordinator if the instruction hash differs, hidden transformation or
 expected-label data appears, the browser requires network access, or a submitted record can
 be overwritten.
+
+Your A or B kit is private to you. Do not request or accept the other package, the
+coordinator manifest, another annotator's state, submissions, amendments, or decisions.

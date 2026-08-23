@@ -1,25 +1,44 @@
-# v0.2 Human Annotation Pilot
+# v0.2 Human Annotation Pilot Sources
 
-This directory is an annotation-readiness handoff, not a completed study. It contains two
-blind assignment packages covering 20 Dataset-v2 smoke parents × two challenge variants =
-40 tasks. Every task is assigned to both independent annotators. No answerability label,
-adjudication, eligibility decision, or model output is included.
+This directory is the source-controlled, annotation-ready engineering contract, not a
+delivery directory and not a completed study. The canonical blind package sources cover
+20 Dataset-v2 smoke parents × two challenge variants = 40 tasks. Every task is assigned to
+both independent annotators. No answerability label, adjudication, eligibility decision,
+IAA result, synthetic decision, or model output is included.
+
+Packages from baseline `372096b` are obsolete. The canonical sources in `packages/` are
+regenerated in place against instruction identity `pilot-v0.2.1-draft` and the SHA-256 of
+the complete `PILOT_PROTOCOL.md` file.
 
 The task text derives from HotpotQA and retains its CC BY-SA 4.0 data obligations; project
 code remains MIT licensed. Read the repository `DATA_CARD.md` and `PILOT_PROTOCOL.md`.
 
-## Coordinator workflow
+## B0.1 stop boundary
 
-1. Give `packages/ann-pilot-a.json` and `packages/ann-pilot-b.json` to two different humans.
-   Do not give repository access or `manifest.json` unless operationally necessary.
-2. Each human chooses a private local state directory and runs:
+This source state does not authorize the human pilot. Owner approval is still required
+before independent humans receive external kits. It also does not authorize protocol
+freeze, confirmatory sampling, model/API execution, merge, tag, release, GitHub Release
+assets, or Hugging Face publication.
 
-   `rag-evidence annotation serve --package <their-json> --state <private-state-dir>`
+## Future owner-approved coordinator workflow
 
-3. Keep annotator pseudonyms unchanged. Do not record names or email addresses.
-4. Collect exported submissions and amendments separately from this clean package folder.
-5. Run two-annotator completeness, then send only disagreements to a third human.
-6. Review IAA, evidence overlap, timing, defects, and instruction feedback against the
-   promotion gate in `PILOT_PROTOCOL.md`.
+1. Build Git-external, checksum-verified A and B kits from a final clean checkout. Each kit
+   contains the same verified wheel but only its own package and launcher. Neither kit
+   contains `packages/manifest.json` or the other annotator's package.
+2. Each annotator uses a private state directory and returns `submissions.jsonl`, a present
+   `amendments.jsonl` (which may be empty), and return checksums.
+3. Collect both streams:
 
-Re-run `python scripts/scan_annotation_export.py pilot/v0.2/packages` before delivery.
+   `rag-evidence annotation collect --manifest coordinator/manifest.json --submission returns/a/submissions.jsonl --submission returns/b/submissions.jsonl --amendment returns/a/amendments.jsonl --amendment returns/b/amendments.jsonl --out coordinator/collection`
+
+4. If complete, start third-human adjudication:
+
+   `rag-evidence annotation adjudicate --manifest coordinator/manifest.json --effective coordinator/collection/effective-submissions.jsonl --state coordinator/private-adjudication-state --host 127.0.0.1 --port 8002`
+
+5. Export `http://127.0.0.1:8002/api/export/adjudications.jsonl` and finalize:
+
+   `rag-evidence annotation finalize-pilot --manifest coordinator/manifest.json --originals coordinator/collection/original-submissions.jsonl --amendments coordinator/collection/amendments.jsonl --adjudications coordinator/adjudications.jsonl --protocol PILOT_PROTOCOL.md --out coordinator/final`
+
+6. Stop unless all 40 pairs are complete, all disagreements are adjudicated, privacy and
+   integrity pass, and both Cohen's kappa and nominal Krippendorff's alpha are finite and
+   at least 0.70. `READY_FOR_HUMAN_FREEZE_REVIEW` still requires owner review.

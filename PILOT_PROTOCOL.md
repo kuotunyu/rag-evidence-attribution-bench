@@ -1,9 +1,13 @@
 # Human Annotation Pilot Protocol
 
-**Protocol ID:** `pilot-v0.2-draft`
+**Protocol ID:** `pilot-v0.2.1-draft`
 **Status:** PILOT ONLY — mutable after pilot
 **Scope:** 20 parent questions; missing-hop and evidence-swap tasks
 **Primary-analysis eligibility:** permanently ineligible
+
+The instruction identity is the SHA-256 of this entire file, byte for byte. Packages from
+baseline `372096b` used the superseded `pilot-v0.2-draft` identity and are obsolete. Only
+canonical packages regenerated from this file may enter a future owner-approved handoff.
 
 ## Purpose
 
@@ -75,6 +79,34 @@ field in the tool payload.
 8. A third independent human adjudicator resolves or excludes disagreements.
 9. Original annotations remain unchanged.
 
+### Coordinator commands
+
+Run collection only after receiving both independently exported streams and a present
+amendment file from each annotator. An empty amendment file is valid; a missing file is not.
+
+```text
+rag-evidence annotation collect --manifest coordinator/manifest.json --submission returns/a/submissions.jsonl --submission returns/b/submissions.jsonl --amendment returns/a/amendments.jsonl --amendment returns/b/amendments.jsonl --out coordinator/collection
+```
+
+Incomplete collection writes its receipt and effective rows but exits blocked without a
+disagreement queue. A complete collection may open the localhost-only third-human console:
+
+```text
+rag-evidence annotation adjudicate --manifest coordinator/manifest.json --effective coordinator/collection/effective-submissions.jsonl --state coordinator/private-adjudication-state --host 127.0.0.1 --port 8002
+```
+
+Export immutable adjudications from
+`http://127.0.0.1:8002/api/export/adjudications.jsonl`, then finalize:
+
+```text
+rag-evidence annotation finalize-pilot --manifest coordinator/manifest.json --originals coordinator/collection/original-submissions.jsonl --amendments coordinator/collection/amendments.jsonl --adjudications coordinator/adjudications.jsonl --protocol PILOT_PROTOCOL.md --out coordinator/final
+```
+
+The coordinator stops at every `BLOCKED_*` verdict. Even
+`READY_FOR_HUMAN_FREEZE_REVIEW` means only that the owner may review whether to freeze a
+future protocol. It does not authorize the human pilot, confirmatory sampling, model/API
+execution, merge, tag, release, or publication.
+
 ## Data captured for pilot learning
 
 - task start and submit timestamps;
@@ -92,26 +124,30 @@ artifacts.
 ## Pilot completion rule
 
 The pilot ends when all 40 tasks have two valid independent submissions, every disagreement
-has an independent human adjudication or explicit exclusion, the export/privacy scan
-passes, and pilot feedback has been reviewed. It does not end early because agreement is
-high, and it is not expanded because a model effect appears small or large.
+has an independent human adjudication or explicit exclusion, both mandatory IAA
+coefficients pass, the export/privacy scan passes, and pilot feedback has been reviewed.
+It does not end early because agreement is high, and it is not expanded because a model
+effect appears small or large.
 
 ## Promotion gate
 
 The confirmatory protocol remains DRAFT unless:
 
-- raw agreement, Cohen's kappa, Krippendorff's alpha, prevalence, and evidence-set overlap
-  have been reviewed;
-- the relevant IAA coefficient is at least 0.70;
+- raw agreement, prevalence, and evidence-set overlap have been reviewed as descriptive
+  quantities;
+- both Cohen's kappa and nominal Krippendorff's alpha are defined, finite, and at least
+  0.70 over exactly 40 post-amendment, pre-adjudication pairs;
 - guideline-driven disagreements have been resolved by revising instructions and, if
   needed, the schema/UI;
 - revised instructions are versioned and hashed;
 - blind-export and append-only integrity tests still pass;
 - no formal eval assignment or model output has been opened.
 
-IAA below 0.70 blocks promotion. Increasing the confirmatory sample is not a substitute
-for fixing instructions. Any revision after this pilot makes the pilot permanently
-ineligible for the confirmatory primary analysis, as already required by this protocol.
+Either IAA coefficient below 0.70, undefined, non-finite, or computed from fewer than 40
+complete pairs blocks promotion. Raw agreement or prevalence cannot substitute for either
+coefficient. Increasing the confirmatory sample is not a substitute for fixing
+instructions. Any revision after this pilot makes the pilot permanently ineligible for
+the confirmatory primary analysis, as already required by this protocol.
 
 ## Human responsibilities
 
@@ -131,3 +167,13 @@ and deterministic accounting, but cannot fill, correct, or resolve a scientific 
 - a pilot completion checklist.
 
 None of these outputs are formal confirmatory results.
+
+## Privacy and repository boundary
+
+Annotators receive only their external verified A or B delivery kit. A never receives B's
+package, B never receives A's package, and neither receives the coordinator manifest or
+repository access. State, submissions, amendments, adjudications, eligibility/IAA
+artifacts, reports, receipts, checksums, synthetic rehearsal outputs, wheels, sdists, and
+delivery copies remain outside Git. Only decision-free canonical package sources,
+schemas, builder source/tests, runbooks, launchers, dependency lock, and hashes belong in
+the repository.
