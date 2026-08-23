@@ -54,6 +54,7 @@ def scientific_config(cfg: AppConfig, stage: str, **extra: Any) -> dict[str, Any
             "split_seed": cfg.data.split_seed,
             "split_sizes": dict(cfg.data.split_sizes),
         },
+        "execution": cfg.execution.model_dump(mode="json"),
     }
     if stage == "retrieve":
         method = str(extra.get("method"))

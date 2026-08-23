@@ -210,6 +210,23 @@ def load_prepared_verified(cfg: AppConfig) -> list[Example]:
     return [Example.from_json(rec) for rec in records]
 
 
+def load_execution_examples(cfg: AppConfig) -> list[Example]:
+    """Load natural examples or fail-closed human-eligible challenge examples."""
+    if cfg.execution.track == "challenge":
+        from rag_evidence.data.challenge_execution import load_eligible_challenge_examples
+
+        return list(load_eligible_challenge_examples(cfg).examples)
+    return load_prepared_verified(cfg)
+
+
+def load_execution_metadata(cfg: AppConfig) -> dict[str, dict[str, str]]:
+    if cfg.execution.track == "challenge":
+        from rag_evidence.data.challenge_execution import load_eligible_challenge_examples
+
+        return load_eligible_challenge_examples(cfg).metadata
+    return {}
+
+
 def prepare_data(cfg: AppConfig) -> None:
     """The `data prepare` stage. Idempotent; never regenerates an existing manifest."""
     resolved_revision = cfg.data.hf_revision

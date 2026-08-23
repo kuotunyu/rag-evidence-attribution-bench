@@ -94,6 +94,36 @@ class PathsConfig(_StrictModel):
     assets_dir: str = "assets"
 
 
+class ExecutionConfig(_StrictModel):
+    """Select the natural benchmark or one independently human-gated challenge arm."""
+
+    track: Literal["natural", "challenge"] = "natural"
+    phase: Literal["pilot", "confirmatory"] | None = None
+    variant: Literal["missing_hop", "evidence_swap"] | None = None
+    challenge_records_path: str | None = None
+    assignment_manifest_path: str | None = None
+    eligibility_path: str | None = None
+    natural_samples_path: str | None = None
+
+    @model_validator(mode="after")
+    def _challenge_contract_is_complete(self) -> ExecutionConfig:
+        bound = (
+            self.phase,
+            self.variant,
+            self.challenge_records_path,
+            self.assignment_manifest_path,
+            self.eligibility_path,
+            self.natural_samples_path,
+        )
+        if self.track == "natural":
+            if any(value is not None for value in bound):
+                raise ValueError("natural execution cannot carry challenge bindings")
+            return self
+        if any(value is None for value in bound):
+            raise ValueError("challenge execution requires phase, variant, and all artifact paths")
+        return self
+
+
 class BM25Config(_StrictModel):
     k1: float = 1.5
     b: float = 0.75
@@ -300,6 +330,7 @@ class AppConfig(_StrictModel):
     data: DataConfig = DataConfig()
     challenge: ChallengeConfig = ChallengeConfig()
     paths: PathsConfig = PathsConfig()
+    execution: ExecutionConfig = ExecutionConfig()
     retrieval: RetrievalConfig = RetrievalConfig()
     generation: GenerationConfig = GenerationConfig()
     attribution: AttributionConfig = AttributionConfig()
@@ -408,6 +439,10 @@ _YAML_PATH_FIELDS: tuple[tuple[str, str], ...] = (
     ("paths", "results_raw"),
     ("paths", "results_derived"),
     ("paths", "assets_dir"),
+    ("execution", "challenge_records_path"),
+    ("execution", "assignment_manifest_path"),
+    ("execution", "eligibility_path"),
+    ("execution", "natural_samples_path"),
     ("generation", "retrieval_results_raw"),
     ("attribution", "controls.retrieval_results_raw"),
     ("reranking", "preregistration_path"),

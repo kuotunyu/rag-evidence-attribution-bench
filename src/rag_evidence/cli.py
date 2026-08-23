@@ -42,6 +42,11 @@ reranking_app = typer.Typer(
     help="Controlled cross-encoder reranking extension commands.",
 )
 app.add_typer(reranking_app, name="reranking")
+challenge_app = typer.Typer(
+    no_args_is_help=True,
+    help="Human-gated answerability challenge execution (generate/attribute/evaluate/report).",
+)
+app.add_typer(challenge_app, name="challenge")
 
 ConfigOpt = Annotated[
     Path,
@@ -68,6 +73,39 @@ class RerankingArm(StrEnum):
     dense = "dense"
     hybrid_rrf = "hybrid_rrf"
     hybrid_rrf_rerank = "hybrid_rrf_rerank"
+
+
+class ChallengePhase(StrEnum):
+    pilot = "pilot"
+    confirmatory = "confirmatory"
+
+
+class ChallengeVariant(StrEnum):
+    missing_hop = "missing_hop"
+    evidence_swap = "evidence_swap"
+
+
+def _challenge_config(
+    cfg: Any,
+    *,
+    phase: ChallengePhase,
+    variant: ChallengeVariant,
+    assignments: Path,
+    eligibility: Path,
+) -> Any:
+    from rag_evidence.data.challenge_execution import build_challenge_execution_config
+
+    return build_challenge_execution_config(
+        cfg,
+        phase=phase.value,
+        variant=variant.value,
+        challenge_records_path=(
+            cfg.results_raw_dir / cfg.split / "challenge" / "samples" / "records.jsonl"
+        ),
+        assignment_manifest_path=assignments,
+        eligibility_path=eligibility,
+        natural_samples_path=cfg.results_raw_dir / cfg.split / "samples" / "records.jsonl",
+    )
 
 
 def _version_callback(value: bool) -> None:
@@ -202,6 +240,141 @@ def report(config: ConfigOpt) -> None:
     from rag_evidence.pipeline import run_report
 
     _run(run_report, config)
+
+
+@challenge_app.command("generate")
+def challenge_generate(
+    config: ConfigOpt,
+    phase: Annotated[ChallengePhase, typer.Option("--phase")],
+    variant: Annotated[ChallengeVariant, typer.Option("--variant")],
+    assignments: Annotated[
+        Path, typer.Option("--assignments", exists=True, dir_okay=False, readable=True)
+    ],
+    eligibility: Annotated[
+        Path, typer.Option("--eligibility", exists=True, dir_okay=False, readable=True)
+    ],
+    resume: ResumeOpt = False,
+    limit: LimitOpt = None,
+) -> None:
+    """Generate on one eligible challenge arm; transformation labels are not truth."""
+    from rag_evidence.generation.run import run_generation_stage
+
+    _run(
+        lambda cfg, **kwargs: run_generation_stage(
+            _challenge_config(
+                cfg,
+                phase=phase,
+                variant=variant,
+                assignments=assignments,
+                eligibility=eligibility,
+            ),
+            **kwargs,
+        ),
+        config,
+        resume=resume,
+        limit=limit,
+    )
+
+
+@challenge_app.command("attribute")
+def challenge_attribute(
+    config: ConfigOpt,
+    phase: Annotated[ChallengePhase, typer.Option("--phase")],
+    variant: Annotated[ChallengeVariant, typer.Option("--variant")],
+    assignments: Annotated[
+        Path, typer.Option("--assignments", exists=True, dir_okay=False, readable=True)
+    ],
+    eligibility: Annotated[
+        Path, typer.Option("--eligibility", exists=True, dir_okay=False, readable=True)
+    ],
+    method: Annotated[str, typer.Option("--method")],
+    mode: Annotated[str, typer.Option("--mode")] = "generated",
+    resume: ResumeOpt = False,
+    retry_failures: Annotated[bool, typer.Option("--retry-failures")] = False,
+    limit: LimitOpt = None,
+) -> None:
+    """Attribute one eligible challenge arm (generated-answer mode by default)."""
+    from rag_evidence.attribution.run import run_attribution_stage
+
+    _run(
+        lambda cfg, **kwargs: run_attribution_stage(
+            _challenge_config(
+                cfg,
+                phase=phase,
+                variant=variant,
+                assignments=assignments,
+                eligibility=eligibility,
+            ),
+            **kwargs,
+        ),
+        config,
+        method=method,
+        mode=mode,
+        resume=resume,
+        retry_failures=retry_failures,
+        limit=limit,
+    )
+
+
+@challenge_app.command("evaluate")
+def challenge_evaluate(
+    config: ConfigOpt,
+    phase: Annotated[ChallengePhase, typer.Option("--phase")],
+    variant: Annotated[ChallengeVariant, typer.Option("--variant")],
+    assignments: Annotated[
+        Path, typer.Option("--assignments", exists=True, dir_okay=False, readable=True)
+    ],
+    eligibility: Annotated[
+        Path, typer.Option("--eligibility", exists=True, dir_okay=False, readable=True)
+    ],
+    allow_partial: Annotated[bool, typer.Option("--allow-partial")] = False,
+) -> None:
+    """Evaluate one eligible challenge arm in its isolated derived root."""
+    from rag_evidence.evaluation.evaluate import evaluate_all
+
+    _run(
+        lambda cfg, **kwargs: evaluate_all(
+            _challenge_config(
+                cfg,
+                phase=phase,
+                variant=variant,
+                assignments=assignments,
+                eligibility=eligibility,
+            ),
+            **kwargs,
+        ),
+        config,
+        allow_partial=allow_partial,
+    )
+
+
+@challenge_app.command("report")
+def challenge_report(
+    config: ConfigOpt,
+    phase: Annotated[ChallengePhase, typer.Option("--phase")],
+    variant: Annotated[ChallengeVariant, typer.Option("--variant")],
+    assignments: Annotated[
+        Path, typer.Option("--assignments", exists=True, dir_okay=False, readable=True)
+    ],
+    eligibility: Annotated[
+        Path, typer.Option("--eligibility", exists=True, dir_okay=False, readable=True)
+    ],
+) -> None:
+    """Report one challenge arm without changing public README result blocks."""
+    from rag_evidence.reporting.report import build_report
+
+    _run(
+        lambda cfg: build_report(
+            _challenge_config(
+                cfg,
+                phase=phase,
+                variant=variant,
+                assignments=assignments,
+                eligibility=eligibility,
+            )
+        ),
+        config,
+    )
 
 
 @app.command()

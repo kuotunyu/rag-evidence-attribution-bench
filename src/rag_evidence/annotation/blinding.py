@@ -135,3 +135,25 @@ def project_challenge(
     if violations:
         raise DataError("blind projection leak: " + "; ".join(violations))
     return BlindTask.model_validate(payload)
+
+
+def validate_blind_task_source(task: BlindTask, record: ChallengeRecord) -> None:
+    """Re-bind an immutable blind task to the current visible challenge content."""
+    if task.challenge_id != record.challenge_id:
+        raise DataError("blind task challenge ID does not match source record")
+    expected_passages = [
+        {
+            "alias": f"P{passage_index}",
+            "title": passage.title,
+            "sentences": [
+                {"alias": f"P{passage_index}.S{sentence_index}", "text": sentence}
+                for sentence_index, sentence in enumerate(passage.sentences, start=1)
+            ],
+        }
+        for passage_index, passage in enumerate(record.example.passages, start=1)
+    ]
+    if (
+        task.question != record.example.question
+        or [passage.model_dump(mode="json") for passage in task.passages] != expected_passages
+    ):
+        raise DataError("blind task visible content does not match challenge source")

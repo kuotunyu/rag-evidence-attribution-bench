@@ -14,7 +14,7 @@ from rag_evidence.config import (
     validate_v2_runtime_binding,
 )
 from rag_evidence.data import ids
-from rag_evidence.data.hotpot import load_prepared_verified
+from rag_evidence.data.hotpot import load_execution_examples, load_execution_metadata
 from rag_evidence.data.schema import Example, Passage
 from rag_evidence.errors import RagEvidenceError, UpstreamMissingError
 from rag_evidence.generation.backends import build_backend
@@ -93,7 +93,8 @@ def _is_oom(exc: BaseException) -> bool:
 
 def run_generation_stage(cfg: AppConfig, *, resume: bool, limit: int | None) -> None:
     validate_v2_runtime_binding(cfg.generation)
-    examples = load_prepared_verified(cfg)
+    examples = load_execution_examples(cfg)
+    execution_metadata = load_execution_metadata(cfg)
     if limit is not None:
         examples = examples[:limit]
 
@@ -152,6 +153,9 @@ def run_generation_stage(cfg: AppConfig, *, resume: bool, limit: int | None) -> 
             "messages": messages,
             "prompt_version": cfg.generation.prompt_version,
         }
+        challenge = execution_metadata.get(example.question_id)
+        if challenge is not None:
+            record["challenge"] = challenge
         try:
             with SampleTimer() as timer:
                 out = backend.generate(messages, max_new_tokens=cfg.generation.max_new_tokens)
@@ -183,6 +187,12 @@ def run_generation_stage(cfg: AppConfig, *, resume: bool, limit: int | None) -> 
                 passage_ids = list(citations.cited_passage_ids)
                 invalid_citations = list(citations.invalid_aliases)
             f1, _prec, _rec = f1_score(answer_text, example.answer)
+            answerability = challenge.get("human_answerability") if challenge else None
+            answerability_correct = (
+                (abstained if answerability == "unanswerable" else not abstained)
+                if answerability is not None
+                else None
+            )
             record.update(
                 response_text=out.text,
                 answer_text=answer_text,
@@ -191,8 +201,21 @@ def run_generation_stage(cfg: AppConfig, *, resume: bool, limit: int | None) -> 
                 cited_passage_ids=passage_ids,
                 invalid_citations=invalid_citations,
                 sentence_citations=sentence_citations,
-                em=exact_match(answer_text, example.answer) if not abstained else 0,
-                f1=round(f1, 6) if not abstained else 0.0,
+                em=(
+                    None
+                    if answerability == "unanswerable"
+                    else exact_match(answer_text, example.answer)
+                    if not abstained
+                    else 0
+                ),
+                f1=(
+                    None
+                    if answerability == "unanswerable"
+                    else round(f1, 6)
+                    if not abstained
+                    else 0.0
+                ),
+                answerability_correct=answerability_correct,
                 prompt_tokens=out.prompt_tokens,
                 completion_tokens=out.completion_tokens,
                 latency_ms=round(timer.elapsed_ms, 3),
@@ -215,6 +238,7 @@ def run_generation_stage(cfg: AppConfig, *, resume: bool, limit: int | None) -> 
                 sentence_citations=None,
                 em=None,
                 f1=None,
+                answerability_correct=None,
                 prompt_tokens=None,
                 completion_tokens=None,
                 latency_ms=None,

@@ -497,7 +497,19 @@ def build_report(cfg: AppConfig) -> None:
 
     report_path = cfg.results_derived_dir / "report.md"
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    lines = ["# Benchmark report", "", block, ""]
+    if cfg.execution.track == "challenge":
+        lines = [
+            "# Human-gated challenge report",
+            "",
+            f"Phase: `{cfg.execution.phase}`; variant: `{cfg.execution.variant}`.",
+            "",
+            "Sibling variants and natural-benchmark rows are intentionally not pooled.",
+            "",
+            block,
+            "",
+        ]
+    else:
+        lines = ["# Benchmark report", "", block, ""]
     if excluded:
         lines += [
             "## Excluded from this report",
@@ -516,6 +528,8 @@ def build_report(cfg: AppConfig) -> None:
         for f in figures:
             logger.info("wrote %s", f)
 
+    if cfg.execution.track == "challenge":
+        return
     readme_blocks = {
         Path("README.md"): render_results_block(real_summary, locale="zh-TW"),
         Path("README_en.md"): block,

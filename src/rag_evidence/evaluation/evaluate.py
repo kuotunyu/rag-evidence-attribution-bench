@@ -19,7 +19,7 @@ from typing import Any
 
 import rag_evidence
 from rag_evidence.config import AppConfig
-from rag_evidence.data.hotpot import load_prepared_verified
+from rag_evidence.data.hotpot import load_execution_examples
 from rag_evidence.data.schema import Example
 from rag_evidence.data.splits import load_manifest
 from rag_evidence.errors import DataError, UpstreamMissingError
@@ -237,6 +237,11 @@ def evaluate_generation(
         mismatches = []
         for rec in ok:
             example = examples[rec["question_id"]]
+            if (
+                rec.get("em") is None
+                and (rec.get("challenge") or {}).get("human_answerability") == "unanswerable"
+            ):
+                continue
             em_here = exact_match(rec["answer_text"], example.answer) if not rec["abstained"] else 0
             if em_here != rec["em"]:
                 mismatches.append(rec["question_id"])
@@ -289,8 +294,19 @@ def evaluate_generation(
             "n_failed": len(failed),
             "failure_rate": len(failed) / max(1, len(records)),
             "abstain_rate": len(abstained) / max(1, len(ok)),
-            "em": _mean(r["em"] for r in ok),
-            "f1": _mean(r["f1"] for r in ok),
+            "em": _mean(r["em"] for r in ok if r.get("em") is not None),
+            "f1": _mean(r["f1"] for r in ok if r.get("f1") is not None),
+            "answerability_accuracy": _mean(
+                float(r["answerability_correct"])
+                for r in ok
+                if r.get("answerability_correct") is not None
+            ),
+            "n_answerable": sum(
+                (r.get("challenge") or {}).get("human_answerability") == "answerable" for r in ok
+            ),
+            "n_unanswerable": sum(
+                (r.get("challenge") or {}).get("human_answerability") == "unanswerable" for r in ok
+            ),
             "citation": {
                 "precision": _mean(cit_p),
                 "recall": _mean(cit_r),
@@ -313,6 +329,8 @@ def evaluate_generation(
 
 
 def _is_correct(cfg: AppConfig, gen_rec: dict[str, Any]) -> bool:
+    if gen_rec.get("em") is None:
+        return False
     if cfg.evaluation.correctness_criterion == "em":
         return bool(gen_rec["em"] == 1)
     return bool(gen_rec["f1"] is not None and gen_rec["f1"] >= 0.5)  # f1_05
@@ -583,7 +601,7 @@ def evaluate_attribution(
 
 def evaluate_all(cfg: AppConfig, *, allow_partial: bool = False) -> None:
     split = cfg.split
-    examples = {e.question_id: e for e in load_prepared_verified(cfg)}
+    examples = {e.question_id: e for e in load_execution_examples(cfg)}
     derived_split = cfg.results_derived_dir / split
     derived_split.mkdir(parents=True, exist_ok=True)
 
@@ -640,6 +658,7 @@ def evaluate_all(cfg: AppConfig, *, allow_partial: bool = False) -> None:
         package_version=rag_evidence.__version__,
         dataset_hash=manifest["fingerprint"]["dataset_hash"],
         primary_k=cfg.evaluation.primary_k,
+        execution=cfg.execution.model_dump(mode="json"),
     )
     write_json_atomic(summary_path, summary)
     logger.info(
