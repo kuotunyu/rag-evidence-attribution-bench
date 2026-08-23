@@ -1,6 +1,6 @@
 # Human Annotation Pilot Protocol
 
-**Protocol ID:** `pilot-v0.2.1-draft`
+**Protocol ID:** `pilot-v0.2.2-draft`
 **Status:** PILOT ONLY — mutable after pilot
 **Scope:** 20 parent questions; missing-hop and evidence-swap tasks
 **Primary-analysis eligibility:** permanently ineligible
@@ -34,8 +34,9 @@ annotator pseudonyms. Sibling variants are never adjacent in either annotator's 
 ## Blinding
 
 Annotators receive an export package, not repository access. Payloads contain only an
-opaque task ID, opaque parent-group pseudonym, question, public passage aliases, public
-sentence aliases, instruction version/hash, batch, and task-content hash. They exclude
+opaque task ID, opaque challenge ID, question, public passage aliases, public sentence aliases,
+instruction version/hash, batch, and task-content hash. They exclude all parent/group/sibling
+metadata and
 transformation identity, expected answerability, changed fields, provenance, siblings,
 gold/adjudicated labels, model/method identities, scores, and abstention expectations.
 

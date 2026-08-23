@@ -18,6 +18,7 @@ def test_annotation_cli_surface_is_explicit() -> None:
     assert isinstance(annotation, TyperGroup)
     assert set(annotation.commands) == {
         "adjudicate",
+        "build-coordinator-manifest",
         "build-handoff",
         "collect",
         "finalize-pilot",

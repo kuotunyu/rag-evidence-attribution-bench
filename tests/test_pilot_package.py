@@ -6,7 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from rag_evidence.annotation.assignment import AssignmentManifest, AssignmentPackage
+from rag_evidence.annotation.assignment import AssignmentManifestV2, AssignmentPackageV2
 from rag_evidence.annotation.package import build_pilot_package, scan_clean_package
 from rag_evidence.config import load_config
 
@@ -29,16 +29,14 @@ def test_real_shaped_pilot_package_has_20_parents_40_tasks_and_no_labels(
     manifest = build_pilot_package(cfg, out)
     scan = scan_clean_package(out)
 
-    assert len(manifest.task_assignments) == 40
-    assert len(manifest.packages) == 2
-    tasks = {task.annotation_task_id: task for task in manifest.packages[0].tasks}
+    assert len(manifest.coordinator_tasks) == 40
+    tasks = {task.annotation_task_id: task for task in manifest.tasks}
     assert len(tasks) == 40
-    assert len({task.blinded_parent_group for task in tasks.values()}) == 20
-    assert all(len(row.annotators) == 2 for row in manifest.task_assignments)
-    assert all(len(package.tasks) == 40 for package in manifest.packages)
-    assert scan == {"files": 3, "packages": 2, "tasks": 40, "decisions": 0}
+    assert len({row.internal_group_id for row in manifest.coordinator_tasks}) == 20
+    assert all(len(row.annotators) == 2 for row in manifest.coordinator_tasks)
+    assert scan == {"files": 2, "packages": 2, "tasks": 40, "decisions": 0}
 
-    serialized = json.dumps(manifest.model_dump(mode="json"), ensure_ascii=False)
+    serialized = "".join(path.read_text(encoding="utf-8") for path in out.iterdir())
     for hidden in (
         "expected_answerability",
         "transformation",
@@ -64,18 +62,17 @@ def test_pilot_package_is_byte_deterministic_and_bound_to_protocol_hash(
     build_pilot_package(cfg, second)
 
     assert _tree_bytes(first) == _tree_bytes(second)
-    package = AssignmentPackage.model_validate(
+    package = AssignmentPackageV2.model_validate(
         json.loads((first / "ann-pilot-a.json").read_text(encoding="utf-8"))
     )
-    assert package.instruction_version == "pilot-v0.2.1-draft"
+    assert package.instruction_version == "pilot-v0.2.2-draft"
     assert (
         package.instruction_hash
         == hashlib.sha256(Path("PILOT_PROTOCOL.md").read_bytes()).hexdigest()
     )
-    saved = AssignmentManifest.model_validate(
-        json.loads((first / "manifest.json").read_text(encoding="utf-8"))
-    )
-    assert saved == build_pilot_package(cfg, tmp_path / "third")
+    repeated = build_pilot_package(cfg, tmp_path / "third")
+    assert isinstance(repeated, AssignmentManifestV2)
+    assert repeated == build_pilot_package(cfg, tmp_path / "fourth")
 
 
 def test_committed_packages_share_current_full_protocol_hash(repo_root: Path) -> None:
@@ -83,8 +80,17 @@ def test_committed_packages_share_current_full_protocol_hash(repo_root: Path) ->
     package_root = repo_root / "pilot" / "v0.2" / "packages"
 
     for name in ("ann-pilot-a.json", "ann-pilot-b.json"):
-        package = AssignmentPackage.model_validate(
+        package = AssignmentPackageV2.model_validate(
             json.loads((package_root / name).read_text(encoding="utf-8"))
         )
-        assert package.instruction_version == "pilot-v0.2.1-draft"
+        assert package.instruction_version == "pilot-v0.2.2-draft"
         assert package.instruction_hash == protocol_hash
+
+
+def test_committed_package_directory_contains_no_private_manifest(repo_root: Path) -> None:
+    package_root = repo_root / "pilot" / "v0.2" / "packages"
+
+    assert {path.name for path in package_root.iterdir() if path.is_file()} == {
+        "ann-pilot-a.json",
+        "ann-pilot-b.json",
+    }

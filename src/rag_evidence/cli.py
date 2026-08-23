@@ -585,6 +585,40 @@ def annotation_package_pilot(
     _run(lambda cfg: build_pilot_package(cfg, out), config)
 
 
+@annotation_app.command("build-coordinator-manifest")
+def annotation_build_coordinator_manifest(
+    challenge_records: Annotated[
+        Path,
+        typer.Option("--challenge-records", exists=True, dir_okay=False, readable=True),
+    ],
+    package_a: Annotated[
+        Path, typer.Option("--package-a", exists=True, dir_okay=False, readable=True)
+    ],
+    package_b: Annotated[
+        Path, typer.Option("--package-b", exists=True, dir_okay=False, readable=True)
+    ],
+    output: Annotated[Path, typer.Option("--output", dir_okay=False)],
+) -> None:
+    """Rebuild the coordinator-only v2 manifest outside the source repository."""
+    from rag_evidence.annotation.package import rebuild_coordinator_manifest
+    from rag_evidence.errors import RagEvidenceError
+
+    try:
+        manifest = rebuild_coordinator_manifest(
+            challenge_records,
+            package_a,
+            package_b,
+            output,
+            repository_root=Path.cwd(),
+        )
+    except RagEvidenceError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(
+        f"wrote coordinator manifest with {len(manifest.coordinator_tasks)} tasks to {output}"
+    )
+
+
 @annotation_app.command("serve")
 def annotation_serve(
     package: Annotated[Path, typer.Option("--package", exists=True, dir_okay=False, readable=True)],

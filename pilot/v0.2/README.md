@@ -7,7 +7,7 @@ both independent annotators. No answerability label, adjudication, eligibility d
 IAA result, synthetic decision, or model output is included.
 
 Packages from baseline `372096b` are obsolete. The canonical sources in `packages/` are
-regenerated in place against instruction identity `pilot-v0.2.1-draft` and the SHA-256 of
+regenerated in place against instruction identity `pilot-v0.2.2-draft` and the SHA-256 of
 the complete `PILOT_PROTOCOL.md` file.
 
 The task text derives from HotpotQA and retains its CC BY-SA 4.0 data obligations; project
@@ -29,7 +29,9 @@ assets, or Hugging Face publication.
 
 1. Build Git-external, checksum-verified A and B kits from a final clean checkout. Each kit
    contains the same verified wheel but only its own package and launcher. Neither kit
-   contains `packages/manifest.json` or the other annotator's package.
+   contains the coordinator-only `assignment-manifest-v2.json` or the other annotator's
+   package. Rebuild that private manifest outside the repository with the exact canonical A/B
+   package bytes before collection.
 2. Each annotator uses a private state directory and returns `submissions.jsonl`, a present
    `amendments.jsonl` (which may be empty), and return checksums.
 3. Collect both streams:

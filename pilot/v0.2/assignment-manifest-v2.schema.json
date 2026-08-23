@@ -1,0 +1,233 @@
+{
+  "$defs": {
+    "BlindTaskV2": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "blind-task-v2",
+          "default": "blind-task-v2",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "annotation_task_id": {
+          "pattern": "^task-[0-9a-f]{24}$",
+          "title": "Annotation Task Id",
+          "type": "string"
+        },
+        "challenge_id": {
+          "pattern": "^ch-[0-9a-f]{24}$",
+          "title": "Challenge Id",
+          "type": "string"
+        },
+        "instruction_version": {
+          "minLength": 1,
+          "title": "Instruction Version",
+          "type": "string"
+        },
+        "instruction_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Instruction Hash",
+          "type": "string"
+        },
+        "question": {
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "passages": {
+          "items": {
+            "$ref": "#/$defs/TaskPassage"
+          },
+          "minItems": 1,
+          "title": "Passages",
+          "type": "array"
+        },
+        "task_content_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Task Content Hash",
+          "type": "string"
+        },
+        "assignment_batch": {
+          "minLength": 1,
+          "title": "Assignment Batch",
+          "type": "string"
+        }
+      },
+      "required": [
+        "annotation_task_id",
+        "challenge_id",
+        "instruction_version",
+        "instruction_hash",
+        "question",
+        "passages",
+        "task_content_hash",
+        "assignment_batch"
+      ],
+      "title": "BlindTaskV2",
+      "type": "object"
+    },
+    "CoordinatorTaskV2": {
+      "additionalProperties": false,
+      "properties": {
+        "annotation_task_id": {
+          "pattern": "^task-[0-9a-f]{24}$",
+          "title": "Annotation Task Id",
+          "type": "string"
+        },
+        "internal_group_id": {
+          "pattern": "^coord-[a-z0-9._-]+$",
+          "title": "Internal Group Id",
+          "type": "string"
+        },
+        "transformation": {
+          "enum": [
+            "missing_hop",
+            "evidence_swap"
+          ],
+          "title": "Transformation",
+          "type": "string"
+        },
+        "annotators": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "title": "Annotators",
+          "type": "array"
+        },
+        "delivery_positions": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Delivery Positions",
+          "type": "object"
+        }
+      },
+      "required": [
+        "annotation_task_id",
+        "internal_group_id",
+        "transformation",
+        "annotators",
+        "delivery_positions"
+      ],
+      "title": "CoordinatorTaskV2",
+      "type": "object"
+    },
+    "TaskPassage": {
+      "additionalProperties": false,
+      "properties": {
+        "alias": {
+          "pattern": "^P[1-9]\\d*$",
+          "title": "Alias",
+          "type": "string"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "sentences": {
+          "items": {
+            "$ref": "#/$defs/TaskSentence"
+          },
+          "minItems": 1,
+          "title": "Sentences",
+          "type": "array"
+        }
+      },
+      "required": [
+        "alias",
+        "title",
+        "sentences"
+      ],
+      "title": "TaskPassage",
+      "type": "object"
+    },
+    "TaskSentence": {
+      "additionalProperties": false,
+      "properties": {
+        "alias": {
+          "pattern": "^P[1-9]\\d*\\.S[1-9]\\d*$",
+          "title": "Alias",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "alias",
+        "text"
+      ],
+      "title": "TaskSentence",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "assignment-manifest-v2",
+      "default": "assignment-manifest-v2",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "seed": {
+      "title": "Seed",
+      "type": "integer"
+    },
+    "instruction_version": {
+      "title": "Instruction Version",
+      "type": "string"
+    },
+    "instruction_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Instruction Hash",
+      "type": "string"
+    },
+    "assignment_batch": {
+      "title": "Assignment Batch",
+      "type": "string"
+    },
+    "tasks": {
+      "items": {
+        "$ref": "#/$defs/BlindTaskV2"
+      },
+      "title": "Tasks",
+      "type": "array"
+    },
+    "coordinator_tasks": {
+      "items": {
+        "$ref": "#/$defs/CoordinatorTaskV2"
+      },
+      "title": "Coordinator Tasks",
+      "type": "array"
+    },
+    "package_sha256": {
+      "additionalProperties": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "title": "Package Sha256",
+      "type": "object"
+    }
+  },
+  "required": [
+    "seed",
+    "instruction_version",
+    "instruction_hash",
+    "assignment_batch",
+    "tasks",
+    "coordinator_tasks",
+    "package_sha256"
+  ],
+  "title": "AssignmentManifestV2",
+  "type": "object"
+}
