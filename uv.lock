@@ -3277,6 +3277,12 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+annotation = [
+    { name = "fastapi", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "pydantic", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "typer", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "uvicorn", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
 app = [
     { name = "fastapi", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "gradio", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -3304,6 +3310,12 @@ ml = [
 ]
 
 [package.dev-dependencies]
+annotation = [
+    { name = "fastapi", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "pydantic", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "typer", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "uvicorn", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
 dev = [
     { name = "httpx", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "jupyterlab", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -3321,12 +3333,14 @@ requires-dist = [
     { name = "bitsandbytes", marker = "sys_platform == 'linux' and extra == 'gpu'", specifier = ">=0.46" },
     { name = "context-cite", marker = "extra == 'contextcite'", specifier = ">=0.0.4" },
     { name = "datasets", marker = "extra == 'ml'", specifier = ">=3.0" },
+    { name = "fastapi", marker = "extra == 'annotation'", specifier = ">=0.111" },
     { name = "fastapi", marker = "extra == 'app'", specifier = ">=0.111" },
     { name = "gradio", marker = "extra == 'app'", specifier = ">=5.0" },
     { name = "huggingface-hub", marker = "extra == 'ml'", specifier = ">=0.30" },
     { name = "matplotlib", specifier = ">=3.8" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "pydantic", specifier = ">=2.7" },
+    { name = "pydantic", marker = "extra == 'annotation'", specifier = ">=2.7" },
     { name = "pydantic-settings", specifier = ">=2.3" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rag-evidence-attribution-bench", extras = ["ml"], marker = "extra == 'gpu'" },
@@ -3338,11 +3352,19 @@ requires-dist = [
     { name = "torch", marker = "sys_platform == 'win32' and extra == 'ml'", specifier = ">=2.4,<2.7", index = "https://download.pytorch.org/whl/cpu" },
     { name = "transformers", marker = "extra == 'ml'", specifier = ">=4.51" },
     { name = "typer", specifier = ">=0.12" },
+    { name = "typer", marker = "extra == 'annotation'", specifier = ">=0.12" },
+    { name = "uvicorn", marker = "extra == 'annotation'", specifier = ">=0.30" },
     { name = "uvicorn", marker = "extra == 'app'", specifier = ">=0.30" },
 ]
-provides-extras = ["app", "ml", "gpu", "contextcite"]
+provides-extras = ["annotation", "app", "ml", "gpu", "contextcite"]
 
 [package.metadata.requires-dev]
+annotation = [
+    { name = "fastapi", specifier = ">=0.111" },
+    { name = "pydantic", specifier = ">=2.7" },
+    { name = "typer", specifier = ">=0.12" },
+    { name = "uvicorn", specifier = ">=0.30" },
+]
 dev = [
     { name = "httpx", specifier = ">=0.27" },
     { name = "jupyterlab", specifier = ">=4.6.2" },

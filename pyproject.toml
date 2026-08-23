@@ -18,6 +18,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+annotation = [
+    "fastapi>=0.111",
+    "pydantic>=2.7",
+    "typer>=0.12",
+    "uvicorn>=0.30",
+]
 app = [
     "fastapi>=0.111",
     "uvicorn>=0.30",
@@ -44,6 +50,12 @@ contextcite = [
 ]
 
 [dependency-groups]
+annotation = [
+    "fastapi>=0.111",
+    "pydantic>=2.7",
+    "typer>=0.12",
+    "uvicorn>=0.30",
+]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=5.0",

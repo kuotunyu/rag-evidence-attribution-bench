@@ -12,14 +12,14 @@ access, another person's state, or any prior decision.
 - Keep the kit, state, exports, and return checksums private and outside any Git checkout.
 - Use only `127.0.0.1`. Stop if the browser or tool requests network access.
 - Stop immediately if `SHA256SUMS` fails, the wheel/package is missing, the package shows
-  another pseudonym, the instruction version is not `pilot-v0.2.1-draft`, or the displayed
+  another pseudonym, the instruction version is not `pilot-v0.2.2-draft`, or the displayed
   instruction hash differs from the package hash.
 - Never continue after a hash mismatch. Preserve the files unchanged and notify the
   coordinator through the separately agreed private channel.
 
 Each kit must contain exactly one `ann-pilot-a.json` or `ann-pilot-b.json`, one wheel,
-`ONBOARDING.md`, this runbook, `start.ps1`, `start.sh`, and `SHA256SUMS`. It must not contain
-the other package or any file with `manifest` in its name.
+`annotation-requirements-py311.lock`, `ONBOARDING.md`, this runbook, `start.ps1`, `start.sh`,
+and `SHA256SUMS`. It must not contain the other package or any file with `manifest` in its name.
 
 ## Windows PowerShell 7+
 
@@ -37,8 +37,9 @@ Get-Content -LiteralPath (Join-Path $KitRoot "SHA256SUMS") | ForEach-Object {
 }
 ```
 
-Create a Python 3.11 environment and private state outside the kit, then install the one
-verified wheel with the `app` extra:
+Create a Python 3.11 environment outside the kit. Bootstrap only the locked binary runtime,
+then install the one verified wheel without dependency resolution. Do not upgrade pip, remove
+`--only-binary=:all:`, resolve a wheel extra, or permit an sdist/build-isolation fallback:
 
 ```powershell
 $PrivateRoot = Join-Path $env:LOCALAPPDATA "reab-pilot-private"
@@ -48,10 +49,10 @@ $ReturnRoot = Join-Path $PrivateRoot "return"
 $null = New-Item -ItemType Directory -Force -Path $PrivateRoot, $StateRoot, $ReturnRoot
 py -3.11 -m venv $VenvRoot
 $Python = Join-Path $VenvRoot "Scripts/python.exe"
-& $Python -m pip install --upgrade pip
 $Wheels = @(Get-ChildItem -LiteralPath $KitRoot -Filter *.whl -File)
 if ($Wheels.Count -ne 1) { throw "Kit must contain exactly one wheel." }
-& $Python -m pip install "$($Wheels[0].FullName)[app]"
+& $Python -m pip install --require-hashes --only-binary=:all: -r (Join-Path $KitRoot "annotation-requirements-py311.lock")
+& $Python -m pip install --no-deps "$($Wheels[0].FullName)"
 & $Python -c "import sys; assert sys.version_info[:2] == (3, 11)"
 & $Python -m rag_evidence annotation --help
 ```
@@ -87,8 +88,8 @@ KIT_ROOT=$(pwd -P)
 sha256sum -c SHA256SUMS
 ```
 
-Create a Python 3.11 environment and private directories outside the kit, then install the
-one verified wheel with the `app` extra:
+Create a Python 3.11 environment outside the kit. Bootstrap only the locked binary runtime,
+then install the verified wheel without dependency resolution:
 
 ```sh
 PRIVATE_ROOT=${XDG_STATE_HOME:-"$HOME/.local/state"}/reab-pilot-private
@@ -98,10 +99,10 @@ RETURN_ROOT=$PRIVATE_ROOT/return
 mkdir -p -- "$PRIVATE_ROOT" "$STATE_ROOT" "$RETURN_ROOT"
 python3.11 -m venv "$VENV_ROOT"
 PYTHON=$VENV_ROOT/bin/python
-"$PYTHON" -m pip install --upgrade pip
 set -- "$KIT_ROOT"/*.whl
 [ "$#" -eq 1 ] || { echo "Kit must contain exactly one wheel." >&2; exit 2; }
-"$PYTHON" -m pip install "$1[app]"
+"$PYTHON" -m pip install --require-hashes --only-binary=:all: -r "$KIT_ROOT/annotation-requirements-py311.lock"
+"$PYTHON" -m pip install --no-deps "$1"
 "$PYTHON" -c 'import sys; assert sys.version_info[:2] == (3, 11)'
 "$PYTHON" -m rag_evidence annotation --help
 ```
