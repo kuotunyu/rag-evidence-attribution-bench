@@ -90,6 +90,11 @@ class ChallengeVariant(StrEnum):
     evidence_swap = "evidence_swap"
 
 
+class HandoffWheelMode(StrEnum):
+    byte_identical = "byte-identical"
+    per_build_hash_verified = "per-build-hash-verified"
+
+
 def _challenge_config(
     cfg: Any,
     *,
@@ -492,6 +497,57 @@ def annotation_finalize_pilot(
     typer.echo(result.verdict.value)
     if result.verdict is not PilotVerdictName.READY_FOR_HUMAN_FREEZE_REVIEW:
         raise typer.Exit(code=2)
+
+
+@annotation_app.command("build-handoff")
+def annotation_build_handoff(
+    spec: Annotated[
+        Path,
+        typer.Option("--spec", exists=True, dir_okay=False, readable=True),
+    ],
+    wheel: Annotated[
+        Path,
+        typer.Option("--wheel", exists=True, dir_okay=False, readable=True),
+    ],
+    clean_install: Annotated[
+        Path,
+        typer.Option("--clean-install", exists=True, dir_okay=False, readable=True),
+    ],
+    source_commit: Annotated[str, typer.Option("--source-commit")],
+    build_time: Annotated[str, typer.Option("--build-time")],
+    wheel_reproducibility: Annotated[
+        HandoffWheelMode,
+        typer.Option("--wheel-reproducibility"),
+    ],
+    out: Annotated[Path, typer.Option("--out", file_okay=False)],
+) -> None:
+    """Build two disjoint, checksum-bound annotator kits outside the repository."""
+    from rag_evidence.annotation.handoff import (
+        CleanInstallVerification,
+        build_handoff,
+    )
+    from rag_evidence.errors import RagEvidenceError
+
+    try:
+        verification = CleanInstallVerification.model_validate_json(
+            clean_install.read_text(encoding="utf-8")
+        )
+        receipt = build_handoff(
+            spec_path=spec,
+            wheel_path=wheel,
+            external_root=out,
+            source_commit=source_commit,
+            build_time=build_time,
+            clean_install=verification,
+            wheel_reproducibility=wheel_reproducibility.value,
+        )
+    except (RagEvidenceError, ValueError) as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(
+        f"built isolated kits at {out}; wheel={receipt.wheel.reproducibility}; "
+        f"commit={receipt.source_commit_sha}"
+    )
 
 
 @annotation_app.command("package-pilot")

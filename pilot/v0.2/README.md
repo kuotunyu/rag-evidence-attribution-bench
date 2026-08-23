@@ -13,6 +13,11 @@ the complete `PILOT_PROTOCOL.md` file.
 The task text derives from HotpotQA and retains its CC BY-SA 4.0 data obligations; project
 code remains MIT licensed. Read the repository `DATA_CARD.md` and `PILOT_PROTOCOL.md`.
 
+The committed `handoff-manifest.json` and `handoff-manifest.schema.json` bind builder/spec
+versions, Python 3.11 support, the dependency lock, canonical source hashes, instruction
+identity, expected Git-external layout, and the reproducible recipe. They intentionally do
+not contain a predicted wheel hash. See `HANDOFF_RUNBOOK.md` for exact commands.
+
 ## B0.1 stop boundary
 
 This source state does not authorize the human pilot. Owner approval is still required

@@ -60,6 +60,24 @@ reab_bundle.zip
 # `cli import-results`, never commit the zips themselves
 results_*.zip
 
+# annotation handoff binaries, private state, decisions, and generated receipts
+dist/
+build/
+*.whl
+*.tar.gz
+**/handoff-receipt.json
+**/SHA256SUMS
+**/submissions.jsonl
+**/amendments.jsonl
+**/adjudications.jsonl
+**/eligibility.json
+**/iaa.json
+**/annotation-state/
+**/coordinator-private/
+**/synthetic-rehearsal/
+pilot/v0.2/delivery*/
+pilot/v0.2/*.zip
+
 # OS / editor
 .DS_Store
 Thumbs.db

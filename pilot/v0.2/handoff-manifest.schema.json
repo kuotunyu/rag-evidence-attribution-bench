@@ -1,0 +1,209 @@
+{
+  "$defs": {
+    "ExpectedLayout": {
+      "additionalProperties": false,
+      "properties": {
+        "external_root_files": {
+          "default": [
+            "handoff-receipt.json",
+            "SHA256SUMS"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "External Root Files",
+          "type": "array"
+        },
+        "kit_a_directory": {
+          "const": "kit-a",
+          "default": "kit-a",
+          "title": "Kit A Directory",
+          "type": "string"
+        },
+        "kit_b_directory": {
+          "const": "kit-b",
+          "default": "kit-b",
+          "title": "Kit B Directory",
+          "type": "string"
+        },
+        "kit_a_files": {
+          "default": [
+            "<verified-wheel>",
+            "ann-pilot-a.json",
+            "ONBOARDING.md",
+            "HANDOFF_RUNBOOK.md",
+            "start.ps1",
+            "start.sh",
+            "SHA256SUMS"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Kit A Files",
+          "type": "array"
+        },
+        "kit_b_files": {
+          "default": [
+            "<verified-wheel>",
+            "ann-pilot-b.json",
+            "ONBOARDING.md",
+            "HANDOFF_RUNBOOK.md",
+            "start.ps1",
+            "start.sh",
+            "SHA256SUMS"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Kit B Files",
+          "type": "array"
+        }
+      },
+      "title": "ExpectedLayout",
+      "type": "object"
+    },
+    "ReproducibleBuildRecipe": {
+      "additionalProperties": false,
+      "properties": {
+        "source_date_epoch": {
+          "minimum": 315532800,
+          "title": "Source Date Epoch",
+          "type": "integer"
+        },
+        "build_command": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Build Command",
+          "type": "array"
+        },
+        "verification_steps": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Verification Steps",
+          "type": "array"
+        },
+        "wheel_policy": {
+          "const": "byte-compare-else-per-build-hash",
+          "default": "byte-compare-else-per-build-hash",
+          "title": "Wheel Policy",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_date_epoch",
+        "build_command",
+        "verification_steps"
+      ],
+      "title": "ReproducibleBuildRecipe",
+      "type": "object"
+    },
+    "SupportedEnvironment": {
+      "additionalProperties": false,
+      "properties": {
+        "python": {
+          "const": "3.11",
+          "default": "3.11",
+          "title": "Python",
+          "type": "string"
+        },
+        "operating_systems": {
+          "default": [
+            "Windows",
+            "Linux"
+          ],
+          "items": {
+            "enum": [
+              "Windows",
+              "Linux"
+            ],
+            "type": "string"
+          },
+          "title": "Operating Systems",
+          "type": "array"
+        },
+        "install_extra": {
+          "const": "app",
+          "default": "app",
+          "title": "Install Extra",
+          "type": "string"
+        },
+        "dependency_lock": {
+          "const": "uv.lock",
+          "default": "uv.lock",
+          "title": "Dependency Lock",
+          "type": "string"
+        }
+      },
+      "title": "SupportedEnvironment",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "handoff-manifest-v1",
+      "default": "handoff-manifest-v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "spec_version": {
+      "const": "handoff-spec-v1",
+      "default": "handoff-spec-v1",
+      "title": "Spec Version",
+      "type": "string"
+    },
+    "builder_version": {
+      "const": "handoff-builder-v1",
+      "default": "handoff-builder-v1",
+      "title": "Builder Version",
+      "type": "string"
+    },
+    "supported_environment": {
+      "$ref": "#/$defs/SupportedEnvironment"
+    },
+    "source_paths": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Source Paths",
+      "type": "object"
+    },
+    "canonical_sha256": {
+      "additionalProperties": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "title": "Canonical Sha256",
+      "type": "object"
+    },
+    "instruction_version": {
+      "const": "pilot-v0.2.1-draft",
+      "title": "Instruction Version",
+      "type": "string"
+    },
+    "instruction_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Instruction Sha256",
+      "type": "string"
+    },
+    "expected_layout": {
+      "$ref": "#/$defs/ExpectedLayout"
+    },
+    "reproducible_build": {
+      "$ref": "#/$defs/ReproducibleBuildRecipe"
+    }
+  },
+  "required": [
+    "supported_environment",
+    "source_paths",
+    "canonical_sha256",
+    "instruction_version",
+    "instruction_sha256",
+    "expected_layout",
+    "reproducible_build"
+  ],
+  "title": "HandoffSpec",
+  "type": "object"
+}
