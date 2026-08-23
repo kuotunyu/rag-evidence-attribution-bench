@@ -5,21 +5,21 @@ or fills an annotation from challenge transformation metadata.
 """
 
 from rag_evidence.annotation.models import (
-    AdjudicationRecord,
-    AnnotationAmendment,
-    AnswerabilityAnnotation,
-    BlindTask,
-    CitationAnnotation,
-    EligibilityArtifact,
-    EligibilityRecord,
+    AdjudicationV2,
+    AnnotationAmendmentV2,
+    AnswerabilityAnnotationV2,
+    BlindTaskV2,
+    CitationAnnotationV2,
+    EligibilityArtifactV2,
+    EligibilityRecordV2,
 )
 
 __all__ = [
-    "AdjudicationRecord",
-    "AnnotationAmendment",
-    "AnswerabilityAnnotation",
-    "BlindTask",
-    "CitationAnnotation",
-    "EligibilityArtifact",
-    "EligibilityRecord",
+    "AdjudicationV2",
+    "AnnotationAmendmentV2",
+    "AnswerabilityAnnotationV2",
+    "BlindTaskV2",
+    "CitationAnnotationV2",
+    "EligibilityArtifactV2",
+    "EligibilityRecordV2",
 ]
