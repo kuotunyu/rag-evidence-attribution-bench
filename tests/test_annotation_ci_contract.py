@@ -35,6 +35,12 @@ def test_ci_has_symmetric_annotation_platform_jobs(repo_root: Path) -> None:
     assert "0.2.0.dev0" in serialized
     assert "checkout@v4" in serialized
     assert "pull_request.head.sha" in serialized
+    for job in (windows, linux):
+        assert "runner.temp" not in json.dumps(job["env"])
+        build_step = next(
+            step for step in job["steps"] if step.get("name", "").startswith("Build exact")
+        )
+        assert "runner.temp" in json.dumps(build_step["env"])
 
 
 def test_platform_jobs_upload_only_coordinator_verification_evidence(repo_root: Path) -> None:

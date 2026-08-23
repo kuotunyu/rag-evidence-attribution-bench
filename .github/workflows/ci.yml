@@ -60,8 +60,6 @@ jobs:
       SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
       SOURCE_DATE_EPOCH: "1787443200"
       BOOTSTRAP_POLICY: "--require-hashes --only-binary=:all:"
-      UV_CACHE_DIR: ${{ runner.temp }}/annotation-windows-uv-cache
-      PYTHONPYCACHEPREFIX: ${{ runner.temp }}/annotation-windows-pycache
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
       - uses: actions/checkout@v4
@@ -75,6 +73,9 @@ jobs:
           enable-cache: false
       - name: Build exact 0.2.0.dev0 wheel outside checkout
         shell: pwsh
+        env:
+          UV_CACHE_DIR: ${{ runner.temp }}/annotation-windows-uv-cache
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/annotation-windows-pycache
         run: |
           $Dist = Join-Path $env:RUNNER_TEMP "annotation-windows-dist"
           uv build --wheel --out-dir $Dist
@@ -117,8 +118,6 @@ jobs:
       SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
       SOURCE_DATE_EPOCH: "1787443200"
       BOOTSTRAP_POLICY: "--require-hashes --only-binary=:all:"
-      UV_CACHE_DIR: ${{ runner.temp }}/annotation-linux-uv-cache
-      PYTHONPYCACHEPREFIX: ${{ runner.temp }}/annotation-linux-pycache
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
       - uses: actions/checkout@v4
@@ -132,6 +131,9 @@ jobs:
           enable-cache: false
       - name: Build exact 0.2.0.dev0 wheel outside checkout
         shell: bash
+        env:
+          UV_CACHE_DIR: ${{ runner.temp }}/annotation-linux-uv-cache
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/annotation-linux-pycache
         run: |
           DIST="$RUNNER_TEMP/annotation-linux-dist"
           uv build --wheel --out-dir "$DIST"
