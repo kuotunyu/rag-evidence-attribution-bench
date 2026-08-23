@@ -51,12 +51,9 @@ _FORBIDDEN_KEY_PARTS = frozenset(
         "expected",
         "gold",
         "provenance",
-        "source",
         "coordinator",
         "seed",
         "score",
-        "method",
-        "model",
     }
 )
 
@@ -100,7 +97,12 @@ def scan_delivery_payload(payload: object, *, artifact_kind: str) -> tuple[str, 
             for raw_key, child in value.items():
                 key = str(raw_key)
                 child_path = f"{path}.{key}"
-                if _key_parts(key) & _FORBIDDEN_KEY_PARTS:
+                lowered = key.casefold()
+                if (
+                    lowered in _PRIVATE_KEYS
+                    or lowered.startswith(("expected_", "gold_"))
+                    or _key_parts(key) & _FORBIDDEN_KEY_PARTS
+                ):
                     violations.append(f"{child_path}: forbidden delivery metadata key")
                 visit(child, child_path)
             return

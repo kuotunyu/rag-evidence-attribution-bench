@@ -10,8 +10,8 @@ from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import ValidationError
 
-from rag_evidence.annotation.assignment import AssignmentManifest, AssignmentPackageV2
-from rag_evidence.annotation.models import AnswerabilityAnnotation
+from rag_evidence.annotation.assignment import AssignmentManifestV2, AssignmentPackageV2
+from rag_evidence.annotation.models import AnswerabilityAnnotationV2
 from rag_evidence.annotation.store import AnnotationStore
 from rag_evidence.annotation.workflow import AdjudicationStore
 from rag_evidence.errors import ArtifactError
@@ -136,23 +136,21 @@ def create_adjudication_app(
     state_dir: Path,
 ) -> FastAPI:
     try:
-        manifest = AssignmentManifest.model_validate(
+        manifest = AssignmentManifestV2.model_validate(
             json.loads(manifest_path.read_text(encoding="utf-8"))
         )
     except (OSError, json.JSONDecodeError, ValidationError) as exc:
         raise ArtifactError(f"failed to load assignment manifest {manifest_path}: {exc}") from exc
     submissions = tuple(
-        AnswerabilityAnnotation.model_validate(payload)
+        AnswerabilityAnnotationV2.model_validate(payload)
         for payload in read_records(submissions_path)
     )
     store = AdjudicationStore(state_dir, manifest, submissions)
-    tasks = {
-        task.annotation_task_id: task for package in manifest.packages for task in package.tasks
-    }
+    tasks = {task.annotation_task_id: task for task in manifest.tasks}
     app = FastAPI(
         title="RAG evidence adjudication console",
         description="Offline third-human disagreement resolution.",
-        version="adjudication-ui-v1",
+        version="adjudication-ui-v2",
     )
     app.state.adjudication_store = store
 

@@ -20,16 +20,16 @@ from rag_evidence.annotation.agreement import (
     aggregate_evidence_agreement,
     nominal_agreement,
 )
-from rag_evidence.annotation.assignment import AssignmentManifest
+from rag_evidence.annotation.assignment import AssignmentManifestV2, validate_pilot_manifest_v2
 from rag_evidence.annotation.coordinator import resolve_amendments
 from rag_evidence.annotation.models import (
-    AdjudicationRecord,
-    AnnotationAmendment,
-    AnswerabilityAnnotation,
-    EligibilityArtifact,
+    AdjudicationV2,
+    AnnotationAmendmentV2,
+    AnswerabilityAnnotationV2,
+    EligibilityArtifactV2,
     artifact_hash,
 )
-from rag_evidence.annotation.privacy import scan_private_payload
+from rag_evidence.annotation.privacy import scan_delivery_payload
 from rag_evidence.annotation.workflow import (
     FlowAccounting,
     build_workflow_result,
@@ -45,7 +45,7 @@ from rag_evidence.storage.artifacts import (
 
 EXPECTED_PILOT_TASKS = 40
 IAA_THRESHOLD = 0.70
-EXPECTED_INSTRUCTION_VERSION = "pilot-v0.2.1-draft"
+EXPECTED_INSTRUCTION_VERSION = "pilot-v0.2.2-draft"
 FINAL_ARTIFACT_NAMES = (
     "flow-accounting.json",
     "disagreements.jsonl",
@@ -90,7 +90,7 @@ class PilotFinalizationResult:
 
 
 class IaaArtifact(_StrictModel):
-    schema_version: Literal["pilot-iaa-v1"] = "pilot-iaa-v1"
+    schema_version: Literal["pilot-iaa-v2"] = "pilot-iaa-v2"
     generated_at: dt.datetime
     population: Literal["post-amendment-pre-adjudication"] = "post-amendment-pre-adjudication"
     required_tasks: Literal[40] = 40
@@ -109,7 +109,7 @@ class IaaArtifact(_StrictModel):
 
 
 class EvidenceAgreementArtifact(_StrictModel):
-    schema_version: Literal["pilot-evidence-agreement-v1"] = "pilot-evidence-agreement-v1"
+    schema_version: Literal["pilot-evidence-agreement-v2"] = "pilot-evidence-agreement-v2"
     generated_at: dt.datetime
     n_total_tasks: int = Field(ge=0)
     n_comparable: int = Field(ge=0)
@@ -121,7 +121,7 @@ class EvidenceAgreementArtifact(_StrictModel):
 
 
 class PrivacyScanArtifact(_StrictModel):
-    schema_version: Literal["pilot-privacy-scan-v1"] = "pilot-privacy-scan-v1"
+    schema_version: Literal["pilot-privacy-scan-v2"] = "pilot-privacy-scan-v2"
     generated_at: dt.datetime
     passed: bool
     scanned_artifacts: tuple[str, ...]
@@ -129,7 +129,7 @@ class PrivacyScanArtifact(_StrictModel):
 
 
 class PilotVerdictArtifact(_StrictModel):
-    schema_version: Literal["pilot-verdict-v1"] = "pilot-verdict-v1"
+    schema_version: Literal["pilot-verdict-v2"] = "pilot-verdict-v2"
     generated_at: dt.datetime
     verdict: PilotVerdictName
     ready_for_human_freeze_review: bool
@@ -265,7 +265,7 @@ def _evidence_artifact(
 
 
 def _timing_summary(
-    originals: Sequence[AnswerabilityAnnotation],
+    originals: Sequence[AnswerabilityAnnotationV2],
     generated_at: dt.datetime,
 ) -> dict[str, Any]:
     by_annotator: dict[str, list[float]] = {}
@@ -287,7 +287,7 @@ def _timing_summary(
             }
         )
     return {
-        "schema_version": "pilot-timing-summary-v1",
+        "schema_version": "pilot-timing-summary-v2",
         "generated_at": generated_at.isoformat().replace("+00:00", "Z"),
         "basis": "original-submission-start-to-submit",
         "annotators": annotators,
@@ -340,7 +340,7 @@ def _write_bundle(
     generated_at: dt.datetime,
     flow: FlowAccounting,
     disagreements: Sequence[Mapping[str, Any]],
-    eligibility: EligibilityArtifact,
+    eligibility: EligibilityArtifactV2,
     iaa: IaaArtifact,
     evidence: EvidenceAgreementArtifact,
     timing: Mapping[str, Any],
@@ -349,7 +349,7 @@ def _write_bundle(
 ) -> PilotFinalizationResult:
     out.mkdir(parents=True, exist_ok=True)
     flow_payload = {
-        "schema_version": "pilot-flow-accounting-v1",
+        "schema_version": "pilot-flow-accounting-v2",
         "generated_at": generated_at.isoformat().replace("+00:00", "Z"),
         **flow.model_dump(mode="json"),
     }
@@ -370,7 +370,7 @@ def _write_bundle(
 
     output_names = [name for name in FINAL_ARTIFACT_NAMES if name != "input-manifest.json"]
     manifest_payload = {
-        "schema_version": "pilot-finalization-input-manifest-v1",
+        "schema_version": "pilot-finalization-input-manifest-v2",
         "artifacts": [
             *(_digest(logical_name, "input", path) for logical_name, path in input_paths),
             *(_digest(Path(name).stem, "output", out / name) for name in output_names),
@@ -407,7 +407,7 @@ def _blocked_bundle(
     agreement = nominal_agreement([(None, None)] * assigned_tasks)
     gate = evaluate_iaa_gate(agreement)
     evidence = aggregate_evidence_agreement([(None, None)] * assigned_tasks)
-    eligibility = EligibilityArtifact(
+    eligibility = EligibilityArtifactV2(
         phase="pilot",
         protocol_version=protocol_version,
         protocol_hash=protocol_hash,
@@ -444,7 +444,7 @@ def _blocked_bundle(
 def _raw_assigned_count(manifest_payload: object) -> int:
     if not isinstance(manifest_payload, Mapping):
         return 0
-    assignments = manifest_payload.get("task_assignments")
+    assignments = manifest_payload.get("coordinator_tasks")
     if not isinstance(assignments, Sequence) or isinstance(assignments, (str, bytes)):
         return 0
     return len(assignments)
@@ -453,13 +453,7 @@ def _raw_assigned_count(manifest_payload: object) -> int:
 def _raw_protocol_version(manifest_payload: object) -> str:
     if not isinstance(manifest_payload, Mapping):
         return "unknown-protocol"
-    packages = manifest_payload.get("packages")
-    if not isinstance(packages, Sequence) or not packages:
-        return "unknown-protocol"
-    first = packages[0]
-    if not isinstance(first, Mapping):
-        return "unknown-protocol"
-    value = first.get("instruction_version")
+    value = manifest_payload.get("instruction_version")
     return value if isinstance(value, str) and value else "unknown-protocol"
 
 
@@ -503,15 +497,17 @@ def finalize_pilot(
             blockers=("one or more input artifacts could not be parsed",),
         )
 
-    raw_payloads: tuple[object, ...] = (
-        raw_manifest,
+    source_payloads: tuple[object, ...] = (
         raw_originals,
         raw_amendments,
         raw_adjudications,
         protocol_bytes.decode("utf-8", errors="replace"),
     )
-    generated_at = _source_generated_at(raw_payloads)
-    privacy_violations = scan_private_payload(raw_payloads)
+    generated_at = _source_generated_at(source_payloads)
+    privacy_violations = scan_delivery_payload(
+        (raw_originals, raw_amendments, raw_adjudications),
+        artifact_kind="finalization_inputs",
+    )
     if privacy_violations:
         return _blocked_bundle(
             out=out,
@@ -526,17 +522,18 @@ def finalize_pilot(
         )
 
     try:
-        manifest = AssignmentManifest.model_validate(raw_manifest)
+        manifest = AssignmentManifestV2.model_validate(raw_manifest)
+        validate_pilot_manifest_v2(manifest)
         originals = tuple(
-            AnswerabilityAnnotation.model_validate(payload) for payload in raw_originals
+            AnswerabilityAnnotationV2.model_validate(payload) for payload in raw_originals
         )
         amendments = tuple(
-            AnnotationAmendment.model_validate(payload) for payload in raw_amendments
+            AnnotationAmendmentV2.model_validate(payload) for payload in raw_amendments
         )
         adjudications = tuple(
-            AdjudicationRecord.model_validate(payload) for payload in raw_adjudications
+            AdjudicationV2.model_validate(payload) for payload in raw_adjudications
         )
-    except ValidationError:
+    except (DataError, ValidationError):
         return _blocked_bundle(
             out=out,
             input_paths=input_paths,
@@ -549,20 +546,13 @@ def finalize_pilot(
         )
 
     integrity_errors: list[str] = []
-    if len(manifest.task_assignments) != EXPECTED_PILOT_TASKS:
+    if len(manifest.coordinator_tasks) != EXPECTED_PILOT_TASKS:
         integrity_errors.append("pilot manifest must assign exactly 40 tasks")
-    instruction_bindings = {
-        (package.instruction_version, package.instruction_hash) for package in manifest.packages
-    }
-    if len(instruction_bindings) != 1:
-        integrity_errors.append("pilot packages do not share one instruction binding")
-        protocol_version = _raw_protocol_version(raw_manifest)
-    else:
-        protocol_version, bound_hash = next(iter(instruction_bindings))
-        if protocol_version != EXPECTED_INSTRUCTION_VERSION:
-            integrity_errors.append(f"instruction version must be {EXPECTED_INSTRUCTION_VERSION}")
-        if bound_hash != protocol_hash:
-            integrity_errors.append("instruction hash does not match the exact protocol bytes")
+    protocol_version = manifest.instruction_version
+    if protocol_version != EXPECTED_INSTRUCTION_VERSION:
+        integrity_errors.append(f"instruction version must be {EXPECTED_INSTRUCTION_VERSION}")
+    if manifest.instruction_hash != protocol_hash:
+        integrity_errors.append("instruction hash does not match the exact protocol bytes")
     adjudication_ids = [record.adjudication_id for record in adjudications]
     adjudication_hashes = [artifact_hash(record) for record in adjudications]
     if len(set(adjudication_ids)) != len(adjudication_ids):
@@ -578,7 +568,7 @@ def finalize_pilot(
                 indexed.get(assignment.annotation_task_id, {}).get(assignment.annotators[0]),
                 indexed.get(assignment.annotation_task_id, {}).get(assignment.annotators[1]),
             )
-            for assignment in manifest.task_assignments
+            for assignment in manifest.coordinator_tasks
         )
         agreement = nominal_agreement(
             [
@@ -605,7 +595,7 @@ def finalize_pilot(
             out=out,
             input_paths=input_paths,
             generated_at=generated_at,
-            assigned_tasks=len(manifest.task_assignments),
+            assigned_tasks=len(manifest.coordinator_tasks),
             protocol_version=protocol_version,
             protocol_hash=protocol_hash,
             verdict_name=PilotVerdictName.BLOCKED_INTEGRITY,
@@ -655,13 +645,16 @@ def finalize_pilot(
         _timing_summary(originals, generated_at),
         verdict.model_dump(mode="json"),
     )
-    derived_violations = scan_private_payload(derived_payloads)
+    derived_violations = scan_delivery_payload(
+        derived_payloads,
+        artifact_kind="finalization_outputs",
+    )
     if derived_violations:
         return _blocked_bundle(
             out=out,
             input_paths=input_paths,
             generated_at=generated_at,
-            assigned_tasks=len(manifest.task_assignments),
+            assigned_tasks=len(manifest.coordinator_tasks),
             protocol_version=protocol_version,
             protocol_hash=protocol_hash,
             verdict_name=PilotVerdictName.BLOCKED_PRIVACY,

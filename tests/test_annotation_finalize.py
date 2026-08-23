@@ -10,8 +10,12 @@ from pathlib import Path
 import pytest
 
 from rag_evidence.annotation.agreement import nominal_agreement
-from rag_evidence.annotation.assignment import AssignmentManifest, build_dual_assignments
-from rag_evidence.annotation.blinding import project_challenge
+from rag_evidence.annotation.assignment import (
+    AssignmentManifestV2,
+    SchedulableTaskV2,
+    build_dual_assignments_v2,
+)
+from rag_evidence.annotation.blinding import project_challenge_v2
 from rag_evidence.annotation.finalize import (
     EXPECTED_PILOT_TASKS,
     FINAL_ARTIFACT_NAMES,
@@ -20,9 +24,9 @@ from rag_evidence.annotation.finalize import (
     finalize_pilot,
 )
 from rag_evidence.annotation.models import (
-    AdjudicationRecord,
-    AnnotationAmendment,
-    AnswerabilityAnnotation,
+    AdjudicationV2,
+    AnnotationAmendmentV2,
+    AnswerabilityAnnotationV2,
     artifact_hash,
 )
 from rag_evidence.storage.artifacts import (
@@ -35,36 +39,48 @@ from test_annotation_blinding import challenge_record
 from test_annotation_coordinator import _annotation
 from test_annotation_workflow import _adjudication
 
-_PROTOCOL_TEXT = """# Synthetic pilot protocol\n\nProtocol ID: pilot-v0.2.1-draft\n"""
+_PROTOCOL_TEXT = """# Synthetic pilot protocol\n\nProtocol ID: pilot-v0.2.2-draft\n"""
 
 
-def _pilot_manifest(protocol_hash: str) -> AssignmentManifest:
+def _pilot_manifest(protocol_hash: str) -> AssignmentManifestV2:
     tasks = [
-        project_challenge(
+        project_challenge_v2(
             challenge_record(
                 challenge_id=f"ch-{index:024x}",
-                parent_id=f"invented-parent-{index}",
+                parent_id=f"invented-parent-{(index - 1) // 2}",
+                transformation=("missing_hop" if index % 2 else "evidence_swap"),
             ),
-            instruction_version="pilot-v0.2.1-draft",
+            instruction_version="pilot-v0.2.2-draft",
             instruction_hash=protocol_hash,
             batch="pilot-batch-01",
             namespace="pilot-v0.2-finalize-tests",
         )
         for index in range(1, EXPECTED_PILOT_TASKS + 1)
     ]
-    return build_dual_assignments(tasks, ("ann-r7", "ann-k2"), seed=19)
+    schedulable = tuple(
+        SchedulableTaskV2(
+            task=task,
+            internal_group_id=f"coord-{(index - 1) // 2:024x}",
+            transformation=("missing_hop" if index % 2 else "evidence_swap"),
+        )
+        for index, task in enumerate(tasks, start=1)
+    )
+    _, manifest = build_dual_assignments_v2(
+        schedulable, ("ann-pilot-a", "ann-pilot-b"), seed=19
+    )
+    return manifest
 
 
 def _streams(
-    manifest: AssignmentManifest,
+    manifest: AssignmentManifestV2,
     *,
     flips: int = 4,
     incomplete: bool = False,
     private: bool = False,
-) -> tuple[list[AnswerabilityAnnotation], list[AdjudicationRecord]]:
-    originals: list[AnswerabilityAnnotation] = []
-    adjudications: list[AdjudicationRecord] = []
-    for index, assignment in enumerate(manifest.task_assignments):
+) -> tuple[list[AnswerabilityAnnotationV2], list[AdjudicationV2]]:
+    originals: list[AnswerabilityAnnotationV2] = []
+    adjudications: list[AdjudicationV2] = []
+    for index, assignment in enumerate(manifest.coordinator_tasks):
         left_label = "answerable" if index < 20 else "unanswerable"
         right_label = left_label
         if index < flips // 2 or 20 <= index < 20 + flips - flips // 2:
@@ -186,27 +202,46 @@ def test_ready_finalization_writes_fixed_artifacts_and_is_byte_deterministic(
     for name in FINAL_ARTIFACT_NAMES:
         assert (tmp_path / "out-1" / name).read_bytes() == (tmp_path / "out-2" / name).read_bytes()
     iaa = json.loads((tmp_path / "out-1" / "iaa.json").read_text(encoding="utf-8"))
+    assert iaa["schema_version"] == "pilot-iaa-v2"
     assert iaa["n_total"] == 40
     assert iaa["n_complete"] == 40
     assert iaa["cohen_kappa"] == pytest.approx(0.8)
     assert iaa["gate_passed"] is True
     verdict = json.loads((tmp_path / "out-1" / "pilot-verdict.json").read_text(encoding="utf-8"))
+    assert verdict["schema_version"] == "pilot-verdict-v2"
     assert verdict["authorizes_human_pilot"] is False
     assert verdict["authorizes_release"] is False
     input_manifest = json.loads(
         (tmp_path / "out-1" / "input-manifest.json").read_text(encoding="utf-8")
     )
     assert str(tmp_path) not in json.dumps(input_manifest)
+    assert input_manifest["schema_version"] == "pilot-finalization-input-manifest-v2"
+    assert read_json(tmp_path / "out-1" / "flow-accounting.json")["schema_version"] == (
+        "pilot-flow-accounting-v2"
+    )
+    assert read_json(tmp_path / "out-1" / "evidence-agreement.json")["schema_version"] == (
+        "pilot-evidence-agreement-v2"
+    )
+    assert read_json(tmp_path / "out-1" / "timing-summary.json")["schema_version"] == (
+        "pilot-timing-summary-v2"
+    )
+    assert read_json(tmp_path / "out-1" / "privacy-scan.json")["schema_version"] == (
+        "pilot-privacy-scan-v2"
+    )
+    assert read_json(tmp_path / "out-1" / "eligibility.json")["schema_version"] == (
+        "eligibility-artifact-v2"
+    )
 
 
 def test_finalization_iaa_uses_amendment_tip_before_adjudication(tmp_path: Path) -> None:
     inputs = _write_inputs(tmp_path / "inputs")
     manifest_path, originals_path, amendments_path, adjudications_path, _protocol = inputs
-    manifest = AssignmentManifest.model_validate(read_json(manifest_path))
+    manifest = AssignmentManifestV2.model_validate(read_json(manifest_path))
     originals = [
-        AnswerabilityAnnotation.model_validate(payload) for payload in read_records(originals_path)
+        AnswerabilityAnnotationV2.model_validate(payload)
+        for payload in read_records(originals_path)
     ]
-    first_assignment = manifest.task_assignments[0]
+    first_assignment = manifest.coordinator_tasks[0]
     first_pair = [
         record
         for record in originals
@@ -221,9 +256,9 @@ def test_finalization_iaa_uses_amendment_tip_before_adjudication(tmp_path: Path)
         answerability=left.answerability,
         submitted_at="2026-08-23T01:07:00Z",
     )
-    amendment = AnnotationAmendment.model_validate(
+    amendment = AnnotationAmendmentV2.model_validate(
         {
-            "schema_version": "annotation-amendment-v1",
+            "schema_version": "annotation-amendment-v2",
             "amendment_id": "amend-0123456789abcdef01234567",
             "original_annotation_hash": artifact_hash(right),
             "previous_amendment_hash": None,
@@ -235,7 +270,7 @@ def test_finalization_iaa_uses_amendment_tip_before_adjudication(tmp_path: Path)
     )
     write_records_atomic(amendments_path, [amendment.model_dump(mode="json")])
     adjudications = [
-        AdjudicationRecord.model_validate(payload) for payload in read_records(adjudications_path)
+        AdjudicationV2.model_validate(payload) for payload in read_records(adjudications_path)
     ]
     write_records_atomic(
         adjudications_path,

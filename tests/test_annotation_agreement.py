@@ -86,7 +86,7 @@ def test_evidence_agreement_handles_empty_families_explicitly() -> None:
 
 def test_evidence_summary_counts_only_both_answerable_nonempty_pairs() -> None:
     manifest = _manifest(task_count=3)
-    task_ids = [assignment.annotation_task_id for assignment in manifest.task_assignments]
+    task_ids = [assignment.annotation_task_id for assignment in manifest.coordinator_tasks]
     comparable = (
         _annotation(manifest, task_ids[0], "ann-k2"),
         _annotation(manifest, task_ids[0], "ann-r7"),
@@ -120,7 +120,7 @@ def test_evidence_summary_counts_only_both_answerable_nonempty_pairs() -> None:
 
 def test_evidence_summary_with_no_comparable_pairs_has_no_scores() -> None:
     manifest = _manifest()
-    task_id = manifest.task_assignments[0].annotation_task_id
+    task_id = manifest.coordinator_tasks[0].annotation_task_id
     pair = (
         _annotation(manifest, task_id, "ann-k2", answerability="unanswerable"),
         _annotation(manifest, task_id, "ann-r7", answerability="unanswerable"),

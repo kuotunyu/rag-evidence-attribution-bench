@@ -8,6 +8,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from rag_evidence.annotation.app import create_adjudication_app
+from rag_evidence.annotation.privacy import scan_delivery_payload
 from test_annotation_workflow import _adjudication, _annotation, _answerable, _manifest
 
 
@@ -52,8 +53,16 @@ def test_adjudicator_sees_both_originals_and_visible_task_but_no_expected_label(
         "unanswerable",
     }
     serialized = json.dumps(payload, sort_keys=True)
-    for forbidden in ("expected_answerability", "transformation", "changed_fields", "provenance"):
+    for forbidden in (
+        "expected_answerability",
+        "transformation",
+        "changed_fields",
+        "provenance",
+        "group",
+        "bg-",
+    ):
         assert forbidden not in serialized
+    assert scan_delivery_payload(payload, artifact_kind="adjudication_case") == ()
 
     html = client.get("/")
     assert html.status_code == 200

@@ -6,7 +6,7 @@ from collections import Counter
 from collections.abc import Callable, Iterable, Sequence, Set
 from dataclasses import dataclass
 
-from rag_evidence.annotation.models import AnswerabilityAnnotation
+from rag_evidence.annotation.models import AnswerabilityAnnotationV2
 
 
 @dataclass(frozen=True)
@@ -148,7 +148,7 @@ def evidence_agreement(
 
 
 def aggregate_evidence_agreement(
-    pairs: Sequence[tuple[AnswerabilityAnnotation | None, AnswerabilityAnnotation | None]],
+    pairs: Sequence[tuple[AnswerabilityAnnotationV2 | None, AnswerabilityAnnotationV2 | None]],
 ) -> EvidenceAgreementSummary:
     """Aggregate only valid pairs where both humans independently chose answerable."""
     comparable: list[EvidenceAgreement] = []
