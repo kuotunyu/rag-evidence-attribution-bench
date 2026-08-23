@@ -6,10 +6,23 @@ import json
 
 import pytest
 
-from rag_evidence.annotation.blinding import project_challenge, scan_blind_payload
+import rag_evidence.annotation.blinding as blinding
+import rag_evidence.annotation.privacy as privacy
 from rag_evidence.data.challenge_schema import PENDING_REVIEW, ChallengeRecord
 from rag_evidence.data.schema import Example, Passage
 from rag_evidence.errors import DataError
+
+
+def project_challenge_v2(*args: object, **kwargs: object):
+    function = getattr(blinding, "project_challenge_v2", None)
+    assert function is not None, "project_challenge_v2 must be implemented"
+    return function(*args, **kwargs)
+
+
+def scan_delivery_payload(payload: object, *, artifact_kind: str) -> tuple[str, ...]:
+    function = getattr(privacy, "scan_delivery_payload", None)
+    assert function is not None, "scan_delivery_payload must be implemented"
+    return function(payload, artifact_kind=artifact_kind)
 
 
 def challenge_record(
@@ -62,9 +75,9 @@ def challenge_record(
 
 def test_projection_contains_only_public_aliases_and_visible_content() -> None:
     record = challenge_record()
-    task = project_challenge(
+    task = project_challenge_v2(
         record,
-        instruction_version="pilot-v0.2-draft",
+        instruction_version="pilot-v0.2.2-draft",
         instruction_hash="1" * 64,
         batch="pilot-batch-01",
         namespace="pilot-v0.2",
@@ -75,7 +88,6 @@ def test_projection_contains_only_public_aliases_and_visible_content() -> None:
         "schema_version",
         "annotation_task_id",
         "challenge_id",
-        "blinded_parent_group",
         "instruction_version",
         "instruction_hash",
         "question",
@@ -104,29 +116,32 @@ def test_projection_contains_only_public_aliases_and_visible_content() -> None:
         "is_gold",
     ):
         assert hidden not in serialized
-    assert scan_blind_payload(payload) == ()
+    assert scan_delivery_payload(payload, artifact_kind="blind_task") == ()
 
 
-def test_projection_is_stable_but_namespace_separates_parent_pseudonyms() -> None:
+def test_projection_is_stable_and_namespace_changes_only_task_identity() -> None:
     record = challenge_record()
     kwargs = {
-        "instruction_version": "pilot-v0.2-draft",
+        "instruction_version": "pilot-v0.2.2-draft",
         "instruction_hash": "1" * 64,
         "batch": "pilot-batch-01",
     }
-    first = project_challenge(record, namespace="pilot-v0.2", **kwargs)
-    repeated = project_challenge(record, namespace="pilot-v0.2", **kwargs)
-    other = project_challenge(record, namespace="confirmatory-v2", **kwargs)
+    first = project_challenge_v2(record, namespace="pilot-v0.2", **kwargs)
+    repeated = project_challenge_v2(record, namespace="pilot-v0.2", **kwargs)
+    other = project_challenge_v2(record, namespace="confirmatory-v2", **kwargs)
 
     assert first == repeated
-    assert first.blinded_parent_group != other.blinded_parent_group
-    assert first.task_content_hash != other.task_content_hash
+    assert first.annotation_task_id != other.annotation_task_id
+    assert first.task_content_hash == other.task_content_hash
 
 
 @pytest.mark.parametrize(
     "poison",
     [
         {"expected_answerability": "unanswerable"},
+        {"blinded_parent_group": "bg-0123456789abcdef01234567"},
+        {"coordinator": {"group_id": "coord-group-01"}},
+        {"value": "bg-0123456789abcdef01234567"},
         {"nested": {"transformation": "evidence_swap"}},
         {"model_name": "Qwen"},
         {"score": 0.99},
@@ -136,19 +151,20 @@ def test_projection_is_stable_but_namespace_separates_parent_pseudonyms() -> Non
     ],
 )
 def test_leak_scanner_reports_hidden_keys_and_private_values(poison: dict[str, object]) -> None:
-    violations = scan_blind_payload(poison)
+    violations = scan_delivery_payload(poison, artifact_kind="submission")
     assert violations
 
 
 def test_projection_refuses_a_payload_that_fails_its_own_leak_scan(monkeypatch) -> None:
     monkeypatch.setattr(
-        "rag_evidence.annotation.blinding.scan_blind_payload",
-        lambda _payload: ("synthetic leak",),
+        "rag_evidence.annotation.blinding.scan_delivery_payload",
+        lambda _payload, *, artifact_kind: (f"{artifact_kind}: synthetic leak",),
+        raising=False,
     )
     with pytest.raises(DataError, match="synthetic leak"):
-        project_challenge(
+        project_challenge_v2(
             challenge_record(),
-            instruction_version="pilot-v0.2-draft",
+            instruction_version="pilot-v0.2.2-draft",
             instruction_hash="1" * 64,
             batch="pilot-batch-01",
             namespace="pilot-v0.2",

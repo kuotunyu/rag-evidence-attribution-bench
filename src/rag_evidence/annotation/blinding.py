@@ -7,7 +7,8 @@ import json
 import re
 from collections.abc import Mapping, Sequence
 
-from rag_evidence.annotation.models import BlindTask
+from rag_evidence.annotation.models import BlindTask, BlindTaskV2
+from rag_evidence.annotation.privacy import scan_delivery_payload
 from rag_evidence.data.challenge_schema import ChallengeRecord
 from rag_evidence.errors import DataError
 
@@ -137,8 +138,73 @@ def project_challenge(
     return BlindTask.model_validate(payload)
 
 
+def project_challenge_v2(
+    record: ChallengeRecord,
+    *,
+    instruction_version: str,
+    instruction_hash: str,
+    batch: str,
+    namespace: str,
+) -> BlindTaskV2:
+    """Construct a group-free v2 task from visible challenge content only."""
+    passages = [
+        {
+            "alias": f"P{passage_index}",
+            "title": passage.title,
+            "sentences": [
+                {
+                    "alias": f"P{passage_index}.S{sentence_index}",
+                    "text": sentence,
+                }
+                for sentence_index, sentence in enumerate(passage.sentences, start=1)
+            ],
+        }
+        for passage_index, passage in enumerate(record.example.passages, start=1)
+    ]
+    content = {
+        "challenge_id": record.challenge_id,
+        "instruction_version": instruction_version,
+        "instruction_hash": instruction_hash,
+        "question": record.example.question,
+        "passages": passages,
+    }
+    payload = {
+        "schema_version": "blind-task-v2",
+        "annotation_task_id": _opaque_id("task", namespace, batch, record.challenge_id),
+        **content,
+        "task_content_hash": _hash(content),
+        "assignment_batch": batch,
+    }
+    violations = scan_delivery_payload(payload, artifact_kind="blind_task")
+    if violations:
+        raise DataError("blind projection leak: " + "; ".join(violations))
+    return BlindTaskV2.model_validate(payload)
+
+
 def validate_blind_task_source(task: BlindTask, record: ChallengeRecord) -> None:
     """Re-bind an immutable blind task to the current visible challenge content."""
+    if task.challenge_id != record.challenge_id:
+        raise DataError("blind task challenge ID does not match source record")
+    expected_passages = [
+        {
+            "alias": f"P{passage_index}",
+            "title": passage.title,
+            "sentences": [
+                {"alias": f"P{passage_index}.S{sentence_index}", "text": sentence}
+                for sentence_index, sentence in enumerate(passage.sentences, start=1)
+            ],
+        }
+        for passage_index, passage in enumerate(record.example.passages, start=1)
+    ]
+    if (
+        task.question != record.example.question
+        or [passage.model_dump(mode="json") for passage in task.passages] != expected_passages
+    ):
+        raise DataError("blind task visible content does not match challenge source")
+
+
+def validate_blind_task_source_v2(task: BlindTaskV2, record: ChallengeRecord) -> None:
+    """Re-bind a v2 task to the current visible challenge content."""
     if task.challenge_id != record.challenge_id:
         raise DataError("blind task challenge ID does not match source record")
     expected_passages = [
