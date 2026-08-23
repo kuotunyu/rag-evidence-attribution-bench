@@ -46,6 +46,8 @@ def test_rehearsal_covers_full_path_twice_without_changing_formal_packages(
     assert result.dataset_defect_exclusions == 1
     assert result.repeat_byte_identical is True
     assert result.verdict == "READY_FOR_HUMAN_FREEZE_REVIEW"
+    assert result.schema_versions
+    assert all(version.endswith("-v2") for version in result.schema_versions)
     assert _formal_hashes(repo_root) == before
     for run_name in ("run-1", "run-2"):
         run_root = tmp_path / "synthetic-rehearsal" / run_name
@@ -58,13 +60,22 @@ def test_rehearsal_covers_full_path_twice_without_changing_formal_packages(
         )
         questions = [
             task["question"]
-            for package in json.loads(
-                (run_root / "inputs" / "manifest.json").read_text(encoding="utf-8")
-            )["packages"]
-            for task in package["tasks"]
+            for task in json.loads(
+                (run_root / "inputs/assignment-manifest-v2.json").read_text(encoding="utf-8")
+            )["tasks"]
         ]
         assert questions
         assert all("invented Lumen archive" in question for question in questions)
+        human_files = (
+            list((run_root / "inputs").glob("ann-pilot-*.json"))
+            + list((run_root / "inputs").glob("submission-*.jsonl"))
+            + list((run_root / "inputs").glob("amendment-*.jsonl"))
+            + [run_root / "adjudications.jsonl"]
+        )
+        human_text = "\n".join(path.read_text(encoding="utf-8") for path in human_files)
+        assert '"blinded_parent_group"' not in human_text
+        assert '"internal_group_id"' not in human_text
+        assert '-v1"' not in human_text
 
 
 def test_rehearsal_refuses_nonempty_output_directory(

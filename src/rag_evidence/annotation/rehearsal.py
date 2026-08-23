@@ -1,4 +1,4 @@
-"""Explicitly synthetic, Git-external rehearsal of the complete pilot operations path."""
+"""Explicitly synthetic, Git-external rehearsal of the complete group-free v2 path."""
 
 from __future__ import annotations
 
@@ -10,18 +10,25 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from rag_evidence.annotation.app import create_adjudication_app
-from rag_evidence.annotation.assignment import AssignmentManifest, build_dual_assignments
+from rag_evidence.annotation.assignment import (
+    AssignmentManifestV2,
+    SchedulableTaskV2,
+    build_dual_assignments_v2,
+    canonical_package_bytes,
+    validate_pilot_manifest_v2,
+)
 from rag_evidence.annotation.coordinator import collect_annotation_streams
 from rag_evidence.annotation.finalize import PilotVerdictName, finalize_pilot
 from rag_evidence.annotation.models import (
-    AdjudicationRecord,
-    AnnotationAmendment,
-    AnswerabilityAnnotation,
-    BlindTask,
+    AdjudicationV2,
+    AnnotationAmendmentV2,
+    AnswerabilityAnnotationV2,
+    BlindTaskV2,
     TaskPassage,
     TaskSentence,
     artifact_hash,
 )
+from rag_evidence.annotation.privacy import scan_delivery_payload
 from rag_evidence.errors import DataError
 from rag_evidence.storage.artifacts import (
     read_json,
@@ -34,9 +41,26 @@ _MARKER = (
     "SYNTHETIC REHEARSAL ONLY. These invented records are not human annotations, "
     "pilot results, or confirmatory evidence.\n"
 )
-_INSTRUCTION_VERSION = "pilot-v0.2.1-draft"
-_ANNOTATORS = ("ann-synth-a", "ann-synth-b")
+_INSTRUCTION_VERSION = "pilot-v0.2.2-draft"
+_ASSIGNMENT_BATCH = "synthetic-rehearsal-v2"
+_ANNOTATORS = ("ann-pilot-a", "ann-pilot-b")
 _ADJUDICATOR = "ann-synth-c"
+_SCHEMA_VERSIONS = (
+    "assignment-manifest-v2",
+    "assignment-package-v2",
+    "blind-task-v2",
+    "answerability-annotation-v2",
+    "annotation-amendment-v2",
+    "annotation-collection-receipt-v2",
+    "annotation-input-manifest-v2",
+    "disagreement-case-v2",
+    "adjudication-v2",
+    "eligibility-artifact-v2",
+    "pilot-iaa-v2",
+    "pilot-evidence-agreement-v2",
+    "pilot-privacy-scan-v2",
+    "pilot-verdict-v2",
+)
 
 
 @dataclass(frozen=True)
@@ -48,6 +72,7 @@ class RehearsalResult:
     dataset_defect_exclusions: int
     repeat_byte_identical: bool
     verdict: str
+    schema_versions: tuple[str, ...]
     output_dir: Path
 
 
@@ -75,15 +100,16 @@ def _opaque_id(prefix: str, *parts: object) -> str:
     return f"{prefix}-{_canonical_hash(parts)[:24]}"
 
 
-def _build_tasks(instruction_hash: str) -> tuple[tuple[BlindTask, ...], dict[str, str]]:
-    tasks: list[BlindTask] = []
+def _build_tasks(
+    instruction_hash: str,
+) -> tuple[tuple[SchedulableTaskV2, ...], dict[str, str]]:
+    tasks: list[SchedulableTaskV2] = []
     base_labels: dict[str, str] = {}
     for task_index in range(40):
         parent_index = task_index // 2
         card_index = task_index % 2
         answerable = task_index < 20
-        challenge_id = _opaque_id("ch", "synthetic-rehearsal", task_index)
-        group_id = _opaque_id("bg", "synthetic-rehearsal", parent_index)
+        challenge_id = _opaque_id("ch", "synthetic-rehearsal-v2", task_index)
         question = (
             f"In the invented Lumen archive parent {parent_index}, card {card_index}, "
             "what codeword is recorded?"
@@ -108,35 +134,39 @@ def _build_tasks(instruction_hash: str) -> tuple[tuple[BlindTask, ...], dict[str
         )
         content = {
             "challenge_id": challenge_id,
-            "blinded_parent_group": group_id,
             "instruction_version": _INSTRUCTION_VERSION,
             "instruction_hash": instruction_hash,
             "question": question,
             "passages": [passage.model_dump(mode="json") for passage in passages],
         }
-        task = BlindTask(
-            annotation_task_id=_opaque_id("task", "synthetic-rehearsal", task_index),
+        task = BlindTaskV2(
+            annotation_task_id=_opaque_id("task", "synthetic-rehearsal-v2", task_index),
             challenge_id=challenge_id,
-            blinded_parent_group=group_id,
             instruction_version=_INSTRUCTION_VERSION,
             instruction_hash=instruction_hash,
             question=question,
             passages=passages,
             task_content_hash=_canonical_hash(content),
-            assignment_batch="synthetic-rehearsal-v1",
+            assignment_batch=_ASSIGNMENT_BATCH,
         )
-        tasks.append(task)
+        tasks.append(
+            SchedulableTaskV2(
+                task=task,
+                internal_group_id=f"coord-synth-{parent_index:02d}",
+                transformation="missing_hop" if card_index == 0 else "evidence_swap",
+            )
+        )
         base_labels[task.annotation_task_id] = "answerable" if answerable else "unanswerable"
     return tuple(tasks), base_labels
 
 
 def _timestamp(minute: int) -> str:
-    value = dt.datetime(2026, 8, 23, 1, 0, tzinfo=dt.UTC) + dt.timedelta(minutes=minute)
+    value = dt.datetime(2026, 8, 24, 1, 0, tzinfo=dt.UTC) + dt.timedelta(minutes=minute)
     return value.isoformat().replace("+00:00", "Z")
 
 
 def _annotation(
-    task: BlindTask,
+    task: BlindTaskV2,
     annotator: str,
     *,
     answerability: str,
@@ -144,14 +174,13 @@ def _annotation(
     dataset_defect: bool = False,
     minute: int,
     rationale: str = "Synthetic fixture decision grounded in the invented visible text.",
-) -> AnswerabilityAnnotation:
+) -> AnswerabilityAnnotationV2:
     is_answerable = answerability == "answerable"
-    return AnswerabilityAnnotation.model_validate(
+    return AnswerabilityAnnotationV2.model_validate(
         {
-            "schema_version": "answerability-annotation-v1",
+            "schema_version": "answerability-annotation-v2",
             "annotation_task_id": task.annotation_task_id,
             "challenge_id": task.challenge_id,
-            "blinded_parent_group": task.blinded_parent_group,
             "annotator_pseudonym": annotator,
             "instruction_version": task.instruction_version,
             "instruction_hash": task.instruction_hash,
@@ -172,14 +201,10 @@ def _annotation(
 
 
 def _formal_package_hashes(repository_root: Path) -> dict[str, str]:
-    package_root = repository_root / "pilot" / "v0.2" / "packages"
+    package_root = repository_root / "pilot/v0.2/packages"
     files = sorted(package_root.glob("*.json"))
-    if {path.name for path in files} != {
-        "ann-pilot-a.json",
-        "ann-pilot-b.json",
-        "manifest.json",
-    }:
-        raise DataError("canonical formal package sources are missing")
+    if {path.name for path in files} != {"ann-pilot-a.json", "ann-pilot-b.json"}:
+        raise DataError("canonical formal package sources are missing or contain private files")
     return {path.name: hashlib.sha256(path.read_bytes()).hexdigest() for path in files}
 
 
@@ -195,7 +220,7 @@ def _write_fixture_inputs(
     run_root: Path,
     repository_root: Path,
 ) -> tuple[
-    AssignmentManifest,
+    AssignmentManifestV2,
     Path,
     tuple[Path, Path],
     tuple[Path, Path],
@@ -208,26 +233,27 @@ def _write_fixture_inputs(
     shutil.copyfile(repository_root / "PILOT_PROTOCOL.md", protocol_path)
     instruction_hash = hashlib.sha256(protocol_path.read_bytes()).hexdigest()
     tasks, base_labels = _build_tasks(instruction_hash)
-    manifest = build_dual_assignments(tasks, _ANNOTATORS, seed=20260823)
-    task_map = {
-        task.annotation_task_id: task for package in manifest.packages for task in package.tasks
-    }
+    packages, manifest = build_dual_assignments_v2(tasks, _ANNOTATORS, seed=20260824)
+    validate_pilot_manifest_v2(manifest)
+    task_map = {task.annotation_task_id: task for task in manifest.tasks}
     answerable_ids = [
-        assignment.annotation_task_id
-        for assignment in manifest.task_assignments
-        if base_labels[assignment.annotation_task_id] == "answerable"
+        row.annotation_task_id
+        for row in manifest.coordinator_tasks
+        if base_labels[row.annotation_task_id] == "answerable"
     ]
     unanswerable_ids = [
-        assignment.annotation_task_id
-        for assignment in manifest.task_assignments
-        if base_labels[assignment.annotation_task_id] == "unanswerable"
+        row.annotation_task_id
+        for row in manifest.coordinator_tasks
+        if base_labels[row.annotation_task_id] == "unanswerable"
     ]
     flipped = {answerable_ids[0], answerable_ids[1], unanswerable_ids[0], unanswerable_ids[1]}
     amendment_task_id = answerable_ids[0]
     evidence_task_id = answerable_ids[2]
     defect_task_id = unanswerable_ids[-1]
-    streams: dict[str, list[AnswerabilityAnnotation]] = {annotator: [] for annotator in _ANNOTATORS}
-    for position, assignment in enumerate(manifest.task_assignments):
+    streams: dict[str, list[AnswerabilityAnnotationV2]] = {
+        annotator: [] for annotator in _ANNOTATORS
+    }
+    for position, assignment in enumerate(manifest.coordinator_tasks):
         task = task_map[assignment.annotation_task_id]
         base = base_labels[assignment.annotation_task_id]
         right_label = base
@@ -258,18 +284,17 @@ def _write_fixture_inputs(
         for record in streams[_ANNOTATORS[1]]
         if record.annotation_task_id == amendment_task_id
     )
-    amendment_task = task_map[amendment_task_id]
     replacement = _annotation(
-        amendment_task,
+        task_map[amendment_task_id],
         amendment_original.annotator_pseudonym,
         answerability="answerable",
         minute=405,
         rationale="Synthetic amendment corrects the deliberately flipped fixture decision.",
     )
-    amendment = AnnotationAmendment.model_validate(
+    amendment = AnnotationAmendmentV2.model_validate(
         {
-            "schema_version": "annotation-amendment-v1",
-            "amendment_id": _opaque_id("amend", "synthetic-rehearsal", 1),
+            "schema_version": "annotation-amendment-v2",
+            "amendment_id": _opaque_id("amend", "synthetic-rehearsal-v2", 1),
             "original_annotation_hash": artifact_hash(amendment_original),
             "previous_amendment_hash": None,
             "annotator_pseudonym": amendment_original.annotator_pseudonym,
@@ -278,31 +303,31 @@ def _write_fixture_inputs(
             "created_at": _timestamp(411),
         }
     )
-    manifest_path = inputs / "manifest.json"
+    manifest_path = inputs / "assignment-manifest-v2.json"
     write_json_atomic(manifest_path, manifest.model_dump(mode="json"))
-    for package in manifest.packages:
-        write_json_atomic(
-            inputs / f"{package.annotator_pseudonym}.json",
-            package.blind_export(),
-        )
-    submission_paths = (
-        inputs / "submission-a.jsonl",
-        inputs / "submission-b.jsonl",
-    )
-    amendment_paths = (
-        inputs / "amendment-a.jsonl",
-        inputs / "amendment-b.jsonl",
-    )
+    for package in packages:
+        package_path = inputs / f"{package.annotator_pseudonym}.json"
+        package_path.write_bytes(canonical_package_bytes(package))
+    submission_paths = (inputs / "submission-a.jsonl", inputs / "submission-b.jsonl")
+    amendment_paths = (inputs / "amendment-a.jsonl", inputs / "amendment-b.jsonl")
     for index, annotator in enumerate(_ANNOTATORS):
         write_records_atomic(
             submission_paths[index],
             (record.model_dump(mode="json") for record in streams[annotator]),
         )
-        records = [amendment] if annotator == amendment.annotator_pseudonym else []
+        amendments = [amendment] if annotator == amendment.annotator_pseudonym else []
         write_records_atomic(
             amendment_paths[index],
-            (record.model_dump(mode="json") for record in records),
+            (record.model_dump(mode="json") for record in amendments),
         )
+    delivery_payloads = (
+        [package.blind_export() for package in packages]
+        + [record.model_dump(mode="json") for stream in streams.values() for record in stream]
+        + [amendment.model_dump(mode="json")]
+    )
+    violations = scan_delivery_payload(delivery_payloads, artifact_kind="synthetic_inputs")
+    if violations:
+        raise DataError("synthetic v2 input privacy scan failed: " + "; ".join(violations))
     return (
         manifest,
         manifest_path,
@@ -319,16 +344,15 @@ def _adjudication_payload(
     base_answerability: str,
     position: int,
 ) -> dict[str, object]:
-    left = AnswerabilityAnnotation.model_validate(case["left"])
-    right = AnswerabilityAnnotation.model_validate(case["right"])
+    left = AnswerabilityAnnotationV2.model_validate(case["left"])
+    right = AnswerabilityAnnotationV2.model_validate(case["right"])
     answerable = base_answerability == "answerable"
-    record = AdjudicationRecord.model_validate(
+    record = AdjudicationV2.model_validate(
         {
-            "schema_version": "adjudication-v1",
-            "adjudication_id": _opaque_id("adj", "synthetic-rehearsal", position),
+            "schema_version": "adjudication-v2",
+            "adjudication_id": _opaque_id("adj", "synthetic-rehearsal-v2", position),
             "annotation_task_id": left.annotation_task_id,
             "challenge_id": left.challenge_id,
-            "blinded_parent_group": left.blinded_parent_group,
             "adjudicator_pseudonym": _ADJUDICATOR,
             "left": left.model_dump(mode="json"),
             "right": right.model_dump(mode="json"),
@@ -372,10 +396,10 @@ def _run_once(run_root: Path, repository_root: Path) -> _RunResult:
     try:
         from fastapi.testclient import TestClient
     except ImportError as exc:
-        raise DataError("synthetic rehearsal requires the development test dependencies") from exc
+        raise DataError("synthetic rehearsal requires development test dependencies") from exc
     app = create_adjudication_app(
         manifest_path,
-        run_root / "collection" / "effective-submissions.jsonl",
+        run_root / "collection/effective-submissions.jsonl",
         run_root / "adjudication-state",
     )
     with TestClient(app) as client:
@@ -401,8 +425,7 @@ def _run_once(run_root: Path, repository_root: Path) -> _RunResult:
             if response.status_code != 201:
                 raise DataError("synthetic adjudication submission failed")
         final_status = client.get("/api/status")
-        status_payload = final_status.json()
-        if final_status.status_code != 200 or not status_payload.get("complete"):
+        if final_status.status_code != 200 or not final_status.json().get("complete"):
             raise DataError("synthetic adjudication status did not become complete")
         export = client.get("/api/export/adjudications.jsonl")
         if export.status_code != 200:
@@ -411,26 +434,23 @@ def _run_once(run_root: Path, repository_root: Path) -> _RunResult:
     adjudications_path.write_text(export.text, encoding="utf-8", newline="\n")
     final = finalize_pilot(
         manifest_path,
-        run_root / "collection" / "original-submissions.jsonl",
-        run_root / "collection" / "amendments.jsonl",
+        run_root / "collection/original-submissions.jsonl",
+        run_root / "collection/amendments.jsonl",
         adjudications_path,
         protocol_path,
         run_root / "final",
     )
-    eligibility = read_json(run_root / "final" / "eligibility.json")
-    if not isinstance(eligibility, dict):
-        raise DataError("synthetic eligibility artifact is not an object")
-    records = eligibility.get("records")
-    if not isinstance(records, list):
-        raise DataError("synthetic eligibility records are missing")
+    eligibility = read_json(run_root / "final/eligibility.json")
+    if not isinstance(eligibility, dict) or not isinstance(eligibility.get("records"), list):
+        raise DataError("synthetic eligibility artifact is incomplete")
     defect_exclusions = sum(
         record.get("exclusion_reason") == "dataset defect"
-        for record in records
+        for record in eligibility["records"]
         if isinstance(record, dict)
     )
     adjudication_count = sum(1 for _record in read_records(adjudications_path))
     return _RunResult(
-        tasks=len(manifest.task_assignments),
+        tasks=len(manifest.coordinator_tasks),
         amendments=collection.amendments,
         disagreements=collection.disagreements,
         adjudications=adjudication_count,
@@ -439,16 +459,11 @@ def _run_once(run_root: Path, repository_root: Path) -> _RunResult:
     )
 
 
-def run_synthetic_rehearsal(
-    out: Path,
-    repository_root: Path,
-) -> RehearsalResult:
-    """Run the invented 40-task path twice and prove formal-package noninterference."""
+def run_synthetic_rehearsal(out: Path, repository_root: Path) -> RehearsalResult:
+    """Run the invented v2 40-task path twice and prove formal-package noninterference."""
     resolved_repository = repository_root.resolve()
     if out.resolve().is_relative_to(resolved_repository):
-        raise DataError(
-            "synthetic rehearsal output must remain outside the repository/formal paths"
-        )
+        raise DataError("synthetic rehearsal output must remain outside repository/formal paths")
     if out.exists() and not out.is_dir():
         raise DataError("synthetic rehearsal output must be a directory")
     if out.exists() and any(out.iterdir()):
@@ -463,8 +478,7 @@ def run_synthetic_rehearsal(
         raise DataError("synthetic rehearsal changed canonical formal package hashes")
     if first != second:
         raise DataError("synthetic repeated runs produced different accounting")
-    byte_identical = _tree_bytes(out / "run-1") == _tree_bytes(out / "run-2")
-    if not byte_identical:
+    if _tree_bytes(out / "run-1") != _tree_bytes(out / "run-2"):
         raise DataError("synthetic repeated runs are not byte-identical")
     return RehearsalResult(
         tasks=first.tasks,
@@ -474,5 +488,6 @@ def run_synthetic_rehearsal(
         dataset_defect_exclusions=first.dataset_defect_exclusions,
         repeat_byte_identical=True,
         verdict=first.verdict.value,
+        schema_versions=_SCHEMA_VERSIONS,
         output_dir=out,
     )
