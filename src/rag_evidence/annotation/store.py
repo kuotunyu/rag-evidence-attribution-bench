@@ -7,14 +7,15 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, Literal
 
-from rag_evidence.annotation.assignment import AssignmentPackage
+from rag_evidence.annotation.assignment import AssignmentPackageV2
 from rag_evidence.annotation.models import (
-    AnnotationAmendment,
-    AnswerabilityAnnotation,
-    BlindTask,
+    AnnotationAmendmentV2,
+    AnswerabilityAnnotationV2,
+    BlindTaskV2,
+    annotation_binding,
     artifact_hash,
 )
-from rag_evidence.annotation.privacy import scan_private_payload
+from rag_evidence.annotation.privacy import scan_delivery_payload
 from rag_evidence.errors import ArtifactError
 from rag_evidence.storage.artifacts import (
     append_record,
@@ -27,40 +28,52 @@ from rag_evidence.storage.artifacts import (
 class AnnotationStore:
     """Package-bound state. Drafts are replaceable; scientific records are append-only."""
 
-    def __init__(self, root: Path, package: AssignmentPackage) -> None:
+    def __init__(self, root: Path, package: AssignmentPackageV2) -> None:
         self.root = root
         self.package = package
         self._tasks = {task.annotation_task_id: task for task in package.tasks}
         self._submissions_path = root / "submissions" / "records.jsonl"
         self._amendments_path = root / "amendments" / "records.jsonl"
 
-    def _task(self, task_id: str) -> BlindTask:
+    def _task(self, task_id: str) -> BlindTaskV2:
         try:
             return self._tasks[task_id]
         except KeyError as exc:
             raise ArtifactError(f"task {task_id} is not assigned in this package") from exc
 
     def _scan(self, payload: object) -> None:
-        violations = scan_private_payload(payload)
+        violations = scan_delivery_payload(payload, artifact_kind="annotation_state")
         if violations:
             raise ArtifactError("annotation privacy violation: " + "; ".join(violations))
 
-    def _validate_binding(self, record: AnswerabilityAnnotation) -> None:
+    def _validate_binding(self, record: AnswerabilityAnnotationV2) -> None:
         task = self._task(record.annotation_task_id)
-        expected = {
-            "challenge_id": task.challenge_id,
-            "blinded_parent_group": task.blinded_parent_group,
-            "instruction_version": task.instruction_version,
-            "instruction_hash": task.instruction_hash,
-            "task_content_hash": task.task_content_hash,
-            "assignment_batch": task.assignment_batch,
-        }
-        for field, value in expected.items():
-            if getattr(record, field) != value:
-                label = field.replace("_", " ")
-                raise ArtifactError(f"annotation {label} does not match assigned task")
-        if record.annotator_pseudonym != self.package.annotator_pseudonym:
-            raise ArtifactError("annotation annotator does not match the package pseudonym")
+        expected = (
+            task.annotation_task_id,
+            task.challenge_id,
+            task.task_content_hash,
+            task.instruction_version,
+            task.instruction_hash,
+            task.assignment_batch,
+            self.package.annotator_pseudonym,
+        )
+        actual = annotation_binding(record)
+        if actual != expected:
+            labels = (
+                "task ID",
+                "challenge ID",
+                "task content hash",
+                "instruction version",
+                "instruction hash",
+                "assignment batch",
+                "annotator",
+            )
+            mismatch = next(
+                label
+                for label, left, right in zip(labels, actual, expected, strict=True)
+                if left != right
+            )
+            raise ArtifactError(f"annotation {mismatch} does not match assigned task")
 
     def _draft_path(self, task_id: str) -> Path:
         task = self._task(task_id)
@@ -70,7 +83,7 @@ class AnnotationStore:
         task = self._task(task_id)
         self._scan(payload)
         record = {
-            "schema_version": "annotation-draft-v1",
+            "schema_version": "annotation-draft-v2",
             "annotation_task_id": task.annotation_task_id,
             "annotator_pseudonym": self.package.annotator_pseudonym,
             "instruction_hash": task.instruction_hash,
@@ -90,22 +103,22 @@ class AnnotationStore:
             raise ArtifactError(f"draft {path} is not a JSON object")
         return dict(payload)
 
-    def submissions(self) -> tuple[AnswerabilityAnnotation, ...]:
+    def submissions(self) -> tuple[AnswerabilityAnnotationV2, ...]:
         if not self._submissions_path.exists():
             return ()
         return tuple(
-            AnswerabilityAnnotation.model_validate(record)
+            AnswerabilityAnnotationV2.model_validate(record)
             for record in read_records(self._submissions_path)
         )
 
-    def submit(self, payload: Mapping[str, Any]) -> AnswerabilityAnnotation:
-        self._scan(payload)
+    def submit(self, payload: Mapping[str, Any]) -> AnswerabilityAnnotationV2:
         task_id = payload.get("annotation_task_id")
         if not isinstance(task_id, str):
-            record = AnswerabilityAnnotation.model_validate(payload)
+            record = AnswerabilityAnnotationV2.model_validate(payload)
             raise AssertionError(f"validated annotation unexpectedly lacks task ID: {record}")
         self._task(task_id)
-        record = AnswerabilityAnnotation.model_validate(payload)
+        record = AnswerabilityAnnotationV2.model_validate(payload)
+        self._scan(record.model_dump(mode="json"))
         self._validate_binding(record)
         if any(
             existing.annotation_task_id == record.annotation_task_id
@@ -118,18 +131,18 @@ class AnnotationStore:
         append_record(self._submissions_path, record.model_dump(mode="json"))
         return record
 
-    def amendments(self) -> tuple[AnnotationAmendment, ...]:
+    def amendments(self) -> tuple[AnnotationAmendmentV2, ...]:
         if not self._amendments_path.exists():
             return ()
         return tuple(
-            AnnotationAmendment.model_validate(record)
+            AnnotationAmendmentV2.model_validate(record)
             for record in read_records(self._amendments_path)
         )
 
-    def amend(self, payload: Mapping[str, Any]) -> AnnotationAmendment:
-        self._scan(payload)
-        amendment = AnnotationAmendment.model_validate(payload)
-        if not isinstance(amendment.replacement, AnswerabilityAnnotation):
+    def amend(self, payload: Mapping[str, Any]) -> AnnotationAmendmentV2:
+        amendment = AnnotationAmendmentV2.model_validate(payload)
+        self._scan(amendment.model_dump(mode="json"))
+        if not isinstance(amendment.replacement, AnswerabilityAnnotationV2):
             raise ArtifactError("this answerability package cannot store citation amendments")
         self._validate_binding(amendment.replacement)
         originals = {artifact_hash(submission): submission for submission in self.submissions()}
@@ -158,7 +171,7 @@ class AnnotationStore:
         return {"total": total, "submitted": submitted, "remaining": total - submitted}
 
     def export_records(self, kind: Literal["submissions", "amendments"]) -> list[dict[str, Any]]:
-        records: Sequence[AnswerabilityAnnotation | AnnotationAmendment]
+        records: Sequence[AnswerabilityAnnotationV2 | AnnotationAmendmentV2]
         records = self.submissions() if kind == "submissions" else self.amendments()
         payload = [record.model_dump(mode="json") for record in records]
         self._scan(payload)

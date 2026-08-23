@@ -6,11 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from rag_evidence.annotation.assignment import AssignmentPackage, build_dual_assignments
-from rag_evidence.annotation.blinding import project_challenge
+from rag_evidence.annotation.assignment import AssignmentPackageV2
+from rag_evidence.annotation.blinding import project_challenge_v2
 from rag_evidence.annotation.models import (
-    AnnotationAmendment,
-    AnswerabilityAnnotation,
+    AnnotationAmendmentV2,
+    AnswerabilityAnnotationV2,
     artifact_hash,
 )
 from rag_evidence.annotation.privacy import scan_private_payload
@@ -19,28 +19,32 @@ from rag_evidence.errors import ArtifactError
 from test_annotation_blinding import challenge_record
 
 
-def _package() -> AssignmentPackage:
+def _package() -> AssignmentPackageV2:
     tasks = [
-        project_challenge(
+        project_challenge_v2(
             challenge_record(challenge_id=f"ch-{index:024x}", parent_id=f"parent-{index}"),
-            instruction_version="pilot-v0.2-draft",
+            instruction_version="pilot-v0.2.2-draft",
             instruction_hash="1" * 64,
             batch="pilot-batch-01",
             namespace="pilot-v0.2",
         )
         for index in range(1, 4)
     ]
-    manifest = build_dual_assignments(tasks, ("ann-r7", "ann-k2"), seed=5)
-    return next(p for p in manifest.packages if p.annotator_pseudonym == "ann-r7")
+    return AssignmentPackageV2(
+        annotator_pseudonym="ann-r7",
+        instruction_version="pilot-v0.2.2-draft",
+        instruction_hash="1" * 64,
+        assignment_batch="pilot-batch-01",
+        tasks=tuple(tasks),
+    )
 
 
-def _submission(package: AssignmentPackage, task_index: int = 0, **updates: object):
+def _submission(package: AssignmentPackageV2, task_index: int = 0, **updates: object):
     task = package.tasks[task_index]
     payload: dict[str, object] = {
-        "schema_version": "answerability-annotation-v1",
+        "schema_version": "answerability-annotation-v2",
         "annotation_task_id": task.annotation_task_id,
         "challenge_id": task.challenge_id,
-        "blinded_parent_group": task.blinded_parent_group,
         "annotator_pseudonym": package.annotator_pseudonym,
         "instruction_version": task.instruction_version,
         "instruction_hash": task.instruction_hash,
@@ -107,7 +111,7 @@ def test_amendment_appends_a_hash_chain_without_overwriting_original(tmp_path: P
     package = _package()
     store = AnnotationStore(tmp_path, package)
     original = store.submit(_submission(package))
-    replacement = AnswerabilityAnnotation.model_validate(
+    replacement = AnswerabilityAnnotationV2.model_validate(
         _submission(
             package,
             answer_text="Riverton City",
@@ -115,9 +119,9 @@ def test_amendment_appends_a_hash_chain_without_overwriting_original(tmp_path: P
             submitted_at="2026-08-23T01:07:00Z",
         )
     )
-    amendment = AnnotationAmendment.model_validate(
+    amendment = AnnotationAmendmentV2.model_validate(
         {
-            "schema_version": "annotation-amendment-v1",
+            "schema_version": "annotation-amendment-v2",
             "amendment_id": "amend-0123456789abcdef01234567",
             "original_annotation_hash": artifact_hash(original),
             "previous_amendment_hash": None,

@@ -76,6 +76,8 @@ def test_autosave_resume_submit_progress_and_export(tmp_path: Path) -> None:
     jsonl = client.get("/api/export/submissions.jsonl")
     assert jsonl.status_code == 200
     assert len(jsonl.text.strip().splitlines()) == 1
+    assert "group" not in submitted.text.casefold()
+    assert "bg-" not in submitted.text.casefold()
 
 
 def test_api_returns_validation_errors_without_mutating_state(tmp_path: Path) -> None:
@@ -88,6 +90,29 @@ def test_api_returns_validation_errors_without_mutating_state(tmp_path: Path) ->
     assert response.status_code == 422
     assert client.get("/api/progress").json()["submitted"] == 0
     assert client.get("/api/export/submissions").json() == []
+
+
+def test_v1_submission_is_rejected_before_state_append(tmp_path: Path) -> None:
+    client, package = _client(tmp_path)
+    state_root = tmp_path / "state"
+    payload = _submission(package)
+    payload["schema_version"] = "answerability-annotation-v1"
+    payload["blinded_parent_group"] = "bg-0123456789abcdef01234567"
+    before = {
+        path.relative_to(state_root).as_posix(): path.read_bytes()
+        for path in state_root.rglob("*")
+        if path.is_file()
+    }
+
+    response = client.post("/api/submissions", json=payload)
+
+    after = {
+        path.relative_to(state_root).as_posix(): path.read_bytes()
+        for path in state_root.rglob("*")
+        if path.is_file()
+    }
+    assert response.status_code == 422
+    assert after == before
 
 
 def test_unknown_task_is_not_disclosed(tmp_path: Path) -> None:

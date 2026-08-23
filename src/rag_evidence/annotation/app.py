@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import ValidationError
 
-from rag_evidence.annotation.assignment import AssignmentManifest, AssignmentPackage
+from rag_evidence.annotation.assignment import AssignmentManifest, AssignmentPackageV2
 from rag_evidence.annotation.models import AnswerabilityAnnotation
 from rag_evidence.annotation.store import AnnotationStore
 from rag_evidence.annotation.workflow import AdjudicationStore
@@ -18,12 +18,12 @@ from rag_evidence.errors import ArtifactError
 from rag_evidence.storage.artifacts import read_records
 
 
-def _load_package(path: Path) -> AssignmentPackage:
+def _load_package(path: Path) -> AssignmentPackageV2:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise ArtifactError(f"failed to load annotation package {path}: {exc}") from exc
-    return AssignmentPackage.model_validate(payload)
+    return AssignmentPackageV2.model_validate(payload)
 
 
 def create_annotation_app(package_path: Path, state_dir: Path) -> FastAPI:
@@ -32,7 +32,7 @@ def create_annotation_app(package_path: Path, state_dir: Path) -> FastAPI:
     app = FastAPI(
         title="RAG evidence annotation console",
         description="Offline, blind, append-only human annotation tool.",
-        version="annotation-ui-v1",
+        version="annotation-ui-v2",
     )
     app.state.annotation_store = store
 
