@@ -46,23 +46,24 @@ the primary decision rule.
 |---|---|---|---|---|
 | `citations` | model self-report | B only | 0 model calls | parses `[P#]` from the generated answer; gold answers performed no citation act, hence no mode A |
 | `embedding` | similarity | A + B | 0 generator calls | cosine(Qwen3-embed(question + answer), passage); shares the passage-vector cache with dense retrieval |
-| `leave_one_out` | **causal (primary baseline)** | A + B | 11 teacher-forced passes | Δ sum-logprob of the target when each passage is removed; aliases stable under ablation; citation markers stripped from targets |
-| `arc_jsd` | causal, **EXPERIMENTAL** | A + B | 11 passes (full distributions) | mean positional JSD between answer-token distributions, full vs minus-passage (arXiv:2505.16415); unvalidated against the official Qwen2.5 implementation — see `legacy/arc_jsd/` |
+| `leave_one_out` | **deletion-based teacher-forced target-dependence diagnostic** | A + B | 11 teacher-forced passes | Δ sum-logprob of the fixed target when each passage is removed; aliases stable under ablation; citation markers stripped from targets; not an identified causal effect |
+| `arc_jsd` | **experimental distributional-dependence diagnostic** | A + B | 11 passes (full distributions) | mean positional JSD between answer-token distributions, full vs minus-passage (arXiv:2505.16415); unvalidated against the official Qwen2.5 implementation — see `legacy/arc_jsd/` |
 | `contextcite` | surrogate model (optional extra) | B only | ~65 generations | MadryLab context-cite with a passage-level partitioner, reusing the loaded model; **attributes its own regeneration** under its own prompt template, not the stored answer (mismatch flagged in metadata) |
 | `control_random` / `control_retrieval` / `control_lexical` / `control_length` / `control_shuffled` | controls | A + B | 0 | flow through the identical pipeline, faithfulness passes included |
 
-Faithfulness (sufficiency ↓ / comprehensiveness ↑, ERASER conventions on mean per-token
-teacher-forced logprob, k=2) is computed for every method inside the `attribute` stage
-(GPU-resident) and stored as raw numbers; `evaluate`/`report` are pure CPU arithmetic.
+Sufficiency and comprehensiveness diagnostics (ERASER-style mean per-token teacher-forced
+logprob, k=2) are computed for every method inside the `attribute` stage (GPU-resident)
+and stored as raw numbers; `evaluate`/`report` are pure CPU arithmetic. They are not
+promoted to validated faithfulness measures unless the prespecified construct controls
+pass.
 
 ## Evaluation modes
 
 - **A (teacher-forced)**: target = official gold answer; all samples.
 - **B (generated)**: target = the model's own answer; all non-abstained samples are
-  attributed (faithfulness is ground-truth-free), but agreement-with-supporting-facts
-  metrics aggregate ONLY over the correct subset (EM==1 by default) — supporting facts
-  are never treated as causal ground truth for a wrong answer. Subset sizes are always
-  reported.
+  attributed, but reference-agreement metrics aggregate ONLY over the correct subset
+  (EM==1 by default). HotpotQA passages and supporting facts are not causal ground truth
+  and reference agreement is not complete faithfulness. Subset sizes are always reported.
 
 ## Determinism policy
 

@@ -270,7 +270,7 @@ def _attribution_tables_v2(splits: dict[str, Any], primary_k: int) -> str:
             missing = validation.get("missing_methods") or []
             missing_text = f" Missing methods: {', '.join(missing)}." if missing else ""
             validation_line = (
-                f"Causal-dependence validation: **{status}**.{missing_text} "
+                f"Construct validation: **{status}**.{missing_text} "
                 "Sufficiency and comprehensiveness remain diagnostics unless this status passes."
             )
             blocks.append(
