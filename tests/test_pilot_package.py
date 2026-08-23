@@ -7,7 +7,11 @@ import json
 from pathlib import Path
 
 from rag_evidence.annotation.assignment import AssignmentManifestV2, AssignmentPackageV2
-from rag_evidence.annotation.package import build_pilot_package, scan_clean_package
+from rag_evidence.annotation.package import (
+    build_pilot_package,
+    rebuild_coordinator_manifest,
+    scan_clean_package,
+)
 from rag_evidence.config import load_config
 
 
@@ -93,4 +97,23 @@ def test_committed_package_directory_contains_no_private_manifest(repo_root: Pat
     assert {path.name for path in package_root.iterdir() if path.is_file()} == {
         "ann-pilot-a.json",
         "ann-pilot-b.json",
+    }
+
+
+def test_coordinator_rebuild_filters_nonpilot_challenge_variants(
+    repo_root: Path, tmp_path: Path
+) -> None:
+    package_root = repo_root / "pilot" / "v0.2" / "packages"
+    manifest = rebuild_coordinator_manifest(
+        repo_root / "results/v2/raw/smoke/challenge/samples/records.jsonl",
+        package_root / "ann-pilot-a.json",
+        package_root / "ann-pilot-b.json",
+        tmp_path / "assignment-manifest-v2.json",
+        repository_root=repo_root,
+    )
+
+    assert len(manifest.coordinator_tasks) == 40
+    assert {task.transformation for task in manifest.coordinator_tasks} == {
+        "missing_hop",
+        "evidence_swap",
     }

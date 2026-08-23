@@ -62,6 +62,15 @@ def _instruction_hash(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _read_pilot_challenge_records(path: Path) -> tuple[ChallengeRecord, ...]:
+    return tuple(
+        ChallengeRecord.from_json(payload)
+        for payload in read_records(path)
+        if payload.get("source_split") == "smoke"
+        and payload.get("transformation") in PILOT_VARIANTS
+    )
+
+
 def _decision_violations(payload: object) -> tuple[str, ...]:
     violations: list[str] = []
 
@@ -203,13 +212,7 @@ def build_pilot_package(
     source = cfg.results_raw_dir / cfg.split / "challenge" / "samples" / "records.jsonl"
     if not source.exists():
         raise DataError(f"challenge source not found: {source}; run data challenge first")
-    records: list[ChallengeRecord] = []
-    for payload in read_records(source):
-        if payload.get("source_split") == "smoke" and payload.get("transformation") in (
-            "missing_hop",
-            "evidence_swap",
-        ):
-            records.append(ChallengeRecord.from_json(payload))
+    records = _read_pilot_challenge_records(source)
     instruction_hash = _instruction_hash(instruction_path)
     package_a, package_b, manifest = build_pilot_assignments(records, instruction_hash)
     out.mkdir(parents=True, exist_ok=True)
@@ -258,9 +261,7 @@ def rebuild_coordinator_manifest(
     }
     if bindings != {(PILOT_INSTRUCTION_VERSION, package_a.instruction_hash, PILOT_BATCH)}:
         raise DataError("A/B packages do not share the approved pilot binding")
-    records = tuple(
-        ChallengeRecord.from_json(payload) for payload in read_records(challenge_records)
-    )
+    records = _read_pilot_challenge_records(challenge_records)
     expected_a, expected_b, manifest = build_pilot_assignments(records, package_a.instruction_hash)
     expected = {
         expected_a.annotator_pseudonym: expected_a,
