@@ -6,6 +6,8 @@ from collections import Counter
 from collections.abc import Callable, Iterable, Sequence, Set
 from dataclasses import dataclass
 
+from rag_evidence.annotation.models import AnswerabilityAnnotation
+
 
 @dataclass(frozen=True)
 class NominalAgreement:
@@ -25,6 +27,17 @@ class EvidenceAgreement:
     exact_set_family_agreement: bool
     jaccard: float
     set_f1: float
+
+
+@dataclass(frozen=True)
+class EvidenceAgreementSummary:
+    n_total_tasks: int
+    n_comparable: int
+    n_excluded_not_both_answerable: int
+    n_invalid_empty_family: int
+    exact_set_family_agreement_rate: float | None
+    mean_jaccard: float | None
+    mean_set_f1: float | None
 
 
 def _prevalence(values: Iterable[str]) -> dict[str, float]:
@@ -131,4 +144,50 @@ def evidence_agreement(
         exact_set_family_agreement=_canonical_family(left_sets) == _canonical_family(right_sets),
         jaccard=_symmetric_best_match(left_sets, right_sets, _jaccard),
         set_f1=_symmetric_best_match(left_sets, right_sets, _set_f1),
+    )
+
+
+def aggregate_evidence_agreement(
+    pairs: Sequence[
+        tuple[AnswerabilityAnnotation | None, AnswerabilityAnnotation | None]
+    ],
+) -> EvidenceAgreementSummary:
+    """Aggregate only valid pairs where both humans independently chose answerable."""
+    comparable: list[EvidenceAgreement] = []
+    excluded = 0
+    invalid_empty = 0
+    for left, right in pairs:
+        if (
+            left is None
+            or right is None
+            or left.answerability != "answerable"
+            or right.answerability != "answerable"
+        ):
+            excluded += 1
+            continue
+        if (
+            not left.minimal_sufficient_evidence_sets
+            or not right.minimal_sufficient_evidence_sets
+        ):
+            invalid_empty += 1
+            continue
+        comparable.append(
+            evidence_agreement(
+                [set(evidence_set) for evidence_set in left.minimal_sufficient_evidence_sets],
+                [set(evidence_set) for evidence_set in right.minimal_sufficient_evidence_sets],
+            )
+        )
+    count = len(comparable)
+    return EvidenceAgreementSummary(
+        n_total_tasks=len(pairs),
+        n_comparable=count,
+        n_excluded_not_both_answerable=excluded,
+        n_invalid_empty_family=invalid_empty,
+        exact_set_family_agreement_rate=(
+            sum(item.exact_set_family_agreement for item in comparable) / count
+            if count
+            else None
+        ),
+        mean_jaccard=(sum(item.jaccard for item in comparable) / count if count else None),
+        mean_set_f1=(sum(item.set_f1 for item in comparable) / count if count else None),
     )

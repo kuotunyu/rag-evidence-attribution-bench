@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from rag_evidence.annotation.agreement import evidence_agreement, nominal_agreement
+from rag_evidence.annotation.agreement import (
+    aggregate_evidence_agreement,
+    evidence_agreement,
+    nominal_agreement,
+)
+from test_annotation_coordinator import _annotation, _manifest
 
 
 def test_nominal_agreement_reports_missingness_prevalence_kappa_and_alpha() -> None:
@@ -77,3 +82,55 @@ def test_evidence_agreement_handles_empty_families_explicitly() -> None:
     assert one_empty.exact_set_family_agreement is False
     assert one_empty.jaccard == 0.0
     assert one_empty.set_f1 == 0.0
+
+
+def test_evidence_summary_counts_only_both_answerable_nonempty_pairs() -> None:
+    manifest = _manifest(task_count=3)
+    task_ids = [assignment.annotation_task_id for assignment in manifest.task_assignments]
+    comparable = (
+        _annotation(manifest, task_ids[0], "ann-k2"),
+        _annotation(manifest, task_ids[0], "ann-r7"),
+    )
+    not_both_answerable = (
+        _annotation(manifest, task_ids[1], "ann-k2"),
+        _annotation(
+            manifest,
+            task_ids[1],
+            "ann-r7",
+            answerability="unanswerable",
+        ),
+    )
+    invalid_empty = (
+        _annotation(manifest, task_ids[2], "ann-k2"),
+        _annotation(manifest, task_ids[2], "ann-r7").model_copy(
+            update={"minimal_sufficient_evidence_sets": ()}
+        ),
+    )
+
+    summary = aggregate_evidence_agreement(
+        [comparable, not_both_answerable, invalid_empty]
+    )
+
+    assert summary.n_total_tasks == 3
+    assert summary.n_comparable == 1
+    assert summary.n_excluded_not_both_answerable == 1
+    assert summary.n_invalid_empty_family == 1
+    assert summary.exact_set_family_agreement_rate == 1.0
+    assert summary.mean_jaccard == 1.0
+    assert summary.mean_set_f1 == 1.0
+
+
+def test_evidence_summary_with_no_comparable_pairs_has_no_scores() -> None:
+    manifest = _manifest()
+    task_id = manifest.task_assignments[0].annotation_task_id
+    pair = (
+        _annotation(manifest, task_id, "ann-k2", answerability="unanswerable"),
+        _annotation(manifest, task_id, "ann-r7", answerability="unanswerable"),
+    )
+
+    summary = aggregate_evidence_agreement([pair])
+
+    assert summary.n_comparable == 0
+    assert summary.exact_set_family_agreement_rate is None
+    assert summary.mean_jaccard is None
+    assert summary.mean_set_f1 is None

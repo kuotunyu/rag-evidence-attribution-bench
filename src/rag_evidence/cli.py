@@ -446,6 +446,54 @@ def annotation_adjudicate(
     )
 
 
+@annotation_app.command("finalize-pilot")
+def annotation_finalize_pilot(
+    manifest: Annotated[
+        Path,
+        typer.Option("--manifest", exists=True, dir_okay=False, readable=True),
+    ],
+    originals: Annotated[
+        Path,
+        typer.Option("--originals", exists=True, dir_okay=False, readable=True),
+    ],
+    amendments: Annotated[
+        Path,
+        typer.Option("--amendments", exists=True, dir_okay=False, readable=True),
+    ],
+    adjudications: Annotated[
+        Path,
+        typer.Option("--adjudications", exists=True, dir_okay=False, readable=True),
+    ],
+    protocol: Annotated[
+        Path,
+        typer.Option("--protocol", exists=True, dir_okay=False, readable=True),
+    ],
+    out: Annotated[Path, typer.Option("--out", file_okay=False)],
+) -> None:
+    """Write the fixed pilot accounting, IAA, privacy, and verdict artifact set."""
+    from rag_evidence.annotation.finalize import (
+        PilotVerdictName,
+        finalize_pilot,
+    )
+    from rag_evidence.errors import RagEvidenceError
+
+    try:
+        result = finalize_pilot(
+            manifest,
+            originals,
+            amendments,
+            adjudications,
+            protocol,
+            out,
+        )
+    except RagEvidenceError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(result.verdict.value)
+    if result.verdict is not PilotVerdictName.READY_FOR_HUMAN_FREEZE_REVIEW:
+        raise typer.Exit(code=2)
+
+
 @annotation_app.command("package-pilot")
 def annotation_package_pilot(
     config: ConfigOpt,

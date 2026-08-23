@@ -19,6 +19,7 @@ def test_annotation_cli_surface_is_explicit() -> None:
     assert set(annotation.commands) == {
         "adjudicate",
         "collect",
+        "finalize-pilot",
         "package-pilot",
         "serve",
     }
