@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evidence ledger · blind annotation</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #16201c;
+      --muted: #65716b;
+      --paper: #f4f0e6;
+      --card: #fffdf6;
+      --rule: #c8c1af;
+      --signal: #b63d2f;
+      --signal-dark: #7c281f;
+      --teal: #1f5e57;
+      --focus: #e4a82f;
+      --shadow: 0 12px 30px rgb(30 38 33 / 10%);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(90deg, transparent 31px, rgb(182 61 47 / 11%) 32px, transparent 33px),
+        repeating-linear-gradient(0deg, var(--paper), var(--paper) 31px, #ded8c9 32px);
+      font: 16px/1.55 Charter, "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    }
+    button, input, select, textarea { font: inherit; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
+    }
+    .shell { min-height: 100vh; display: grid; grid-template-columns: 250px minmax(0, 1fr); }
+    aside {
+      position: sticky; top: 0; height: 100vh; padding: 28px 22px;
+      background: var(--ink); color: var(--paper); border-right: 6px solid var(--signal);
+    }
+    .eyebrow { margin: 0 0 8px; color: #e9b4a7; font: 700 12px/1.2 ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: 28px; line-height: 1; font-weight: 600; }
+    .hash { margin: 22px 0; overflow-wrap: anywhere; color: #b9c9c2; font: 11px/1.45 ui-monospace, monospace; }
+    .progress-track { height: 8px; overflow: hidden; background: #42504a; border: 1px solid #708079; }
+    .progress-fill { width: 0; height: 100%; background: var(--focus); transition: width .25s ease; }
+    .task-list { margin-top: 24px; display: grid; gap: 7px; max-height: 58vh; overflow: auto; }
+    .task-link { width: 100%; padding: 8px 10px; border: 1px solid #59675f; color: inherit; background: transparent; text-align: left; cursor: pointer; }
+    .task-link.active { border-color: var(--focus); background: #304039; }
+    .task-link.done::after { content: " ✓"; color: var(--focus); float: right; }
+    main { padding: 42px clamp(24px, 5vw, 74px) 80px; }
+    .topline { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+    .task-code { font: 12px ui-monospace, monospace; color: var(--muted); }
+    #save-state { color: var(--teal); font: italic 14px Georgia, serif; }
+    .question { margin: 0 0 26px; max-width: 980px; font-size: clamp(25px, 3vw, 40px); line-height: 1.18; font-weight: 500; }
+    .passages { display: grid; gap: 18px; }
+    .passage { background: var(--card); border: 1px solid var(--rule); box-shadow: var(--shadow); }
+    .passage h2 { margin: 0; padding: 12px 16px; color: var(--paper); background: var(--teal); font: 700 15px/1.2 ui-monospace, monospace; }
+    .sentence { display: grid; grid-template-columns: 28px 76px 1fr; gap: 9px; padding: 12px 16px; border-top: 1px dashed var(--rule); align-items: start; }
+    .sentence input { margin-top: 5px; accent-color: var(--signal); }
+    .alias { color: var(--signal-dark); font: 700 12px/1.6 ui-monospace, monospace; }
+    .decision { margin-top: 28px; padding: 24px; background: #e8e2d2; border: 1px solid #b8af9b; }
+    .decision h2 { margin: 0 0 18px; font-size: 22px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    label { display: grid; gap: 6px; font-weight: 600; }
+    label.full { grid-column: 1 / -1; }
+    select, input[type="text"], input[type="number"], textarea { width: 100%; padding: 10px 11px; color: var(--ink); background: var(--card); border: 1px solid #8d887c; }
+    textarea { min-height: 96px; resize: vertical; }
+    .checks { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; }
+    .checks label { display: flex; gap: 8px; align-items: center; }
+    .evidence-sets { margin: 14px 0; display: grid; gap: 8px; }
+    .set-row { display: flex; justify-content: space-between; gap: 14px; padding: 9px 11px; background: var(--card); border-left: 4px solid var(--signal); }
+    .actions { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px; }
+    button.primary { padding: 11px 17px; border: 0; color: white; background: var(--signal); cursor: pointer; }
+    button.primary:hover { background: var(--signal-dark); }
+    button.secondary { padding: 10px 16px; border: 1px solid var(--ink); color: var(--ink); background: transparent; cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .48; }
+    .error { min-height: 24px; margin-top: 12px; color: #8d1d16; font-weight: 700; }
+    @media (max-width: 820px) {
+      .shell { grid-template-columns: 1fr; }
+      aside { position: static; height: auto; }
+      .task-list { max-height: 180px; grid-template-columns: repeat(2, 1fr); }
+      .grid { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <p class="eyebrow">Independent review</p>
+      <h1>Evidence<br>ledger</h1>
+      <p id="identity"></p>
+      <div class="progress-track" aria-label="Annotation progress"><div class="progress-fill" id="progress-fill"></div></div>
+      <p id="progress-text">Loading package…</p>
+      <p class="hash">Instruction SHA-256<br><span id="instruction-hash"></span></p>
+      <nav class="task-list" id="task-list" aria-label="Assigned tasks"></nav>
+    </aside>
+    <main>
+      <div class="topline"><span class="task-code" id="task-code"></span><span id="save-state" aria-live="polite">Local, offline state</span></div>
+      <h2 class="question" id="question">Loading blinded task…</h2>
+      <section class="passages" id="passages" aria-label="Evidence passages"></section>
+      <form class="decision" id="decision-form">
+        <h2>Record a defensible decision</h2>
+        <div class="grid">
+          <label>Answerability
+            <select id="answerability" required>
+              <option value="">Choose…</option>
+              <option value="answerable">Answerable</option>
+              <option value="unanswerable">Unanswerable</option>
+              <option value="unclear">Unclear</option>
+            </select>
+          </label>
+          <label>Confidence (1–5)
+            <input id="confidence" type="number" min="1" max="5" required>
+          </label>
+          <label class="full">Answer text (answerable only)
+            <input id="answer-text" type="text" autocomplete="off">
+          </label>
+        </div>
+        <div class="actions"><button class="secondary" type="button" id="add-set">Add evidence set</button></div>
+        <div class="evidence-sets" id="evidence-sets" aria-live="polite"></div>
+        <div class="checks">
+          <label><input id="exhaustive" type="checkbox"> Evidence sets exhaustive</label>
+          <label><input id="ambiguity" type="checkbox"> Ambiguity</label>
+          <label><input id="dataset-defect" type="checkbox"> Dataset defect</label>
+        </div>
+        <label class="full">Concise rationale
+          <textarea id="rationale" maxlength="1000" required></textarea>
+        </label>
+        <div class="actions">
+          <button class="primary" type="submit" id="submit">Submit immutable decision</button>
+          <button class="secondary" type="button" id="next">Next task</button>
+        </div>
+        <p class="error" id="error" role="alert"></p>
+      </form>
+    </main>
+  </div>
+  <script>
+    "use strict";
+    const state = {pkg: null, index: 0, evidenceSets: [], startedAt: null, submitted: new Set(), timer: null};
+    const el = id => document.getElementById(id);
+    const utcNow = () => new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
+    async function api(path, options = {}) {
+      const response = await fetch(path, {headers: {"Content-Type": "application/json"}, ...options});
+      if (!response.ok) { const body = await response.json().catch(() => ({})); throw new Error(body.detail ? JSON.stringify(body.detail) : `HTTP ${response.status}`); }
+      return response.status === 204 ? null : response.json();
+    }
+    function task() { return state.pkg.tasks[state.index]; }
+    function renderPassages() {
+      el("passages").innerHTML = task().passages.map(p => `<article class="passage"><h2>${p.alias} · ${escapeHtml(p.title)}</h2>${p.sentences.map(s => `<label class="sentence"><input type="checkbox" data-alias="${s.alias}"><span class="alias">${s.alias}</span><span>${escapeHtml(s.text)}</span></label>`).join("")}</article>`).join("");
+    }
+    function escapeHtml(value) { const node = document.createElement("span"); node.textContent = value; return node.innerHTML; }
+    function renderSets() {
+      el("evidence-sets").innerHTML = state.evidenceSets.map((set, i) => `<div class="set-row"><span>Set ${i + 1}: ${set.join(", ")}</span><button type="button" class="secondary" data-remove="${i}">Remove</button></div>`).join("") || "<em>No evidence set added.</em>";
+      document.querySelectorAll("[data-remove]").forEach(button => button.onclick = () => { state.evidenceSets.splice(Number(button.dataset.remove), 1); renderSets(); queueAutosave(); });
+    }
+    function draftPayload() {
+      return {answerability: el("answerability").value, answer_text: el("answer-text").value, minimal_sufficient_evidence_sets: state.evidenceSets, evidence_exhaustive: el("exhaustive").checked, ambiguity: el("ambiguity").checked, dataset_defect: el("dataset-defect").checked, confidence: Number(el("confidence").value || 0), rationale: el("rationale").value, started_at: state.startedAt};
+    }
+    function applyDraft(payload = {}) {
+      el("answerability").value = payload.answerability || ""; el("answer-text").value = payload.answer_text || ""; el("confidence").value = payload.confidence || ""; el("rationale").value = payload.rationale || ""; el("exhaustive").checked = Boolean(payload.evidence_exhaustive); el("ambiguity").checked = Boolean(payload.ambiguity); el("dataset-defect").checked = Boolean(payload.dataset_defect); state.evidenceSets = payload.minimal_sufficient_evidence_sets || []; state.startedAt = payload.started_at || utcNow(); renderSets();
+    }
+    function queueAutosave() { clearTimeout(state.timer); el("save-state").textContent = "Unsaved draft…"; state.timer = setTimeout(saveDraft, 450); }
+    async function saveDraft() { try { await api(`/api/drafts/${task().annotation_task_id}`, {method: "PUT", body: JSON.stringify(draftPayload())}); el("save-state").textContent = "Draft saved locally"; } catch (error) { el("save-state").textContent = "Draft save failed"; el("error").textContent = error.message; } }
+    async function showTask(index) {
+      state.index = index; state.startedAt = utcNow(); el("error").textContent = ""; el("task-code").textContent = task().annotation_task_id; el("question").textContent = task().question; renderPassages();
+      const draft = await api(`/api/drafts/${task().annotation_task_id}`); applyDraft(draft ? draft.payload : {});
+      document.querySelectorAll(".task-link").forEach((button, i) => button.classList.toggle("active", i === index));
+      const locked = state.submitted.has(task().annotation_task_id); el("submit").disabled = locked; el("submit").textContent = locked ? "Submitted · use amendment workflow" : "Submit immutable decision";
+    }
+    async function refreshProgress() { const p = await api("/api/progress"); el("progress-text").textContent = `${p.submitted} of ${p.total} submitted`; el("progress-fill").style.width = `${p.total ? 100 * p.submitted / p.total : 0}%`; }
+    function renderTaskList() { el("task-list").innerHTML = state.pkg.tasks.map((t, i) => `<button class="task-link" type="button" data-index="${i}">${String(i + 1).padStart(2, "0")} · ${t.annotation_task_id.slice(-6)}</button>`).join(""); document.querySelectorAll(".task-link").forEach(button => button.onclick = () => showTask(Number(button.dataset.index))); }
+    el("add-set").onclick = () => { const selected = [...document.querySelectorAll("[data-alias]:checked")].map(input => input.dataset.alias); if (!selected.length) { el("error").textContent = "Select at least one sentence before adding a set."; return; } state.evidenceSets.push(selected); document.querySelectorAll("[data-alias]:checked").forEach(input => { input.checked = false; }); renderSets(); queueAutosave(); };
+    el("decision-form").addEventListener("input", queueAutosave);
+    el("decision-form").onsubmit = async event => { event.preventDefault(); el("error").textContent = ""; const t = task(); const draft = draftPayload(); const answerable = draft.answerability === "answerable"; const payload = {schema_version: "answerability-annotation-v1", annotation_task_id: t.annotation_task_id, challenge_id: t.challenge_id, blinded_parent_group: t.blinded_parent_group, annotator_pseudonym: state.pkg.annotator_pseudonym, instruction_version: t.instruction_version, instruction_hash: t.instruction_hash, task_content_hash: t.task_content_hash, assignment_batch: t.assignment_batch, answerability: draft.answerability, answer_text: answerable ? draft.answer_text : null, minimal_sufficient_evidence_sets: answerable ? draft.minimal_sufficient_evidence_sets : [], evidence_exhaustive: answerable ? draft.evidence_exhaustive : null, ambiguity: draft.ambiguity, dataset_defect: draft.dataset_defect, confidence: draft.confidence, rationale: draft.rationale, started_at: draft.started_at, submitted_at: utcNow()}; try { await api("/api/submissions", {method: "POST", body: JSON.stringify(payload)}); state.submitted.add(t.annotation_task_id); el("submit").disabled = true; el("submit").textContent = "Submitted · immutable"; await refreshProgress(); } catch (error) { el("error").textContent = error.message; } };
+    el("next").onclick = () => showTask((state.index + 1) % state.pkg.tasks.length);
+    (async () => { state.pkg = await api("/api/tasks"); el("identity").textContent = state.pkg.annotator_pseudonym; el("instruction-hash").textContent = state.pkg.instruction_hash; const submissions = await api("/api/export/submissions"); submissions.forEach(record => state.submitted.add(record.annotation_task_id)); renderTaskList(); await refreshProgress(); await showTask(0); })().catch(error => { el("error").textContent = error.message; });
+  </script>
+</body>
+</html>
