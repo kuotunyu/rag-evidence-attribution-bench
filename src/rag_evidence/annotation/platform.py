@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import argparse
 import datetime as dt
 import hashlib
+import json
 import re
 from pathlib import Path, PurePosixPath
 from typing import Literal
@@ -11,7 +13,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from rag_evidence.errors import DataError
-from rag_evidence.storage.artifacts import read_json
+from rag_evidence.storage.artifacts import read_json, write_json_atomic
 
 PlatformName = Literal["Windows", "Linux"]
 CommandKind = Literal[
@@ -215,3 +217,38 @@ def verify_platform_receipt(
         if hashlib.sha256(path.read_bytes()).hexdigest() != expected_hash:
             raise DataError("platform smoke artifact hash mismatch")
     return receipt
+
+
+def emit_platform_receipt(
+    payload_path: Path,
+    output_path: Path,
+    evidence_root: Path,
+) -> PlatformVerificationReceiptV2:
+    """Validate generated payload and retained artifacts before atomically emitting a receipt."""
+    receipt = PlatformVerificationReceiptV2.model_validate(read_json(payload_path))
+    root = evidence_root.resolve()
+    for relative, expected_hash in receipt.smoke_artifact_sha256.items():
+        path = (root / relative).resolve()
+        if not path.is_relative_to(root) or not path.is_file() or path.is_symlink():
+            raise DataError("platform smoke artifact is missing or unsafe")
+        if hashlib.sha256(path.read_bytes()).hexdigest() != expected_hash:
+            raise DataError("platform smoke artifact hash mismatch")
+    write_json_atomic(output_path, receipt.model_dump(mode="json"))
+    return receipt
+
+
+def _main() -> int:
+    parser = argparse.ArgumentParser(description="Validate and emit one v2 platform receipt")
+    parser.add_argument("--payload", required=True, type=Path)
+    parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--evidence-root", required=True, type=Path)
+    args = parser.parse_args()
+    try:
+        emit_platform_receipt(args.payload, args.output, args.evidence_root)
+    except (DataError, ValueError, json.JSONDecodeError) as exc:
+        parser.error(str(exc))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(_main())

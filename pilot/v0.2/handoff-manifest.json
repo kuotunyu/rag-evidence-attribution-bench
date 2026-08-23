@@ -49,6 +49,7 @@
     "source_verifier": "src/rag_evidence/annotation/source_verify.py",
     "wheel_verifier": "src/rag_evidence/annotation/wheel_verify.py",
     "platform_verifier": "src/rag_evidence/annotation/platform.py",
+    "platform_script": "scripts/verify_annotation_platform.py",
     "manifest_schema": "pilot/v0.2/handoff-manifest.schema.json"
   },
   "canonical_sha256": {
@@ -62,10 +63,11 @@
     "launcher_b_powershell": "45eef841ba425d6e77f6f5e3a38dc8c615bde54e62322455dfc39f6447409415",
     "launcher_b_posix": "8b0bca8606ec8a9b551ee2711dd3f43f2c3023436a049a779a810f2ee4e1eb45",
     "dependency_lock": "bbdabdc13ab652a3ae899635aad23804b34d02f535d14ac1d3264d74db9d31af",
-    "builder": "af9c9de32544bd032b6b7dad8a36b97a6057bb173ac632ae51aea4b0f65e0f74",
+    "builder": "2a177c73af6f15b5970dfd0eb3a53a66750ffccd91e40c34a2bd9cd68f31def2",
     "source_verifier": "4782d1fa8113366859dc6a56e736dcb9fde44a1592efef4e1d2ef589b7d9a14d",
     "wheel_verifier": "4bf2a558f4aab4e764495ddadb2926160a85707910fd8f0292e94c66434fba28",
-    "platform_verifier": "40f697a8fe674cfccf67bbf1dd3dffe1906dd30e83ccdaa3ee0e33bc65762db7",
+    "platform_verifier": "7bdfb40859e22f7e89d84079b06df3d747fe4600b8fc5b73a73aec22d69ff552",
+    "platform_script": "5385a239d81b190d471e2dcaf2475b3bb5fd41a487f5bc46b7b85dd828baa947",
     "manifest_schema": "6cb048bd54728ae9e012e7981549687d753e953ae7392468911b905a9900d94d"
   },
   "canonical_package_sha256": {

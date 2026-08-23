@@ -53,6 +53,7 @@ _SOURCE_PATHS = {
     "source_verifier": "src/rag_evidence/annotation/source_verify.py",
     "wheel_verifier": "src/rag_evidence/annotation/wheel_verify.py",
     "platform_verifier": "src/rag_evidence/annotation/platform.py",
+    "platform_script": "scripts/verify_annotation_platform.py",
     "manifest_schema": "pilot/v0.2/handoff-manifest.schema.json",
 }
 _COMMON_KIT_LAYOUT = (
@@ -560,6 +561,11 @@ def build_handoff_v2(
     linux = verify_platform_receipt(linux_receipt_path, expected=expected_platform)
     if (windows.platform, linux.platform) != ("Windows", "Linux"):
         raise DataError("handoff requires exactly one Windows and one Linux platform receipt")
+    expected_verifier_hash = spec.canonical_sha256["platform_script"]
+    if any(
+        receipt.verifier_sha256 != expected_verifier_hash for receipt in (windows, linux)
+    ):
+        raise DataError("platform receipt verifier bytes do not match the candidate source")
 
     clean_commands = tuple(
         command
