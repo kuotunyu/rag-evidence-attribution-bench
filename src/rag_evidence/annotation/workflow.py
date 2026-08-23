@@ -10,16 +10,16 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from rag_evidence.annotation.assignment import AssignmentManifest, TaskAssignment
+from rag_evidence.annotation.assignment import AssignmentManifestV2, CoordinatorTaskV2
 from rag_evidence.annotation.models import (
-    AdjudicationRecord,
-    AnnotationAmendment,
-    AnswerabilityAnnotation,
-    EligibilityArtifact,
-    EligibilityRecord,
+    AdjudicationV2,
+    AnnotationAmendmentV2,
+    AnswerabilityAnnotationV2,
+    EligibilityArtifactV2,
+    EligibilityRecordV2,
     artifact_hash,
 )
-from rag_evidence.annotation.privacy import scan_private_payload
+from rag_evidence.annotation.privacy import scan_delivery_payload
 from rag_evidence.errors import ArtifactError, DataError
 from rag_evidence.storage.artifacts import append_record, read_records
 
@@ -36,17 +36,17 @@ class _StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
 
-class DisagreementCase(_StrictModel):
-    schema_version: Literal["disagreement-case-v1"] = "disagreement-case-v1"
+class DisagreementCaseV2(_StrictModel):
+    schema_version: Literal["disagreement-case-v2"] = "disagreement-case-v2"
     annotation_task_id: str
     challenge_id: str
-    blinded_parent_group: str
     reasons: tuple[DisagreementReason, ...]
-    left: AnswerabilityAnnotation
-    right: AnswerabilityAnnotation
+    left: AnswerabilityAnnotationV2
+    right: AnswerabilityAnnotationV2
 
 
 class FlowAccounting(_StrictModel):
+    schema_version: Literal["pilot-flow-accounting-v2"] = "pilot-flow-accounting-v2"
     assigned: int = Field(ge=0)
     completed: int = Field(ge=0)
     disagreed: int = Field(ge=0)
@@ -68,28 +68,24 @@ class FlowAccounting(_StrictModel):
 
 
 class WorkflowResult(_StrictModel):
-    eligibility: EligibilityArtifact
+    eligibility: EligibilityArtifactV2
     flow: FlowAccounting
-    disagreements: tuple[DisagreementCase, ...]
+    disagreements: tuple[DisagreementCaseV2, ...]
 
 
-def _task_map(manifest: AssignmentManifest) -> dict[str, object]:
-    tasks: dict[str, object] = {}
-    for package in manifest.packages:
-        for task in package.tasks:
-            tasks.setdefault(task.annotation_task_id, task)
-    return tasks
+def _task_map(manifest: AssignmentManifestV2) -> dict[str, object]:
+    return {task.annotation_task_id: task for task in manifest.tasks}
 
 
 def index_submissions(
-    manifest: AssignmentManifest,
-    submissions: Sequence[AnswerabilityAnnotation],
-) -> dict[str, dict[str, AnswerabilityAnnotation]]:
+    manifest: AssignmentManifestV2,
+    submissions: Sequence[AnswerabilityAnnotationV2],
+) -> dict[str, dict[str, AnswerabilityAnnotationV2]]:
     assignments = {
-        assignment.annotation_task_id: assignment for assignment in manifest.task_assignments
+        assignment.annotation_task_id: assignment for assignment in manifest.coordinator_tasks
     }
     tasks = _task_map(manifest)
-    indexed: dict[str, dict[str, AnswerabilityAnnotation]] = {}
+    indexed: dict[str, dict[str, AnswerabilityAnnotationV2]] = {}
     for record in submissions:
         assignment = assignments.get(record.annotation_task_id)
         if assignment is None:
@@ -104,7 +100,6 @@ def index_submissions(
         task = tasks[record.annotation_task_id]
         for field in (
             "challenge_id",
-            "blinded_parent_group",
             "instruction_version",
             "instruction_hash",
             "task_content_hash",
@@ -120,7 +115,7 @@ def _normalized_answer(value: str | None) -> str:
     return re.sub(r"\s+", " ", value or "").strip().casefold()
 
 
-def _normalized_sets(record: AnswerabilityAnnotation) -> tuple[tuple[str, ...], ...]:
+def _normalized_sets(record: AnswerabilityAnnotationV2) -> tuple[tuple[str, ...], ...]:
     return tuple(
         sorted(
             tuple(sorted(evidence_set)) for evidence_set in record.minimal_sufficient_evidence_sets
@@ -129,7 +124,7 @@ def _normalized_sets(record: AnswerabilityAnnotation) -> tuple[tuple[str, ...], 
 
 
 def _reasons(
-    left: AnswerabilityAnnotation, right: AnswerabilityAnnotation
+    left: AnswerabilityAnnotationV2, right: AnswerabilityAnnotationV2
 ) -> tuple[DisagreementReason, ...]:
     reasons: list[DisagreementReason] = []
     if left.answerability != right.answerability:
@@ -146,17 +141,16 @@ def _reasons(
 
 
 def _case(
-    assignment: TaskAssignment,
-    by_annotator: Mapping[str, AnswerabilityAnnotation],
-) -> DisagreementCase | None:
+    assignment: CoordinatorTaskV2,
+    by_annotator: Mapping[str, AnswerabilityAnnotationV2],
+) -> DisagreementCaseV2 | None:
     left, right = sorted(by_annotator.values(), key=lambda record: record.annotator_pseudonym)
     reasons = _reasons(left, right)
     if not reasons:
         return None
-    return DisagreementCase(
+    return DisagreementCaseV2(
         annotation_task_id=assignment.annotation_task_id,
         challenge_id=left.challenge_id,
-        blinded_parent_group=left.blinded_parent_group,
         reasons=reasons,
         left=left,
         right=right,
@@ -164,12 +158,12 @@ def _case(
 
 
 def build_disagreement_queue(
-    manifest: AssignmentManifest,
-    submissions: Sequence[AnswerabilityAnnotation],
-) -> tuple[DisagreementCase, ...]:
+    manifest: AssignmentManifestV2,
+    submissions: Sequence[AnswerabilityAnnotationV2],
+) -> tuple[DisagreementCaseV2, ...]:
     indexed = index_submissions(manifest, submissions)
-    cases: list[DisagreementCase] = []
-    for assignment in manifest.task_assignments:
+    cases: list[DisagreementCaseV2] = []
+    for assignment in manifest.coordinator_tasks:
         by_annotator = indexed.get(assignment.annotation_task_id, {})
         if len(by_annotator) != 2:
             raise DataError(
@@ -182,7 +176,7 @@ def build_disagreement_queue(
     return tuple(cases)
 
 
-def _agreement_exclusion(records: Sequence[AnswerabilityAnnotation]) -> str | None:
+def _agreement_exclusion(records: Sequence[AnswerabilityAnnotationV2]) -> str | None:
     if records[0].answerability == "unclear":
         return "unclear human decision"
     if any(record.dataset_defect for record in records):
@@ -196,7 +190,7 @@ def _agreement_exclusion(records: Sequence[AnswerabilityAnnotation]) -> str | No
     return None
 
 
-def _validate_adjudication(case: DisagreementCase, record: AdjudicationRecord) -> None:
+def _validate_adjudication(case: DisagreementCaseV2, record: AdjudicationV2) -> None:
     if record.annotation_task_id != case.annotation_task_id:
         raise DataError("adjudication task does not match disagreement case")
     expected = {artifact_hash(case.left), artifact_hash(case.right)}
@@ -206,11 +200,11 @@ def _validate_adjudication(case: DisagreementCase, record: AdjudicationRecord) -
 
 
 def build_workflow_result(
-    manifest: AssignmentManifest,
-    submissions: Sequence[AnswerabilityAnnotation],
+    manifest: AssignmentManifestV2,
+    submissions: Sequence[AnswerabilityAnnotationV2],
     *,
-    adjudications: Sequence[AdjudicationRecord],
-    amendments: Sequence[AnnotationAmendment] = (),
+    adjudications: Sequence[AdjudicationV2],
+    amendments: Sequence[AnnotationAmendmentV2] = (),
     phase: Literal["pilot", "confirmatory"],
     protocol_version: str,
     protocol_hash: str,
@@ -222,18 +216,18 @@ def build_workflow_result(
 
         effective_submissions = resolve_amendments(manifest, submissions, amendments)
     indexed = index_submissions(manifest, effective_submissions)
-    adjudication_by_task: dict[str, AdjudicationRecord] = {}
+    adjudication_by_task: dict[str, AdjudicationV2] = {}
     for record in adjudications:
         if record.annotation_task_id in adjudication_by_task:
             raise DataError(f"duplicate adjudication for {record.annotation_task_id}")
         adjudication_by_task[record.annotation_task_id] = record
 
     completed = disagreed = adjudicated = excluded = eligible = 0
-    disagreements: list[DisagreementCase] = []
-    eligibility_records: list[EligibilityRecord] = []
+    disagreements: list[DisagreementCaseV2] = []
+    eligibility_records: list[EligibilityRecordV2] = []
     consumed_adjudications: set[str] = set()
 
-    for assignment in manifest.task_assignments:
+    for assignment in manifest.coordinator_tasks:
         by_annotator = indexed.get(assignment.annotation_task_id, {})
         if len(by_annotator) != 2:
             continue
@@ -269,7 +263,7 @@ def build_workflow_result(
             excluded += 1
             exclusion_reason = exclusion_reason or "unclear adjudicated decision"
         eligibility_records.append(
-            EligibilityRecord(
+            EligibilityRecordV2(
                 challenge_id=originals[0].challenge_id,
                 task_content_hash=originals[0].task_content_hash,
                 source_annotation_hashes=(
@@ -290,7 +284,7 @@ def build_workflow_result(
     extra = set(adjudication_by_task) - consumed_adjudications
     if extra:
         raise DataError(f"adjudications do not match disagreement cases: {sorted(extra)}")
-    artifact = EligibilityArtifact(
+    artifact = EligibilityArtifactV2(
         phase=phase,
         protocol_version=protocol_version,
         protocol_hash=protocol_hash,
@@ -298,7 +292,7 @@ def build_workflow_result(
         records=tuple(eligibility_records),
     )
     flow = FlowAccounting(
-        assigned=len(manifest.task_assignments),
+        assigned=len(manifest.coordinator_tasks),
         completed=completed,
         disagreed=disagreed,
         adjudicated=adjudicated,
@@ -314,8 +308,8 @@ class AdjudicationStore:
     def __init__(
         self,
         root: Path,
-        manifest: AssignmentManifest,
-        submissions: Sequence[AnswerabilityAnnotation],
+        manifest: AssignmentManifestV2,
+        submissions: Sequence[AnswerabilityAnnotationV2],
     ) -> None:
         self.path = root / "adjudications" / "records.jsonl"
         self.cases = {
@@ -323,11 +317,11 @@ class AdjudicationStore:
             for case in build_disagreement_queue(manifest, submissions)
         }
 
-    def records(self) -> tuple[AdjudicationRecord, ...]:
+    def records(self) -> tuple[AdjudicationV2, ...]:
         if not self.path.exists():
             return ()
         return tuple(
-            AdjudicationRecord.model_validate(payload) for payload in read_records(self.path)
+            AdjudicationV2.model_validate(payload) for payload in read_records(self.path)
         )
 
     def status(self) -> dict[str, int | bool]:
@@ -342,7 +336,7 @@ class AdjudicationStore:
 
     def export_jsonl(self) -> str:
         payload = [record.model_dump(mode="json") for record in self.records()]
-        violations = scan_private_payload(payload)
+        violations = scan_delivery_payload(payload, artifact_kind="adjudication_stream")
         if violations:
             raise ArtifactError("adjudication privacy violation: " + "; ".join(violations))
         if not payload:
@@ -355,11 +349,11 @@ class AdjudicationStore:
             + "\n"
         )
 
-    def submit(self, payload: Mapping[str, Any]) -> AdjudicationRecord:
-        violations = scan_private_payload(payload)
+    def submit(self, payload: Mapping[str, Any]) -> AdjudicationV2:
+        violations = scan_delivery_payload(payload, artifact_kind="adjudication_record")
         if violations:
             raise ArtifactError("adjudication privacy violation: " + "; ".join(violations))
-        record = AdjudicationRecord.model_validate(payload)
+        record = AdjudicationV2.model_validate(payload)
         case = self.cases.get(record.annotation_task_id)
         if case is None:
             raise ArtifactError("adjudication task is not in the disagreement queue")

@@ -11,14 +11,14 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
-from rag_evidence.annotation.assignment import AssignmentManifest
+from rag_evidence.annotation.assignment import AssignmentManifestV2
 from rag_evidence.annotation.models import (
-    AnnotationAmendment,
-    AnswerabilityAnnotation,
-    CitationAnnotation,
+    AnnotationAmendmentV2,
+    AnswerabilityAnnotationV2,
+    annotation_binding,
     artifact_hash,
 )
-from rag_evidence.annotation.privacy import scan_private_payload
+from rag_evidence.annotation.privacy import scan_delivery_payload
 from rag_evidence.annotation.workflow import build_disagreement_queue, index_submissions
 from rag_evidence.errors import ArtifactError, DataError
 from rag_evidence.storage.artifacts import (
@@ -26,17 +26,6 @@ from rag_evidence.storage.artifacts import (
     read_records,
     write_json_atomic,
     write_records_atomic,
-)
-
-_BINDING_FIELDS = (
-    "annotation_task_id",
-    "challenge_id",
-    "blinded_parent_group",
-    "annotator_pseudonym",
-    "instruction_version",
-    "instruction_hash",
-    "task_content_hash",
-    "assignment_batch",
 )
 
 
@@ -60,7 +49,7 @@ class ArtifactDigest(_StrictModel):
 
 
 class CollectionReceipt(_StrictModel):
-    schema_version: Literal["annotation-collection-receipt-v1"] = "annotation-collection-receipt-v1"
+    schema_version: Literal["annotation-collection-receipt-v2"] = "annotation-collection-receipt-v2"
     generated_at: dt.datetime
     assigned_tasks: int = Field(ge=1)
     completed_tasks: int = Field(ge=0)
@@ -72,7 +61,7 @@ class CollectionReceipt(_StrictModel):
 
 
 class CollectionInputManifest(_StrictModel):
-    schema_version: Literal["annotation-input-manifest-v1"] = "annotation-input-manifest-v1"
+    schema_version: Literal["annotation-input-manifest-v2"] = "annotation-input-manifest-v2"
     artifacts: tuple[ArtifactDigest, ...]
 
 
@@ -90,33 +79,33 @@ class CollectionResult:
 
 @dataclass(frozen=True)
 class _AmendmentResolution:
-    effective: tuple[AnswerabilityAnnotation, ...]
-    ordered_amendments: tuple[AnnotationAmendment, ...]
+    effective: tuple[AnswerabilityAnnotationV2, ...]
+    ordered_amendments: tuple[AnnotationAmendmentV2, ...]
 
 
 def _submission_order(
-    manifest: AssignmentManifest,
+    manifest: AssignmentManifestV2,
 ) -> dict[tuple[str, str], int]:
     order: dict[tuple[str, str], int] = {}
-    for task_index, assignment in enumerate(manifest.task_assignments):
+    for task_index, assignment in enumerate(manifest.coordinator_tasks):
         for annotator_index, annotator in enumerate(assignment.annotators):
             order[(assignment.annotation_task_id, annotator)] = task_index * 2 + annotator_index
     return order
 
 
 def _same_binding(
-    original: AnswerabilityAnnotation,
-    replacement: AnswerabilityAnnotation | CitationAnnotation,
+    original: AnswerabilityAnnotationV2,
+    replacement: object,
 ) -> bool:
-    return isinstance(replacement, AnswerabilityAnnotation) and all(
-        getattr(original, field) == getattr(replacement, field) for field in _BINDING_FIELDS
+    return isinstance(replacement, AnswerabilityAnnotationV2) and (
+        annotation_binding(original) == annotation_binding(replacement)
     )
 
 
 def _resolve_amendments(
-    manifest: AssignmentManifest,
-    originals: Sequence[AnswerabilityAnnotation],
-    amendments: Sequence[AnnotationAmendment],
+    manifest: AssignmentManifestV2,
+    originals: Sequence[AnswerabilityAnnotationV2],
+    amendments: Sequence[AnnotationAmendmentV2],
 ) -> _AmendmentResolution:
     index_submissions(manifest, originals)
     order = _submission_order(manifest)
@@ -126,17 +115,17 @@ def _resolve_amendments(
             key=lambda record: order[(record.annotation_task_id, record.annotator_pseudonym)],
         )
     )
-    originals_by_hash: dict[str, AnswerabilityAnnotation] = {}
+    originals_by_hash: dict[str, AnswerabilityAnnotationV2] = {}
     for original in sorted_originals:
         digest = artifact_hash(original)
         if digest in originals_by_hash:
             raise DataError("duplicate canonical original annotation hash")
         originals_by_hash[digest] = original
 
-    amendments_by_original: dict[str, list[AnnotationAmendment]] = {
+    amendments_by_original: dict[str, list[AnnotationAmendmentV2]] = {
         digest: [] for digest in originals_by_hash
     }
-    hashes_by_original: dict[str, dict[str, AnnotationAmendment]] = {
+    hashes_by_original: dict[str, dict[str, AnnotationAmendmentV2]] = {
         digest: {} for digest in originals_by_hash
     }
     seen_ids: set[str] = set()
@@ -160,7 +149,7 @@ def _resolve_amendments(
         hashes_by_original[amendment.original_annotation_hash][digest] = amendment
 
     effective_by_original = dict(originals_by_hash)
-    ordered_amendments: list[AnnotationAmendment] = []
+    ordered_amendments: list[AnnotationAmendmentV2] = []
     all_amendment_hashes = {digest for group in hashes_by_original.values() for digest in group}
     for original in sorted_originals:
         original_hash = artifact_hash(original)
@@ -168,8 +157,8 @@ def _resolve_amendments(
         if not group:
             continue
         by_hash = hashes_by_original[original_hash]
-        heads: list[AnnotationAmendment] = []
-        successor: dict[str, AnnotationAmendment] = {}
+        heads: list[AnnotationAmendmentV2] = []
+        successor: dict[str, AnnotationAmendmentV2] = {}
         for amendment in group:
             previous = amendment.previous_amendment_hash
             if previous is None:
@@ -189,7 +178,7 @@ def _resolve_amendments(
 
         current = heads[0]
         visited: set[str] = set()
-        chain: list[AnnotationAmendment] = []
+        chain: list[AnnotationAmendmentV2] = []
         while True:
             current_hash = artifact_hash(current)
             if current_hash in visited:
@@ -203,7 +192,7 @@ def _resolve_amendments(
         if len(visited) != len(group):
             raise DataError("amendment chain is disconnected or cyclic")
         replacement = chain[-1].replacement
-        if not isinstance(replacement, AnswerabilityAnnotation):
+        if not isinstance(replacement, AnswerabilityAnnotationV2):
             raise DataError("answerability amendment contains a citation replacement")
         effective_by_original[original_hash] = replacement
         ordered_amendments.extend(chain)
@@ -218,52 +207,54 @@ def _resolve_amendments(
 
 
 def resolve_amendments(
-    manifest: AssignmentManifest,
-    originals: Sequence[AnswerabilityAnnotation],
-    amendments: Sequence[AnnotationAmendment],
-) -> tuple[AnswerabilityAnnotation, ...]:
+    manifest: AssignmentManifestV2,
+    originals: Sequence[AnswerabilityAnnotationV2],
+    amendments: Sequence[AnnotationAmendmentV2],
+) -> tuple[AnswerabilityAnnotationV2, ...]:
     """Resolve one append-only chain per canonical original, independent of file order."""
     return _resolve_amendments(manifest, originals, amendments).effective
 
 
-def _load_manifest(path: Path) -> AssignmentManifest:
+def _load_manifest(path: Path) -> AssignmentManifestV2:
     if not path.is_file():
         raise DataError(f"assignment manifest file is missing: {path.name}")
     try:
-        payload = read_json(path)
-        violations = scan_private_payload(payload)
-        if violations:
-            raise DataError("assignment manifest privacy violation: " + "; ".join(violations))
-        return AssignmentManifest.model_validate(payload)
+        return AssignmentManifestV2.model_validate(read_json(path))
     except (ArtifactError, ValidationError) as exc:
         raise DataError(f"invalid assignment manifest {path.name}: {exc}") from exc
 
 
-def _load_submissions(path: Path) -> tuple[AnswerabilityAnnotation, ...]:
+def _load_submissions(path: Path) -> tuple[AnswerabilityAnnotationV2, ...]:
     if not path.is_file():
         raise DataError(f"submission file is missing: {path.name}")
     try:
         records = tuple(
-            AnswerabilityAnnotation.model_validate(payload) for payload in read_records(path)
+            AnswerabilityAnnotationV2.model_validate(payload) for payload in read_records(path)
         )
     except (ArtifactError, ValidationError) as exc:
         raise DataError(f"invalid submission file {path.name}: {exc}") from exc
-    violations = scan_private_payload([record.model_dump(mode="json") for record in records])
+    violations = scan_delivery_payload(
+        [record.model_dump(mode="json") for record in records],
+        artifact_kind="submission_stream",
+    )
     if violations:
         raise DataError(f"submission privacy violation in {path.name}: " + "; ".join(violations))
     return records
 
 
-def _load_amendments(path: Path) -> tuple[AnnotationAmendment, ...]:
+def _load_amendments(path: Path) -> tuple[AnnotationAmendmentV2, ...]:
     if not path.is_file():
         raise DataError(f"amendment file is missing: {path.name}")
     try:
         records = tuple(
-            AnnotationAmendment.model_validate(payload) for payload in read_records(path)
+            AnnotationAmendmentV2.model_validate(payload) for payload in read_records(path)
         )
     except (ArtifactError, ValidationError) as exc:
         raise DataError(f"invalid amendment file {path.name}: {exc}") from exc
-    violations = scan_private_payload([record.model_dump(mode="json") for record in records])
+    violations = scan_delivery_payload(
+        [record.model_dump(mode="json") for record in records],
+        artifact_kind="amendment_stream",
+    )
     if violations:
         raise DataError(f"amendment privacy violation in {path.name}: " + "; ".join(violations))
     return records
@@ -292,8 +283,8 @@ def _digest(
 
 
 def _latest_source_time(
-    originals: Sequence[AnswerabilityAnnotation],
-    amendments: Sequence[AnnotationAmendment],
+    originals: Sequence[AnswerabilityAnnotationV2],
+    amendments: Sequence[AnnotationAmendmentV2],
 ) -> dt.datetime:
     timestamps = [record.submitted_at for record in originals]
     timestamps.extend(record.created_at for record in amendments)
@@ -317,12 +308,14 @@ def collect_annotation_streams(
         raise DataError("collection output directory must be absent or empty")
 
     manifest = _load_manifest(manifest_path)
-    assigned_pseudonyms = {package.annotator_pseudonym for package in manifest.packages}
+    assigned_pseudonyms = {
+        annotator for row in manifest.coordinator_tasks for annotator in row.annotators
+    }
     if len(assigned_pseudonyms) != 2:
         raise DataError("pilot collection requires exactly two assigned package pseudonyms")
 
-    originals: list[AnswerabilityAnnotation] = []
-    amendments: list[AnnotationAmendment] = []
+    originals: list[AnswerabilityAnnotationV2] = []
+    amendments: list[AnnotationAmendmentV2] = []
     stream_pseudonyms: list[str] = []
     input_digests: list[ArtifactDigest] = [_digest("assignment-manifest", "input", manifest_path)]
     for position, (submission_path, amendment_path) in enumerate(
@@ -358,9 +351,9 @@ def collect_annotation_streams(
     indexed = index_submissions(manifest, resolution.effective)
     completed_tasks = sum(
         len(indexed.get(assignment.annotation_task_id, {})) == 2
-        for assignment in manifest.task_assignments
+        for assignment in manifest.coordinator_tasks
     )
-    complete = completed_tasks == len(manifest.task_assignments)
+    complete = completed_tasks == len(manifest.coordinator_tasks)
     disagreements = build_disagreement_queue(manifest, resolution.effective) if complete else None
 
     order = _submission_order(manifest)
@@ -396,7 +389,7 @@ def collect_annotation_streams(
 
     receipt = CollectionReceipt(
         generated_at=_latest_source_time(sorted_originals, resolution.ordered_amendments),
-        assigned_tasks=len(manifest.task_assignments),
+        assigned_tasks=len(manifest.coordinator_tasks),
         completed_tasks=completed_tasks,
         original_submissions=len(sorted_originals),
         amendments=len(resolution.ordered_amendments),
@@ -414,7 +407,7 @@ def collect_annotation_streams(
     write_json_atomic(out / "input-manifest.json", input_manifest.model_dump(mode="json"))
     return CollectionResult(
         complete=complete,
-        assigned_tasks=len(manifest.task_assignments),
+        assigned_tasks=len(manifest.coordinator_tasks),
         completed_tasks=completed_tasks,
         original_submissions=len(sorted_originals),
         amendments=len(resolution.ordered_amendments),

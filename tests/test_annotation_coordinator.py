@@ -7,41 +7,57 @@ from pathlib import Path
 
 import pytest
 
-from rag_evidence.annotation.assignment import AssignmentManifest, build_dual_assignments
-from rag_evidence.annotation.blinding import project_challenge
+from rag_evidence.annotation.assignment import (
+    AssignmentManifestV2,
+    SchedulableTaskV2,
+    build_dual_assignments_v2,
+)
+from rag_evidence.annotation.blinding import project_challenge_v2
 from rag_evidence.annotation.coordinator import (
     collect_annotation_streams,
     resolve_amendments,
 )
 from rag_evidence.annotation.models import (
-    AnnotationAmendment,
-    AnswerabilityAnnotation,
+    AnnotationAmendmentV2,
+    AnswerabilityAnnotationV2,
     artifact_hash,
 )
+from rag_evidence.annotation.privacy import scan_delivery_payload
 from rag_evidence.errors import DataError
 from rag_evidence.storage.artifacts import write_json_atomic, write_records_atomic
 from test_annotation_blinding import challenge_record
 
 
-def _manifest(task_count: int = 1) -> AssignmentManifest:
+def _manifest(task_count: int = 1) -> AssignmentManifestV2:
     tasks = [
-        project_challenge(
+        project_challenge_v2(
             challenge_record(
                 challenge_id=f"ch-{index:024x}",
                 parent_id=f"synthetic-parent-{index}",
             ),
-            instruction_version="pilot-v0.2.1-draft",
+            instruction_version="pilot-v0.2.2-draft",
             instruction_hash="1" * 64,
             batch="pilot-batch-01",
             namespace="pilot-v0.2-tests",
         )
         for index in range(1, task_count + 1)
     ]
-    return build_dual_assignments(tasks, ("ann-r7", "ann-k2"), seed=11)
+    schedulable = tuple(
+        SchedulableTaskV2(
+            task=task,
+            internal_group_id=f"coord-{index:024x}",
+            transformation="missing_hop",
+        )
+        for index, task in enumerate(tasks, start=1)
+    )
+    _, manifest = build_dual_assignments_v2(
+        schedulable, ("ann-r7", "ann-k2"), seed=11
+    )
+    return manifest
 
 
 def _annotation(
-    manifest: AssignmentManifest,
+    manifest: AssignmentManifestV2,
     task_id: str,
     annotator: str,
     *,
@@ -49,18 +65,15 @@ def _annotation(
     answer_text: str = "Riverton",
     rationale: str = "The visible sentences provide the answer.",
     submitted_at: str = "2026-08-23T01:05:00Z",
-) -> AnswerabilityAnnotation:
-    tasks = {
-        task.annotation_task_id: task for package in manifest.packages for task in package.tasks
-    }
+) -> AnswerabilityAnnotationV2:
+    tasks = {task.annotation_task_id: task for task in manifest.tasks}
     task = tasks[task_id]
     is_answerable = answerability == "answerable"
-    return AnswerabilityAnnotation.model_validate(
+    return AnswerabilityAnnotationV2.model_validate(
         {
-            "schema_version": "answerability-annotation-v1",
+            "schema_version": "answerability-annotation-v2",
             "annotation_task_id": task.annotation_task_id,
             "challenge_id": task.challenge_id,
-            "blinded_parent_group": task.blinded_parent_group,
             "annotator_pseudonym": annotator,
             "instruction_version": task.instruction_version,
             "instruction_hash": task.instruction_hash,
@@ -81,16 +94,16 @@ def _annotation(
 
 
 def _amendment(
-    original: AnswerabilityAnnotation,
-    replacement: AnswerabilityAnnotation,
+    original: AnswerabilityAnnotationV2,
+    replacement: AnswerabilityAnnotationV2,
     *,
     suffix: str,
     previous: str | None,
     created_at: str,
-) -> AnnotationAmendment:
-    return AnnotationAmendment.model_validate(
+) -> AnnotationAmendmentV2:
+    return AnnotationAmendmentV2.model_validate(
         {
-            "schema_version": "annotation-amendment-v1",
+            "schema_version": "annotation-amendment-v2",
             "amendment_id": f"amend-{suffix:0>24}",
             "original_annotation_hash": artifact_hash(original),
             "previous_amendment_hash": previous,
@@ -103,13 +116,13 @@ def _amendment(
 
 
 def _chain() -> tuple[
-    AssignmentManifest,
-    tuple[AnswerabilityAnnotation, AnswerabilityAnnotation],
-    AnnotationAmendment,
-    AnnotationAmendment,
+    AssignmentManifestV2,
+    tuple[AnswerabilityAnnotationV2, AnswerabilityAnnotationV2],
+    AnnotationAmendmentV2,
+    AnnotationAmendmentV2,
 ]:
     manifest = _manifest()
-    task_id = manifest.task_assignments[0].annotation_task_id
+    task_id = manifest.coordinator_tasks[0].annotation_task_id
     left = _annotation(manifest, task_id, "ann-k2")
     right = _annotation(manifest, task_id, "ann-r7")
     first_replacement = _annotation(
@@ -210,7 +223,7 @@ def test_resolve_amendments_rejects_duplicate_ids() -> None:
 def test_resolve_amendments_rejects_replacement_binding_change() -> None:
     manifest = _manifest(task_count=2)
     first_task, second_task = (
-        assignment.annotation_task_id for assignment in manifest.task_assignments
+        assignment.annotation_task_id for assignment in manifest.coordinator_tasks
     )
     original = _annotation(manifest, first_task, "ann-k2")
     other_task_replacement = _annotation(
@@ -234,7 +247,7 @@ def test_resolve_amendments_rejects_replacement_binding_change() -> None:
 def test_resolve_amendments_rejects_cross_original_predecessor() -> None:
     manifest = _manifest(task_count=2)
     first_task, second_task = (
-        assignment.annotation_task_id for assignment in manifest.task_assignments
+        assignment.annotation_task_id for assignment in manifest.coordinator_tasks
     )
     first_original = _annotation(manifest, first_task, "ann-k2")
     second_original = _annotation(manifest, second_task, "ann-k2")
@@ -275,13 +288,13 @@ def test_resolve_amendments_rejects_cross_original_predecessor() -> None:
 
 def _write_streams(
     root: Path,
-    manifest: AssignmentManifest,
+    manifest: AssignmentManifestV2,
     *,
     complete: bool,
 ) -> tuple[Path, list[Path], list[Path]]:
     manifest_path = root / "manifest.json"
     write_json_atomic(manifest_path, manifest.model_dump(mode="json"))
-    task_ids = [assignment.annotation_task_id for assignment in manifest.task_assignments]
+    task_ids = [assignment.annotation_task_id for assignment in manifest.coordinator_tasks]
     submissions: list[Path] = []
     amendments: list[Path] = []
     for position, annotator in enumerate(("ann-k2", "ann-r7"), start=1):
@@ -349,6 +362,11 @@ def test_complete_collection_accepts_present_empty_amendment_streams(tmp_path: P
     assert result.complete is True
     assert (out / "disagreements.jsonl").read_text(encoding="utf-8") == ""
     assert (out / "amendments.jsonl").read_text(encoding="utf-8") == ""
+    receipt = json.loads((out / "collection-receipt.json").read_text(encoding="utf-8"))
+    input_manifest = json.loads((out / "input-manifest.json").read_text(encoding="utf-8"))
+    assert receipt["schema_version"] == "annotation-collection-receipt-v2"
+    assert input_manifest["schema_version"] == "annotation-input-manifest-v2"
+    assert scan_delivery_payload(receipt, artifact_kind="collection_receipt") == ()
 
 
 def test_collection_rejects_amendment_stream_paired_to_other_pseudonym(
@@ -356,7 +374,7 @@ def test_collection_rejects_amendment_stream_paired_to_other_pseudonym(
 ) -> None:
     manifest = _manifest()
     manifest_path, submissions, amendments = _write_streams(tmp_path, manifest, complete=True)
-    task_id = manifest.task_assignments[0].annotation_task_id
+    task_id = manifest.coordinator_tasks[0].annotation_task_id
     original = _annotation(manifest, task_id, "ann-r7")
     replacement = _annotation(
         manifest,

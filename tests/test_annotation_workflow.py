@@ -6,12 +6,16 @@ from pathlib import Path
 
 import pytest
 
-from rag_evidence.annotation.assignment import AssignmentManifest, build_dual_assignments
-from rag_evidence.annotation.blinding import project_challenge
+from rag_evidence.annotation.assignment import (
+    AssignmentManifestV2,
+    SchedulableTaskV2,
+    build_dual_assignments_v2,
+)
+from rag_evidence.annotation.blinding import project_challenge_v2
 from rag_evidence.annotation.models import (
-    AdjudicationRecord,
-    AnnotationAmendment,
-    AnswerabilityAnnotation,
+    AdjudicationV2,
+    AnnotationAmendmentV2,
+    AnswerabilityAnnotationV2,
     artifact_hash,
 )
 from rag_evidence.annotation.workflow import (
@@ -23,19 +27,30 @@ from rag_evidence.errors import ArtifactError, DataError
 from test_annotation_blinding import challenge_record
 
 
-def _manifest() -> AssignmentManifest:
-    task = project_challenge(
+def _manifest() -> AssignmentManifestV2:
+    task = project_challenge_v2(
         challenge_record(),
-        instruction_version="pilot-v0.2-draft",
+        instruction_version="pilot-v0.2.2-draft",
         instruction_hash="1" * 64,
         batch="pilot-batch-01",
         namespace="pilot-v0.2",
     )
-    return build_dual_assignments([task], ("ann-r7", "ann-k2"), seed=11)
+    _, manifest = build_dual_assignments_v2(
+        (
+            SchedulableTaskV2(
+                task=task,
+                internal_group_id="coord-000000000000000000000001",
+                transformation="missing_hop",
+            ),
+        ),
+        ("ann-r7", "ann-k2"),
+        seed=11,
+    )
+    return manifest
 
 
 def _annotation(
-    manifest: AssignmentManifest,
+    manifest: AssignmentManifestV2,
     annotator: str,
     *,
     answerability: str = "answerable",
@@ -45,15 +60,14 @@ def _annotation(
     exhaustive: bool | None = True,
     rationale: str = "The two visible sentences form the answer chain.",
     submitted_at: str = "2026-08-23T01:05:00Z",
-) -> AnswerabilityAnnotation:
-    task = manifest.packages[0].tasks[0]
+) -> AnswerabilityAnnotationV2:
+    task = manifest.tasks[0]
     is_answerable = answerability == "answerable"
-    return AnswerabilityAnnotation.model_validate(
+    return AnswerabilityAnnotationV2.model_validate(
         {
-            "schema_version": "answerability-annotation-v1",
+            "schema_version": "answerability-annotation-v2",
             "annotation_task_id": task.annotation_task_id,
             "challenge_id": task.challenge_id,
-            "blinded_parent_group": task.blinded_parent_group,
             "annotator_pseudonym": annotator,
             "instruction_version": task.instruction_version,
             "instruction_hash": task.instruction_hash,
@@ -75,28 +89,27 @@ def _annotation(
 
 
 def _answerable(
-    manifest: AssignmentManifest,
+    manifest: AssignmentManifestV2,
     annotator: str,
     **kwargs: object,
-) -> AnswerabilityAnnotation:
+) -> AnswerabilityAnnotationV2:
     defaults: dict[str, object] = {"evidence_sets": [["P1.S1", "P2.S1"]]}
     defaults.update(kwargs)
     return _annotation(manifest, annotator, **defaults)  # type: ignore[arg-type]
 
 
 def _adjudication(
-    left: AnswerabilityAnnotation,
-    right: AnswerabilityAnnotation,
+    left: AnswerabilityAnnotationV2,
+    right: AnswerabilityAnnotationV2,
     *,
     excluded: bool = False,
-) -> AdjudicationRecord:
-    return AdjudicationRecord.model_validate(
+) -> AdjudicationV2:
+    return AdjudicationV2.model_validate(
         {
-            "schema_version": "adjudication-v1",
+            "schema_version": "adjudication-v2",
             "adjudication_id": "adj-0123456789abcdef01234567",
             "annotation_task_id": left.annotation_task_id,
             "challenge_id": left.challenge_id,
-            "blinded_parent_group": left.blinded_parent_group,
             "adjudicator_pseudonym": "ann-j9",
             "left": left.model_dump(mode="json"),
             "right": right.model_dump(mode="json"),
@@ -160,6 +173,7 @@ def test_exact_agreement_becomes_eligible_without_adjudication() -> None:
     )
 
     assert result.flow.model_dump() == {
+        "schema_version": "pilot-flow-accounting-v2",
         "assigned": 1,
         "completed": 1,
         "disagreed": 0,
@@ -271,9 +285,9 @@ def test_workflow_uses_effective_amendment_tip() -> None:
         submitted_at="2026-08-23T01:07:00Z",
         rationale="Correction after rereading the visible evidence.",
     )
-    amendment = AnnotationAmendment.model_validate(
+    amendment = AnnotationAmendmentV2.model_validate(
         {
-            "schema_version": "annotation-amendment-v1",
+            "schema_version": "annotation-amendment-v2",
             "amendment_id": "amend-0123456789abcdef01234567",
             "original_annotation_hash": artifact_hash(right),
             "previous_amendment_hash": None,
@@ -290,7 +304,7 @@ def test_workflow_uses_effective_amendment_tip() -> None:
         amendments=[amendment],
         adjudications=[],
         phase="pilot",
-        protocol_version="pilot-v0.2.1-draft",
+        protocol_version="pilot-v0.2.2-draft",
         protocol_hash="8" * 64,
         generated_at="2026-08-23T03:00:00Z",
     )
