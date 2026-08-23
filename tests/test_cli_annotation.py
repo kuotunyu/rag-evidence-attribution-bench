@@ -22,6 +22,7 @@ def test_annotation_cli_surface_is_explicit() -> None:
         "collect",
         "finalize-pilot",
         "package-pilot",
+        "rehearse-synthetic",
         "serve",
     }
     package = annotation.commands["package-pilot"]

@@ -550,6 +550,31 @@ def annotation_build_handoff(
     )
 
 
+@annotation_app.command("rehearse-synthetic")
+def annotation_rehearse_synthetic(
+    out: Annotated[Path, typer.Option("--out", file_okay=False)],
+    repository_root: Annotated[
+        Path,
+        typer.Option("--repository-root", exists=True, file_okay=False, readable=True),
+    ] = Path("."),
+) -> None:
+    """Run an invented 40-task operational rehearsal twice outside the repository."""
+    from rag_evidence.annotation.rehearsal import run_synthetic_rehearsal
+    from rag_evidence.errors import RagEvidenceError
+
+    try:
+        result = run_synthetic_rehearsal(out, repository_root)
+    except RagEvidenceError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(
+        f"synthetic tasks={result.tasks}; amendments={result.amendments}; "
+        f"disagreements={result.disagreements}; adjudications={result.adjudications}; "
+        f"defect_exclusions={result.dataset_defect_exclusions}; "
+        f"verdict={result.verdict}; byte_identical={result.repeat_byte_identical}"
+    )
+
+
 @annotation_app.command("package-pilot")
 def annotation_package_pilot(
     config: ConfigOpt,

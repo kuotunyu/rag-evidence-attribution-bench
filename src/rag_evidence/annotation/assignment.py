@@ -115,10 +115,10 @@ def build_dual_assignments(
     if len(set(task_ids)) != len(task_ids):
         raise DataError("duplicate annotation task ID")
     canonical_annotators = sorted(set(annotators))
-    if len(canonical_annotators) < 2:
-        raise DataError("dual annotation requires at least two annotators")
     if len(canonical_annotators) != len(annotators):
         raise DataError("duplicate annotator pseudonym")
+    if len(canonical_annotators) < 2:
+        raise DataError("dual annotation requires at least two annotators")
     for pseudonym in canonical_annotators:
         if _PSEUDONYM_RE.fullmatch(pseudonym) is None:
             raise DataError(f"invalid annotator pseudonym: {pseudonym}")

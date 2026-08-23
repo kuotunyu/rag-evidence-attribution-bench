@@ -77,6 +77,8 @@ def test_assignment_rejects_duplicate_tasks_and_too_few_annotators() -> None:
         build_dual_assignments([tasks[0], tasks[0]], ("ann-r7", "ann-k2"), seed=1)
     with pytest.raises(DataError, match="at least two"):
         build_dual_assignments(tasks, ("ann-r7",), seed=1)
+    with pytest.raises(DataError, match="duplicate annotator"):
+        build_dual_assignments(tasks, ("ann-r7", "ann-r7"), seed=1)
 
 
 def test_assignment_fails_when_sibling_non_adjacency_is_impossible() -> None:

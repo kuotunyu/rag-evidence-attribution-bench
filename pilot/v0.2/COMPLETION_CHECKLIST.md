@@ -4,6 +4,24 @@ This checklist is for a future separately approved human pilot. Completing B0.1
 engineering does not authorize the human pilot. Packages from baseline `372096b` are
 obsolete; only `pilot-v0.2.1-draft` packages with the current instruction hash are valid.
 
+Before any human handoff, run the explicitly synthetic rehearsal in a temporary directory:
+
+```powershell
+$RehearsalRoot = Join-Path $env:TEMP "reab-b01-synthetic-rehearsal"
+uv run rag-evidence annotation rehearse-synthetic --out $RehearsalRoot --repository-root .
+git status --short
+```
+
+```sh
+REHEARSAL_ROOT=$(mktemp -d)/reab-b01-synthetic-rehearsal
+uv run rag-evidence annotation rehearse-synthetic --out "$REHEARSAL_ROOT" --repository-root .
+git status --short
+```
+
+The command must report 40 tasks, one amendment, complete adjudication, one dataset-defect
+exclusion, `READY_FOR_HUMAN_FREEZE_REVIEW`, and byte-identical repeats while `git status`
+shows no generated rehearsal artifact.
+
 - [ ] Two independent humans completed onboarding with opaque pseudonyms.
 - [ ] All 40 tasks have exactly two valid submissions.
 - [ ] No names, emails, repository paths, or expected labels entered artifacts.
