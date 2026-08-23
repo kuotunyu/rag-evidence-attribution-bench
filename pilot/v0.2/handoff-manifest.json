@@ -1,20 +1,42 @@
 {
-  "schema_version": "handoff-manifest-v1",
-  "spec_version": "handoff-spec-v1",
-  "builder_version": "handoff-builder-v1",
+  "schema_version": "handoff-manifest-v2",
+  "spec_version": "handoff-spec-v2",
+  "builder_version": "handoff-builder-v2",
+  "protocol_version": "pilot-v0.2.2-draft",
+  "python_distribution": "0.2.0.dev0",
+  "required_verification_platforms": [
+    "Windows",
+    "Linux"
+  ],
   "supported_environment": {
     "python": "3.11",
-    "operating_systems": [
+    "required_verification_platforms": [
       "Windows",
       "Linux"
     ],
-    "install_extra": "app",
-    "dependency_lock": "uv.lock"
+    "dependency_lock": "annotation-requirements-py311.lock",
+    "dependency_bootstrap_argv": [
+      "python",
+      "-m",
+      "pip",
+      "install",
+      "--require-hashes",
+      "--only-binary=:all:",
+      "-r",
+      "annotation-requirements-py311.lock"
+    ],
+    "wheel_install_argv": [
+      "python",
+      "-m",
+      "pip",
+      "install",
+      "--no-deps",
+      "<verified-wheel>"
+    ]
   },
   "source_paths": {
     "package_a": "pilot/v0.2/packages/ann-pilot-a.json",
     "package_b": "pilot/v0.2/packages/ann-pilot-b.json",
-    "assignment_manifest": "pilot/v0.2/packages/manifest.json",
     "instruction": "PILOT_PROTOCOL.md",
     "onboarding": "pilot/v0.2/ONBOARDING.md",
     "runbook": "pilot/v0.2/HANDOFF_RUNBOOK.md",
@@ -22,27 +44,37 @@
     "launcher_a_posix": "pilot/v0.2/launchers/start-a.sh",
     "launcher_b_powershell": "pilot/v0.2/launchers/start-b.ps1",
     "launcher_b_posix": "pilot/v0.2/launchers/start-b.sh",
-    "dependency_lock": "uv.lock",
+    "dependency_lock": "pilot/v0.2/annotation-requirements-py311.lock",
     "builder": "src/rag_evidence/annotation/handoff.py",
+    "source_verifier": "src/rag_evidence/annotation/source_verify.py",
+    "wheel_verifier": "src/rag_evidence/annotation/wheel_verify.py",
+    "platform_verifier": "src/rag_evidence/annotation/platform.py",
     "manifest_schema": "pilot/v0.2/handoff-manifest.schema.json"
   },
   "canonical_sha256": {
-    "package_a": "c68271cb61630fcb8b929d7f36fd485b5cdfc5579735df80dc32724826d2dc97",
-    "package_b": "9659c20e3d427213080f6fa0ee562d1d76a8918a473da6a285a4f72f5fa2f9c0",
-    "assignment_manifest": "447c29a648a69de0b0e5b987f2d539a6a824e43de48f9d4a4270ebed67bb967c",
-    "instruction": "1963f861f2daace46b9c17eb5996d0a7702d272ae04d1e918c3cca8c57afb4d3",
-    "onboarding": "0133091772c0b4331fd9b73743c90670584476a9d4df3fc3f923b0811c74f758",
-    "runbook": "5c019ff2821ac343223dbad4b86d1420598112a43ad641f358dc21dd9b0a4d09",
+    "package_a": "a869166bdf240fe9aa6e9ee821912423bd97d34167df77989323345be2d71cb3",
+    "package_b": "9f75688bae94662b27008ed2ee7e7265f1d7f6830072e7e38a88667f6dedc8b1",
+    "instruction": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+    "onboarding": "2d467d589ab41aeffe4bc7c1eea6b5e53ece19c9ec272dacba99725cd132ab04",
+    "runbook": "2a0cf730c9506c2866ab125dcebd02bbfa76d78cd592ff2f513101f2b26a7e54",
     "launcher_a_powershell": "d3fdf1b2c64615d9e25f8d9e9215d56adf88ea9231210b387aea6945111740b6",
     "launcher_a_posix": "1bb524a0417fb717e7063fa3110767c076fb80871e2bdb0c8cfccbb9c417bebe",
     "launcher_b_powershell": "45eef841ba425d6e77f6f5e3a38dc8c615bde54e62322455dfc39f6447409415",
     "launcher_b_posix": "8b0bca8606ec8a9b551ee2711dd3f43f2c3023436a049a779a810f2ee4e1eb45",
-    "dependency_lock": "4cc0a6d04c92a3d9b4395901c2014470380576ddb64cbf93f688f7a3099b1d09",
-    "builder": "155a91c86a344540070496b49ecc9aeafadb0ee40499f7ec7cfdddf7797fb474",
-    "manifest_schema": "656c37a41134b07221a719db1b6918057215a36c23f7573e1a875c044dfa3f92"
+    "dependency_lock": "bbdabdc13ab652a3ae899635aad23804b34d02f535d14ac1d3264d74db9d31af",
+    "builder": "af9c9de32544bd032b6b7dad8a36b97a6057bb173ac632ae51aea4b0f65e0f74",
+    "source_verifier": "4782d1fa8113366859dc6a56e736dcb9fde44a1592efef4e1d2ef589b7d9a14d",
+    "wheel_verifier": "4bf2a558f4aab4e764495ddadb2926160a85707910fd8f0292e94c66434fba28",
+    "platform_verifier": "40f697a8fe674cfccf67bbf1dd3dffe1906dd30e83ccdaa3ee0e33bc65762db7",
+    "manifest_schema": "6cb048bd54728ae9e012e7981549687d753e953ae7392468911b905a9900d94d"
   },
-  "instruction_version": "pilot-v0.2.1-draft",
-  "instruction_sha256": "1963f861f2daace46b9c17eb5996d0a7702d272ae04d1e918c3cca8c57afb4d3",
+  "canonical_package_sha256": {
+    "ann-pilot-a.json": "a869166bdf240fe9aa6e9ee821912423bd97d34167df77989323345be2d71cb3",
+    "ann-pilot-b.json": "9f75688bae94662b27008ed2ee7e7265f1d7f6830072e7e38a88667f6dedc8b1"
+  },
+  "instruction_version": "pilot-v0.2.2-draft",
+  "instruction_sha256": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+  "dependency_lock_sha256": "bbdabdc13ab652a3ae899635aad23804b34d02f535d14ac1d3264d74db9d31af",
   "expected_layout": {
     "external_root_files": [
       "handoff-receipt.json",
@@ -52,21 +84,23 @@
     "kit_b_directory": "kit-b",
     "kit_a_files": [
       "<verified-wheel>",
-      "ann-pilot-a.json",
+      "annotation-requirements-py311.lock",
       "ONBOARDING.md",
       "HANDOFF_RUNBOOK.md",
       "start.ps1",
       "start.sh",
-      "SHA256SUMS"
+      "SHA256SUMS",
+      "ann-pilot-a.json"
     ],
     "kit_b_files": [
       "<verified-wheel>",
-      "ann-pilot-b.json",
+      "annotation-requirements-py311.lock",
       "ONBOARDING.md",
       "HANDOFF_RUNBOOK.md",
       "start.ps1",
       "start.sh",
-      "SHA256SUMS"
+      "SHA256SUMS",
+      "ann-pilot-b.json"
     ]
   },
   "reproducible_build": {
@@ -78,14 +112,14 @@
       "--out-dir",
       "<external-dist>"
     ],
-    "verification_steps": [
-      "build the exact clean commit in two different temporary directories",
-      "compare canonical package bytes and SHA-256 values",
-      "compare wheel bytes and SHA-256 values",
-      "diagnose ZIP timestamps, build metadata, and dependencies if wheels differ",
-      "record per-build-hash-verified if reasonable fixes do not make wheels identical",
-      "clean-install and create the annotation app with Python 3.11 in both builds"
-    ],
-    "wheel_policy": "byte-compare-else-per-build-hash"
+    "wheel_policy": "byte-identical-required",
+    "required_instances": 4,
+    "environment_policy": [
+      "external-cache",
+      "external-build-root",
+      "external-output",
+      "external-pycache",
+      "PYTHONDONTWRITEBYTECODE=1"
+    ]
   }
 }

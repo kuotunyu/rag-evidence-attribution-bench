@@ -1,18 +1,18 @@
-"""External handoff kits are source-bound, disjoint, and never committed artifacts."""
+"""The v2 handoff contract is source-only, source-bound, and delivery-disjoint."""
 
 from __future__ import annotations
 
 import hashlib
 import json
-import shutil
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from rag_evidence.annotation.handoff import (
-    CleanInstallVerification,
-    HandoffSpec,
-    build_handoff,
+    HandoffSpecV2,
+    resolve_handoff_sources,
+    stage_disjoint_kits,
 )
 from rag_evidence.errors import DataError
 
@@ -21,152 +21,104 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _kit_files(root: Path, kit: str) -> set[str]:
-    return {
-        path.relative_to(root / kit).as_posix()
-        for path in (root / kit).rglob("*")
-        if path.is_file()
-    }
+def _files(root: Path) -> set[str]:
+    return {path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file()}
 
 
-def _verify_sums(root: Path, sums_path: Path) -> None:
-    for line in sums_path.read_text(encoding="utf-8").splitlines():
+def _verify_sums(root: Path) -> None:
+    for line in (root / "SHA256SUMS").read_text(encoding="utf-8").splitlines():
         expected, relative = line.split("  ", maxsplit=1)
         assert _sha256(root / relative) == expected
 
 
-def test_committed_handoff_manifest_matches_schema_and_has_no_wheel_hash(
-    repo_root: Path,
-) -> None:
-    schema_path = repo_root / "pilot" / "v0.2" / "handoff-manifest.schema.json"
-    spec_path = repo_root / "pilot" / "v0.2" / "handoff-manifest.json"
+def _committed_spec(repo_root: Path) -> HandoffSpecV2:
+    path = repo_root / "pilot/v0.2/handoff-manifest.json"
+    return HandoffSpecV2.model_validate_json(path.read_text(encoding="utf-8"))
+
+
+def test_committed_handoff_manifest_is_strict_source_only_v2(repo_root: Path) -> None:
+    schema_path = repo_root / "pilot/v0.2/handoff-manifest.schema.json"
+    spec_path = repo_root / "pilot/v0.2/handoff-manifest.json"
     schema = json.loads(schema_path.read_text(encoding="utf-8"))
     payload = json.loads(spec_path.read_text(encoding="utf-8"))
 
-    assert schema == HandoffSpec.model_json_schema()
-    spec = HandoffSpec.model_validate(payload)
-    assert spec.schema_version == "handoff-manifest-v1"
-    assert spec.spec_version == "handoff-spec-v1"
-    assert spec.builder_version == "handoff-builder-v1"
-    assert "wheel_sha256" not in json.dumps(payload).casefold()
-    assert "wheel" not in payload["canonical_sha256"]
+    assert schema == HandoffSpecV2.model_json_schema()
+    spec = HandoffSpecV2.model_validate(payload)
+    assert spec.schema_version == "handoff-manifest-v2"
+    assert spec.spec_version == "handoff-spec-v2"
+    assert spec.builder_version == "handoff-builder-v2"
+    assert spec.protocol_version == "pilot-v0.2.2-draft"
+    assert spec.python_distribution == "0.2.0.dev0"
+    assert spec.required_verification_platforms == ("Windows", "Linux")
+    serialized = json.dumps(payload).casefold()
+    assert "wheel_sha256" not in serialized
+    assert "assignment_manifest" not in serialized
+    assert "coordinator_manifest_instance" not in serialized
+    assert "verified_platforms" not in serialized
 
 
-def test_committed_handoff_hashes_match_canonical_sources(repo_root: Path) -> None:
-    spec = HandoffSpec.model_validate_json(
-        (repo_root / "pilot" / "v0.2" / "handoff-manifest.json").read_text(encoding="utf-8")
+def test_committed_handoff_hashes_match_all_declared_sources(repo_root: Path) -> None:
+    spec = _committed_spec(repo_root)
+    sources = resolve_handoff_sources(repo_root, spec)
+
+    assert set(sources) == set(spec.source_paths) == set(spec.canonical_sha256)
+    for logical_name, source in sources.items():
+        assert _sha256(source) == spec.canonical_sha256[logical_name]
+    assert spec.instruction_sha256 == spec.canonical_sha256["instruction"]
+    assert spec.dependency_lock_sha256 == spec.canonical_sha256["dependency_lock"]
+    assert spec.canonical_package_sha256 == {
+        "ann-pilot-a.json": spec.canonical_sha256["package_a"],
+        "ann-pilot-b.json": spec.canonical_sha256["package_b"],
+    }
+
+
+def test_v1_handoff_manifest_is_rejected_without_migration(repo_root: Path) -> None:
+    payload = json.loads(
+        (repo_root / "pilot/v0.2/handoff-manifest.json").read_text(encoding="utf-8")
     )
+    payload["schema_version"] = "handoff-manifest-v1"
 
-    for logical_name, expected_hash in spec.canonical_sha256.items():
-        source = repo_root / spec.source_paths[logical_name]
-        assert source.is_file(), logical_name
-        assert _sha256(source) == expected_hash, logical_name
+    with pytest.raises(ValidationError):
+        HandoffSpecV2.model_validate(payload)
 
 
-def test_handoff_kits_are_disjoint_and_receipt_is_complete(
+def test_stage_disjoint_kits_uses_closed_layout_and_own_package_only(
     repo_root: Path,
     tmp_path: Path,
 ) -> None:
-    spec_path = repo_root / "pilot" / "v0.2" / "handoff-manifest.json"
-    wheel = tmp_path / "dist" / "rag_evidence_attribution_bench-0.1.0-py3-none-any.whl"
+    spec = _committed_spec(repo_root)
+    sources = resolve_handoff_sources(repo_root, spec)
+    wheel = tmp_path / "wheel/rag_evidence_attribution_bench-0.2.0.dev0-py3-none-any.whl"
     wheel.parent.mkdir()
-    wheel.write_bytes(b"synthetic wheel bytes for a builder contract test")
-    external = tmp_path / "external"
-    verification = CleanInstallVerification(
-        python_version="3.11.9",
-        kit_a_passed=True,
-        kit_b_passed=True,
-        cli_help_passed=True,
-        app_creation_passed=True,
-    )
+    wheel.write_bytes(b"verified wheel fixture")
+    external = tmp_path / "delivery"
 
-    result = build_handoff(
-        spec_path=spec_path,
-        wheel_path=wheel,
-        external_root=external,
-        source_commit="1" * 40,
-        build_time="2026-08-23T04:00:00Z",
-        clean_install=verification,
-        wheel_reproducibility="byte-identical",
-    )
+    kit_hashes = stage_disjoint_kits(external, wheel, sources, spec)
 
     common = {
         wheel.name,
+        "annotation-requirements-py311.lock",
         "ONBOARDING.md",
         "HANDOFF_RUNBOOK.md",
         "start.ps1",
         "start.sh",
         "SHA256SUMS",
     }
-    assert _kit_files(external, "kit-a") == common | {"ann-pilot-a.json"}
-    assert _kit_files(external, "kit-b") == common | {"ann-pilot-b.json"}
-    assert "ann-pilot-b.json" not in _kit_files(external, "kit-a")
-    assert "ann-pilot-a.json" not in _kit_files(external, "kit-b")
-    assert not any(
-        "manifest" in name.casefold()
-        for name in _kit_files(external, "kit-a") | _kit_files(external, "kit-b")
-    )
-    assert (external / "kit-a" / wheel.name).read_bytes() == wheel.read_bytes()
-    assert (external / "kit-b" / wheel.name).read_bytes() == wheel.read_bytes()
-    assert (external / "handoff-receipt.json").exists()
-    assert (external / "SHA256SUMS").exists()
-    assert result.source_commit_sha == "1" * 40
-    assert result.wheel.sha256 == _sha256(wheel)
-    assert result.wheel.reproducibility == "byte-identical"
-    assert result.clean_install == verification
-    assert result.instruction_version == "pilot-v0.2.1-draft"
-    assert result.dependency_lock_sha256 == _sha256(repo_root / "uv.lock")
-    _verify_sums(external / "kit-a", external / "kit-a" / "SHA256SUMS")
-    _verify_sums(external / "kit-b", external / "kit-b" / "SHA256SUMS")
-    _verify_sums(external, external / "SHA256SUMS")
-    assert set(path.name for path in external.iterdir()) == {
-        "kit-a",
-        "kit-b",
-        "handoff-receipt.json",
-        "SHA256SUMS",
-    }
+    assert _files(external / "kit-a") == common | {"ann-pilot-a.json"}
+    assert _files(external / "kit-b") == common | {"ann-pilot-b.json"}
+    assert "ann-pilot-b.json" not in _files(external / "kit-a")
+    assert "ann-pilot-a.json" not in _files(external / "kit-b")
+    assert not any("manifest" in name.casefold() for name in _files(external))
+    assert set(kit_hashes) == {"kit-a", "kit-b"}
+    _verify_sums(external / "kit-a")
+    _verify_sums(external / "kit-b")
 
 
-def test_handoff_builder_refuses_repository_output_and_source_hash_mismatch(
-    repo_root: Path,
-    tmp_path: Path,
-) -> None:
-    spec_path = repo_root / "pilot" / "v0.2" / "handoff-manifest.json"
-    wheel = tmp_path / "artifact.whl"
-    wheel.write_bytes(b"wheel")
-    verification = CleanInstallVerification(
-        python_version="3.11.9",
-        kit_a_passed=True,
-        kit_b_passed=True,
-        cli_help_passed=True,
-        app_creation_passed=True,
-    )
-    kwargs = {
-        "spec_path": spec_path,
-        "wheel_path": wheel,
-        "source_commit": "2" * 40,
-        "build_time": "2026-08-23T04:00:00Z",
-        "clean_install": verification,
-        "wheel_reproducibility": "per-build-hash-verified",
-    }
+def test_stage_disjoint_kits_refuses_repository_output(repo_root: Path, tmp_path: Path) -> None:
+    spec = _committed_spec(repo_root)
+    sources = resolve_handoff_sources(repo_root, spec)
+    wheel = tmp_path / "rag_evidence_attribution_bench-0.2.0.dev0-py3-none-any.whl"
+    wheel.write_bytes(b"verified wheel fixture")
 
-    with pytest.raises(DataError, match="outside the repository"):
-        build_handoff(external_root=repo_root / "pilot" / "v0.2" / "generated", **kwargs)
-
-    spec = HandoffSpec.model_validate_json(spec_path.read_text(encoding="utf-8"))
-    copied_root = tmp_path / "copied-source"
-    for relative_path in spec.source_paths.values():
-        destination = copied_root / relative_path
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(repo_root / relative_path, destination)
-    copied_spec = copied_root / "pilot" / "v0.2" / "handoff-manifest.json"
-    copied_spec.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(spec_path, copied_spec)
-    copied_package = copied_root / spec.source_paths["package_a"]
-    copied_package.write_bytes(copied_package.read_bytes() + b"\n")
-
-    with pytest.raises(DataError, match="source hash mismatch"):
-        build_handoff(
-            external_root=tmp_path / "external",
-            **{**kwargs, "spec_path": copied_spec},
-        )
+    with pytest.raises(DataError, match="outside"):
+        stage_disjoint_kits(repo_root / "pilot/v0.2/delivery", wheel, sources, spec)

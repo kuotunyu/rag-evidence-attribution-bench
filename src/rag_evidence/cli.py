@@ -90,11 +90,6 @@ class ChallengeVariant(StrEnum):
     evidence_swap = "evidence_swap"
 
 
-class HandoffWheelMode(StrEnum):
-    byte_identical = "byte-identical"
-    per_build_hash_verified = "per-build-hash-verified"
-
-
 def _challenge_config(
     cfg: Any,
     *,
@@ -503,47 +498,52 @@ def annotation_build_handoff(
         Path,
         typer.Option("--spec", exists=True, dir_okay=False, readable=True),
     ],
-    wheel: Annotated[
+    checkout_a: Annotated[
         Path,
-        typer.Option("--wheel", exists=True, dir_okay=False, readable=True),
+        typer.Option("--checkout-a", exists=True, file_okay=False, readable=True),
     ],
-    clean_install: Annotated[
+    checkout_b: Annotated[
         Path,
-        typer.Option("--clean-install", exists=True, dir_okay=False, readable=True),
+        typer.Option("--checkout-b", exists=True, file_okay=False, readable=True),
     ],
-    source_commit: Annotated[str, typer.Option("--source-commit")],
-    build_time: Annotated[str, typer.Option("--build-time")],
-    wheel_reproducibility: Annotated[
-        HandoffWheelMode,
-        typer.Option("--wheel-reproducibility"),
+    wheel_evidence: Annotated[
+        Path,
+        typer.Option("--wheel-evidence", exists=True, dir_okay=False, readable=True),
     ],
-    out: Annotated[Path, typer.Option("--out", file_okay=False)],
+    coordinator_manifest: Annotated[
+        Path,
+        typer.Option("--coordinator-manifest", exists=True, dir_okay=False, readable=True),
+    ],
+    windows_receipt: Annotated[
+        Path,
+        typer.Option("--windows-receipt", exists=True, dir_okay=False, readable=True),
+    ],
+    linux_receipt: Annotated[
+        Path,
+        typer.Option("--linux-receipt", exists=True, dir_okay=False, readable=True),
+    ],
+    output: Annotated[Path, typer.Option("--output", file_okay=False)],
 ) -> None:
-    """Build two disjoint, checksum-bound annotator kits outside the repository."""
-    from rag_evidence.annotation.handoff import (
-        CleanInstallVerification,
-        build_handoff,
-    )
+    """Build final disjoint kits from exact source, wheel, and platform evidence."""
+    from rag_evidence.annotation.handoff import build_handoff_v2
     from rag_evidence.errors import RagEvidenceError
 
     try:
-        verification = CleanInstallVerification.model_validate_json(
-            clean_install.read_text(encoding="utf-8")
-        )
-        receipt = build_handoff(
+        receipt = build_handoff_v2(
             spec_path=spec,
-            wheel_path=wheel,
-            external_root=out,
-            source_commit=source_commit,
-            build_time=build_time,
-            clean_install=verification,
-            wheel_reproducibility=wheel_reproducibility.value,
+            checkout_a_root=checkout_a,
+            checkout_b_root=checkout_b,
+            wheel_evidence_path=wheel_evidence,
+            coordinator_manifest_path=coordinator_manifest,
+            windows_receipt_path=windows_receipt,
+            linux_receipt_path=linux_receipt,
+            external_root=output,
         )
     except (RagEvidenceError, ValueError) as exc:
         typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1) from exc
     typer.echo(
-        f"built isolated kits at {out}; wheel={receipt.wheel.reproducibility}; "
+        f"built source-bound isolated kits at {output}; wheel={receipt.wheel.sha256}; "
         f"commit={receipt.source_commit_sha}"
     )
 
@@ -573,6 +573,29 @@ def annotation_build_wheels(
     typer.echo(
         f"verified four byte-identical wheels; sha256={result.canonical.sha256}; "
         f"commit={result.source_commit_sha}"
+    )
+
+
+@annotation_app.command("write-handoff-spec")
+def annotation_write_handoff_spec(
+    repository_root: Annotated[
+        Path,
+        typer.Option("--repository-root", exists=True, file_okay=False, readable=True),
+    ],
+    output: Annotated[Path, typer.Option("--output", dir_okay=False)],
+) -> None:
+    """Refresh the committed source-only v2 handoff manifest and generated schema."""
+    from rag_evidence.annotation.handoff import write_handoff_spec
+    from rag_evidence.errors import RagEvidenceError
+
+    try:
+        spec = write_handoff_spec(repository_root, output)
+    except (RagEvidenceError, ValueError) as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(
+        f"wrote {spec.schema_version}; protocol={spec.protocol_version}; "
+        f"distribution={spec.python_distribution}"
     )
 
 

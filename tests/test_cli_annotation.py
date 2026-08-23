@@ -26,11 +26,14 @@ def test_annotation_cli_surface_is_explicit() -> None:
         "package-pilot",
         "rehearse-synthetic",
         "serve",
+        "write-handoff-spec",
     }
     package = annotation.commands["package-pilot"]
     serve = annotation.commands["serve"]
     adjudicate = annotation.commands["adjudicate"]
     build_wheels = annotation.commands["build-wheels"]
+    build_handoff = annotation.commands["build-handoff"]
+    write_spec = annotation.commands["write-handoff-spec"]
     assert any(
         isinstance(param, TyperOption) and param.name == "config" for param in package.params
     )
@@ -46,5 +49,19 @@ def test_annotation_cli_surface_is_explicit() -> None:
         "checkout_a",
         "checkout_b",
         "source_commit",
+        "output",
+    }
+    assert {param.name for param in write_spec.params if isinstance(param, TyperOption)} == {
+        "repository_root",
+        "output",
+    }
+    assert {param.name for param in build_handoff.params if isinstance(param, TyperOption)} == {
+        "spec",
+        "checkout_a",
+        "checkout_b",
+        "wheel_evidence",
+        "coordinator_manifest",
+        "windows_receipt",
+        "linux_receipt",
         "output",
     }

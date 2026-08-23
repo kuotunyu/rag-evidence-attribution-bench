@@ -1,6 +1,6 @@
 {
   "$defs": {
-    "ExpectedLayout": {
+    "ExpectedLayoutV2": {
       "additionalProperties": false,
       "properties": {
         "external_root_files": {
@@ -29,12 +29,13 @@
         "kit_a_files": {
           "default": [
             "<verified-wheel>",
-            "ann-pilot-a.json",
+            "annotation-requirements-py311.lock",
             "ONBOARDING.md",
             "HANDOFF_RUNBOOK.md",
             "start.ps1",
             "start.sh",
-            "SHA256SUMS"
+            "SHA256SUMS",
+            "ann-pilot-a.json"
           ],
           "items": {
             "type": "string"
@@ -45,12 +46,13 @@
         "kit_b_files": {
           "default": [
             "<verified-wheel>",
-            "ann-pilot-b.json",
+            "annotation-requirements-py311.lock",
             "ONBOARDING.md",
             "HANDOFF_RUNBOOK.md",
             "start.ps1",
             "start.sh",
-            "SHA256SUMS"
+            "SHA256SUMS",
+            "ann-pilot-b.json"
           ],
           "items": {
             "type": "string"
@@ -59,47 +61,63 @@
           "type": "array"
         }
       },
-      "title": "ExpectedLayout",
+      "title": "ExpectedLayoutV2",
       "type": "object"
     },
-    "ReproducibleBuildRecipe": {
+    "ReproducibleBuildRecipeV2": {
       "additionalProperties": false,
       "properties": {
         "source_date_epoch": {
-          "minimum": 315532800,
+          "const": 1787443200,
+          "default": 1787443200,
           "title": "Source Date Epoch",
           "type": "integer"
         },
         "build_command": {
+          "default": [
+            "uv",
+            "build",
+            "--wheel",
+            "--out-dir",
+            "<external-dist>"
+          ],
           "items": {
             "type": "string"
           },
           "title": "Build Command",
           "type": "array"
         },
-        "verification_steps": {
+        "wheel_policy": {
+          "const": "byte-identical-required",
+          "default": "byte-identical-required",
+          "title": "Wheel Policy",
+          "type": "string"
+        },
+        "required_instances": {
+          "const": 4,
+          "default": 4,
+          "title": "Required Instances",
+          "type": "integer"
+        },
+        "environment_policy": {
+          "default": [
+            "external-cache",
+            "external-build-root",
+            "external-output",
+            "external-pycache",
+            "PYTHONDONTWRITEBYTECODE=1"
+          ],
           "items": {
             "type": "string"
           },
-          "title": "Verification Steps",
+          "title": "Environment Policy",
           "type": "array"
-        },
-        "wheel_policy": {
-          "const": "byte-compare-else-per-build-hash",
-          "default": "byte-compare-else-per-build-hash",
-          "title": "Wheel Policy",
-          "type": "string"
         }
       },
-      "required": [
-        "source_date_epoch",
-        "build_command",
-        "verification_steps"
-      ],
-      "title": "ReproducibleBuildRecipe",
+      "title": "ReproducibleBuildRecipeV2",
       "type": "object"
     },
-    "SupportedEnvironment": {
+    "SupportedEnvironmentV2": {
       "additionalProperties": false,
       "properties": {
         "python": {
@@ -108,7 +126,7 @@
           "title": "Python",
           "type": "string"
         },
-        "operating_systems": {
+        "required_verification_platforms": {
           "default": [
             "Windows",
             "Linux"
@@ -120,48 +138,101 @@
             ],
             "type": "string"
           },
-          "title": "Operating Systems",
+          "title": "Required Verification Platforms",
           "type": "array"
         },
-        "install_extra": {
-          "const": "app",
-          "default": "app",
-          "title": "Install Extra",
-          "type": "string"
-        },
         "dependency_lock": {
-          "const": "uv.lock",
-          "default": "uv.lock",
+          "const": "annotation-requirements-py311.lock",
+          "default": "annotation-requirements-py311.lock",
           "title": "Dependency Lock",
           "type": "string"
+        },
+        "dependency_bootstrap_argv": {
+          "default": [
+            "python",
+            "-m",
+            "pip",
+            "install",
+            "--require-hashes",
+            "--only-binary=:all:",
+            "-r",
+            "annotation-requirements-py311.lock"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Dependency Bootstrap Argv",
+          "type": "array"
+        },
+        "wheel_install_argv": {
+          "default": [
+            "python",
+            "-m",
+            "pip",
+            "install",
+            "--no-deps",
+            "<verified-wheel>"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Wheel Install Argv",
+          "type": "array"
         }
       },
-      "title": "SupportedEnvironment",
+      "title": "SupportedEnvironmentV2",
       "type": "object"
     }
   },
   "additionalProperties": false,
   "properties": {
     "schema_version": {
-      "const": "handoff-manifest-v1",
-      "default": "handoff-manifest-v1",
+      "const": "handoff-manifest-v2",
+      "default": "handoff-manifest-v2",
       "title": "Schema Version",
       "type": "string"
     },
     "spec_version": {
-      "const": "handoff-spec-v1",
-      "default": "handoff-spec-v1",
+      "const": "handoff-spec-v2",
+      "default": "handoff-spec-v2",
       "title": "Spec Version",
       "type": "string"
     },
     "builder_version": {
-      "const": "handoff-builder-v1",
-      "default": "handoff-builder-v1",
+      "const": "handoff-builder-v2",
+      "default": "handoff-builder-v2",
       "title": "Builder Version",
       "type": "string"
     },
+    "protocol_version": {
+      "const": "pilot-v0.2.2-draft",
+      "default": "pilot-v0.2.2-draft",
+      "title": "Protocol Version",
+      "type": "string"
+    },
+    "python_distribution": {
+      "const": "0.2.0.dev0",
+      "default": "0.2.0.dev0",
+      "title": "Python Distribution",
+      "type": "string"
+    },
+    "required_verification_platforms": {
+      "default": [
+        "Windows",
+        "Linux"
+      ],
+      "items": {
+        "enum": [
+          "Windows",
+          "Linux"
+        ],
+        "type": "string"
+      },
+      "title": "Required Verification Platforms",
+      "type": "array"
+    },
     "supported_environment": {
-      "$ref": "#/$defs/SupportedEnvironment"
+      "$ref": "#/$defs/SupportedEnvironmentV2"
     },
     "source_paths": {
       "additionalProperties": {
@@ -178,8 +249,17 @@
       "title": "Canonical Sha256",
       "type": "object"
     },
+    "canonical_package_sha256": {
+      "additionalProperties": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "title": "Canonical Package Sha256",
+      "type": "object"
+    },
     "instruction_version": {
-      "const": "pilot-v0.2.1-draft",
+      "const": "pilot-v0.2.2-draft",
+      "default": "pilot-v0.2.2-draft",
       "title": "Instruction Version",
       "type": "string"
     },
@@ -188,22 +268,28 @@
       "title": "Instruction Sha256",
       "type": "string"
     },
+    "dependency_lock_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Dependency Lock Sha256",
+      "type": "string"
+    },
     "expected_layout": {
-      "$ref": "#/$defs/ExpectedLayout"
+      "$ref": "#/$defs/ExpectedLayoutV2"
     },
     "reproducible_build": {
-      "$ref": "#/$defs/ReproducibleBuildRecipe"
+      "$ref": "#/$defs/ReproducibleBuildRecipeV2"
     }
   },
   "required": [
     "supported_environment",
     "source_paths",
     "canonical_sha256",
-    "instruction_version",
+    "canonical_package_sha256",
     "instruction_sha256",
+    "dependency_lock_sha256",
     "expected_layout",
     "reproducible_build"
   ],
-  "title": "HandoffSpec",
+  "title": "HandoffSpecV2",
   "type": "object"
 }
