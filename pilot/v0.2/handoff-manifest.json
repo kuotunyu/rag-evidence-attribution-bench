@@ -67,7 +67,7 @@
     "source_verifier": "4782d1fa8113366859dc6a56e736dcb9fde44a1592efef4e1d2ef589b7d9a14d",
     "wheel_verifier": "4bf2a558f4aab4e764495ddadb2926160a85707910fd8f0292e94c66434fba28",
     "platform_verifier": "7bdfb40859e22f7e89d84079b06df3d747fe4600b8fc5b73a73aec22d69ff552",
-    "platform_script": "5385a239d81b190d471e2dcaf2475b3bb5fd41a487f5bc46b7b85dd828baa947",
+    "platform_script": "42159cdb77d3557d8e47b2b949d4745572378c1ea1235b546747d4b2c009bf0e",
     "manifest_schema": "6cb048bd54728ae9e012e7981549687d753e953ae7392468911b905a9900d94d"
   },
   "canonical_package_sha256": {

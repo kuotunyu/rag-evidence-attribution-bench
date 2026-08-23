@@ -79,3 +79,11 @@ def test_index_configuration_sanitizer_removes_credentials(repo_root: Path) -> N
     assert "user" not in joined
     assert "secret" not in joined
     assert "token" not in joined
+
+
+def test_index_configuration_records_default_pypi(repo_root: Path) -> None:
+    module = _load(repo_root)
+
+    assert module.sanitize_index_configuration({}) == (
+        "index-url=https://pypi.org/simple",
+    )

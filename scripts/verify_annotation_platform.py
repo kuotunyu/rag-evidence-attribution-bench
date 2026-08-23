@@ -15,6 +15,7 @@ import json
 import os
 import platform as platform_module
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -76,6 +77,8 @@ def sanitize_index_configuration(environment: dict[str, str]) -> tuple[str, ...]
     for host in trusted.split():
         if all(character.isalnum() or character in ".-_:" for character in host):
             records.append(f"trusted-host={host.casefold()}")
+    if not records:
+        records.append("index-url=https://pypi.org/simple")
     return tuple(sorted(set(records)))
 
 
@@ -268,12 +271,18 @@ def _probe_runtime(
     stderr_path = work_root / "launcher.stderr.log"
     started = _utc_now()
     with stdout_path.open("wb") as stdout, stderr_path.open("wb") as stderr:
+        process_options: dict[str, Any] = {}
+        if os.name == "nt":
+            process_options["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+        else:
+            process_options["start_new_session"] = True
         process = subprocess.Popen(
             argv,
             cwd=launcher.parent,
             env=environment,
             stdout=stdout,
             stderr=stderr,
+            **process_options,
         )
         try:
             base_url = f"http://127.0.0.1:{port}"
@@ -318,7 +327,17 @@ def _probe_runtime(
             if (output_root / "smoke/submissions.jsonl").read_bytes() or amendments:
                 raise RuntimeError("platform smoke unexpectedly created a human decision artifact")
         finally:
-            process.terminate()
+            if process.poll() is None and os.name == "nt":
+                subprocess.run(
+                    ("taskkill", "/PID", str(process.pid), "/T", "/F"),
+                    check=False,
+                    capture_output=True,
+                )
+            elif process.poll() is None:
+                kill_process_group = getattr(os, "killpg", None)
+                if kill_process_group is None:
+                    raise RuntimeError("POSIX process-group termination is unavailable")
+                kill_process_group(process.pid, signal.SIGTERM)
             try:
                 process.wait(timeout=10)
             except subprocess.TimeoutExpired:
