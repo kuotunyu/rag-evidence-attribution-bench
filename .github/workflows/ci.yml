@@ -52,3 +52,115 @@ jobs:
             sleep 2
           done
           echo "container never became healthy"; docker logs smoke; docker rm -f smoke; exit 1
+
+  annotation-windows:
+    runs-on: windows-latest
+    env:
+      VERIFICATION_PLATFORM: Windows
+      SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      SOURCE_DATE_EPOCH: "1787443200"
+      BOOTSTRAP_POLICY: "--require-hashes --only-binary=:all:"
+      UV_CACHE_DIR: ${{ runner.temp }}/annotation-windows-uv-cache
+      PYTHONPYCACHEPREFIX: ${{ runner.temp }}/annotation-windows-pycache
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: false
+      - name: Build exact 0.2.0.dev0 wheel outside checkout
+        shell: pwsh
+        run: |
+          $Dist = Join-Path $env:RUNNER_TEMP "annotation-windows-dist"
+          uv build --wheel --out-dir $Dist
+          $Wheels = @(Get-ChildItem -LiteralPath $Dist -Filter *.whl -File)
+          if ($Wheels.Count -ne 1) { throw "Expected exactly one wheel." }
+          if ($Wheels[0].Name -ne "rag_evidence_attribution_bench-0.2.0.dev0-py3-none-any.whl") {
+            throw "Unexpected wheel identity."
+          }
+      - name: Verify annotation platform
+        shell: pwsh
+        run: |
+          $Dist = Join-Path $env:RUNNER_TEMP "annotation-windows-dist"
+          $Wheel = (Get-ChildItem -LiteralPath $Dist -Filter *.whl -File).FullName
+          $Tree = (git rev-parse "$env:SOURCE_COMMIT`^{tree}").Trim()
+          python scripts/verify_annotation_platform.py `
+            --checkout $env:GITHUB_WORKSPACE `
+            --wheel $Wheel `
+            --package pilot/v0.2/packages/ann-pilot-a.json `
+            --lock pilot/v0.2/annotation-requirements-py311.lock `
+            --launcher pilot/v0.2/launchers/start-a.ps1 `
+            --handoff-spec pilot/v0.2/handoff-manifest.json `
+            --handoff-schema pilot/v0.2/handoff-manifest.schema.json `
+            --protocol PILOT_PROTOCOL.md `
+            --source-commit $env:SOURCE_COMMIT `
+            --source-tree $Tree `
+            --platform Windows `
+            --work-root (Join-Path $env:RUNNER_TEMP "annotation-windows-work") `
+            --output (Join-Path $env:RUNNER_TEMP "platform-output-windows")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: platform-verification-windows
+          path: ${{ runner.temp }}/platform-output-windows
+          if-no-files-found: error
+          retention-days: 7
+
+  annotation-linux:
+    runs-on: ubuntu-latest
+    env:
+      VERIFICATION_PLATFORM: Linux
+      SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+      SOURCE_DATE_EPOCH: "1787443200"
+      BOOTSTRAP_POLICY: "--require-hashes --only-binary=:all:"
+      UV_CACHE_DIR: ${{ runner.temp }}/annotation-linux-uv-cache
+      PYTHONPYCACHEPREFIX: ${{ runner.temp }}/annotation-linux-pycache
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: false
+      - name: Build exact 0.2.0.dev0 wheel outside checkout
+        shell: bash
+        run: |
+          DIST="$RUNNER_TEMP/annotation-linux-dist"
+          uv build --wheel --out-dir "$DIST"
+          mapfile -t WHEELS < <(find "$DIST" -maxdepth 1 -type f -name '*.whl')
+          test "${#WHEELS[@]}" -eq 1
+          test "$(basename "${WHEELS[0]}")" = \
+            "rag_evidence_attribution_bench-0.2.0.dev0-py3-none-any.whl"
+      - name: Verify annotation platform
+        shell: bash
+        run: |
+          WHEEL=$(find "$RUNNER_TEMP/annotation-linux-dist" -maxdepth 1 -type f -name '*.whl')
+          TREE=$(git rev-parse "$SOURCE_COMMIT^{tree}")
+          python scripts/verify_annotation_platform.py \
+            --checkout "$GITHUB_WORKSPACE" \
+            --wheel "$WHEEL" \
+            --package pilot/v0.2/packages/ann-pilot-a.json \
+            --lock pilot/v0.2/annotation-requirements-py311.lock \
+            --launcher pilot/v0.2/launchers/start-a.sh \
+            --handoff-spec pilot/v0.2/handoff-manifest.json \
+            --handoff-schema pilot/v0.2/handoff-manifest.schema.json \
+            --protocol PILOT_PROTOCOL.md \
+            --source-commit "$SOURCE_COMMIT" \
+            --source-tree "$TREE" \
+            --platform Linux \
+            --work-root "$RUNNER_TEMP/annotation-linux-work" \
+            --output "$RUNNER_TEMP/platform-output-linux"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: platform-verification-linux
+          path: ${{ runner.temp }}/platform-output-linux
+          if-no-files-found: error
+          retention-days: 7

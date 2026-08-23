@@ -5,12 +5,20 @@ coordinator delivers one verified A or B kit. B0.1 engineering alone does not au
 annotation. Do not obtain the other annotator's kit, the coordinator manifest, repository
 access, another person's state, or any prior decision.
 
+The coordinator may stage a kit only after the exact source candidate has produced four
+byte-identical, Git-blob-bound `0.2.0.dev0` wheels and one passed
+`platform-verification-receipt-v2` on both Windows and Linux. These platform receipts, the root
+handoff receipt, smoke evidence, and the coordinator manifest remain coordinator-only and must not
+be delivered to either annotator. A GitHub Actions result is a review gate, not signed provenance.
+
 ## Fixed privacy and stop rules
 
 - Work only from the visible question and passages. Do not search the web or repository.
 - Do not enter a name, email address, employer, private filesystem path, or other PII.
 - Keep the kit, state, exports, and return checksums private and outside any Git checkout.
 - Use only `127.0.0.1`. Stop if the browser or tool requests network access.
+- The online package-index step ends before state creation. From launcher start through export,
+  follow the documented loopback-only local workflow; this is not an air-gap or OS sandbox claim.
 - Stop immediately if `SHA256SUMS` fails, the wheel/package is missing, the package shows
   another pseudonym, the instruction version is not `pilot-v0.2.2-draft`, or the displayed
   instruction hash differs from the package hash.

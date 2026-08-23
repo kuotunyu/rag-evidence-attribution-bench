@@ -6,11 +6,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 $KitRoot = (Resolve-Path -LiteralPath (Split-Path -Parent $MyInvocation.MyCommand.Path)).Path
-$null = New-Item -ItemType Directory -Force -Path $StateRoot
-$ResolvedState = (Resolve-Path -LiteralPath $StateRoot).Path
+$ResolvedState = [IO.Path]::GetFullPath($StateRoot)
 $KitPrefix = $KitRoot.TrimEnd("\", "/") + [IO.Path]::DirectorySeparatorChar
-if ($ResolvedState.StartsWith($KitPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+if ($ResolvedState -eq $KitRoot -or $ResolvedState.StartsWith($KitPrefix, [StringComparison]::OrdinalIgnoreCase)) {
     throw "StateRoot must remain outside the delivery kit."
 }
+$null = New-Item -ItemType Directory -Force -Path $ResolvedState
 $Package = Join-Path $KitRoot "ann-pilot-a.json"
 python -m rag_evidence annotation serve --package $Package --state $ResolvedState --host 127.0.0.1 --port $Port

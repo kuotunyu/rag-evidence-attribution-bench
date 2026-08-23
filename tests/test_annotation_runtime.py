@@ -79,3 +79,16 @@ def test_committed_launchers_fix_host_without_a_host_override(repo_root: Path) -
         assert "--host 127.0.0.1" in text
         assert "[string]$Host" not in text
         assert "HOST=${" not in text
+
+
+def test_launchers_reject_kit_local_state_before_creating_it(repo_root: Path) -> None:
+    launcher_root = repo_root / "pilot/v0.2/launchers"
+
+    for path in launcher_root.glob("*.ps1"):
+        text = path.read_text(encoding="utf-8")
+        assert text.index("GetFullPath") < text.index("New-Item")
+        assert text.index("StartsWith") < text.index("New-Item")
+    for path in launcher_root.glob("*.sh"):
+        text = path.read_text(encoding="utf-8")
+        assert text.index(".resolve()") < text.index("mkdir -p")
+        assert text.index('"$KIT_ROOT"/*)') < text.index("mkdir -p")
