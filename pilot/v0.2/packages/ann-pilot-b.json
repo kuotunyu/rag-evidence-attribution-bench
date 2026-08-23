@@ -2,7 +2,7 @@
   "schema_version": "assignment-package-v2",
   "annotator_pseudonym": "ann-pilot-b",
   "instruction_version": "pilot-v0.2.2-draft",
-  "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+  "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
   "assignment_batch": "pilot-v0.2-smoke",
   "tasks": [
     {
@@ -10,7 +10,7 @@
       "annotation_task_id": "task-189f5b3706ca13eaba64d548",
       "challenge_id": "ch-d1419c5637f86c6f17388fc6",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Where did the designer of the Van de Graaff generator teach at?",
       "passages": [
         {
@@ -246,7 +246,7 @@
           ]
         }
       ],
-      "task_content_hash": "a7c2fc8ba4e247b5a408825a091c2e65dce101cdaa9aa1a5281dc8508c0ef71d",
+      "task_content_hash": "9e26efc7f9428ec9b8264d44695e412976ad736be8919340010a54fd468ccaa5",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -254,7 +254,7 @@
       "annotation_task_id": "task-ebd5689a0a894f439dc17ef8",
       "challenge_id": "ch-a5c982fb97e428e1cbdd5246",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Which magazine eventually had more monthly publications, Vogue or Y'all?",
       "passages": [
         {
@@ -502,7 +502,7 @@
           ]
         }
       ],
-      "task_content_hash": "4a4aaf2be5294d8644907bd400be72a9e14e718e230786689f2970c6df1e3270",
+      "task_content_hash": "e1b215231dc837d358bdf6d06ee94da4566d660b367954c339cdd14e5d8dbb49",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -510,7 +510,7 @@
       "annotation_task_id": "task-5cc506141eb2e31fe509dcf0",
       "challenge_id": "ch-55d3b59d7372c51c1fc40054",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "What platinum selling track was included on the album \"The Warrior's Code\" with lyrics by Woody Guthrie?",
       "passages": [
         {
@@ -822,7 +822,7 @@
           ]
         }
       ],
-      "task_content_hash": "6d606d1532fbc9541ace5bb9dc467a197973fbc3a343a6f98516850a0b682d86",
+      "task_content_hash": "7d2570a893fdb69da990631d5f24e4893e88ba11c40e61415400b0dc2087e09b",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -830,7 +830,7 @@
       "annotation_task_id": "task-8704dd77fc814152d445c850",
       "challenge_id": "ch-51723511643438e144c0db7f",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Margaret Wilson and Edna St. Vincent Millay have both been given what?",
       "passages": [
         {
@@ -1042,7 +1042,7 @@
           ]
         }
       ],
-      "task_content_hash": "687f3f01ef3b42373779e4be917628567feee690d9bed502dcc641f374716878",
+      "task_content_hash": "755da5fd0a767d48b298958aa0bee3637ab3686ca62e52de4b0bcac97aef18e2",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -1050,7 +1050,7 @@
       "annotation_task_id": "task-234c1d2170ff7218cfd75c02",
       "challenge_id": "ch-5489949032cdacd8cf6646d7",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "After Russell D. Moore served at the Southern Baptist Theological Seminary he became the President of The Ethics & Religious Liberty Commission (ERLC) in what year?",
       "passages": [
         {
@@ -1270,7 +1270,7 @@
           ]
         }
       ],
-      "task_content_hash": "69ec6173679b7ae4f2ca4e4a35250d043300ade4b889e3a2566fa4f6cbf8fea2",
+      "task_content_hash": "5ce362b7512f6603e33ff9c2f72932b420c3f942a0d4e28a943fc7945f23ae6e",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -1278,7 +1278,7 @@
       "annotation_task_id": "task-3215b5d42d1a1ea34444c1fc",
       "challenge_id": "ch-2dc9ce2af037ecbe3244223b",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "What East of Piccadilly star apperared in dozens of stage performances?",
       "passages": [
         {
@@ -1518,7 +1518,7 @@
           ]
         }
       ],
-      "task_content_hash": "880084bd4c9b8fbe373bbd36d07f2dceb1dcb876be94f9c750bc7ec662fdc06c",
+      "task_content_hash": "52fc373f9b59b0e1bcd211369bee33e5c4bd80a13bf26e8fe5c18a4b2da4342c",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -1526,7 +1526,7 @@
       "annotation_task_id": "task-97e0d869b5bd11c75107d6f5",
       "challenge_id": "ch-04391f9d5923feeff98d63d8",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "The historical Nimavar school in the Nimavar Bazaar, or bazar, is located in which country?",
       "passages": [
         {
@@ -1822,7 +1822,7 @@
           ]
         }
       ],
-      "task_content_hash": "cbe5ca1cda5b0f660726e89f170f8ca029f93343b10625d4297ad1ae92c2ce67",
+      "task_content_hash": "fd85566430c3a926400a8d12fe12a807ce2efa27733e94e70a06ebc8cbd75b9f",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -1830,7 +1830,7 @@
       "annotation_task_id": "task-d580a2df1809859342617976",
       "challenge_id": "ch-4447f622161dc7c1261e310f",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Dean Mills Reservoir is on the slopes of the hill located in what town?",
       "passages": [
         {
@@ -2054,7 +2054,7 @@
           ]
         }
       ],
-      "task_content_hash": "f2d6ba2fa9844bd1e6fd1869de7f643b778c0ff30f468a7f6ec1e0233a81542b",
+      "task_content_hash": "3c3ae32c1baba9d1aad11ae77d9b3e0cebc38bba06f6ef7357d10b44e6fc568e",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -2062,7 +2062,7 @@
       "annotation_task_id": "task-e7d1c1c90f85717cf853c684",
       "challenge_id": "ch-4ec286298b71ed7b13288ee1",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "How many people live in the County serviced by The Collier Area Transit system?",
       "passages": [
         {
@@ -2250,7 +2250,7 @@
           ]
         }
       ],
-      "task_content_hash": "e3fce4aeb06567831c0e0d1f6e8f956f8f35666d312d87a888b51ad5c7dbfe66",
+      "task_content_hash": "3dc8accebf0784bf520cb6758b52ca4441d8515f9013414522c74a472b980411",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -2258,7 +2258,7 @@
       "annotation_task_id": "task-19d744c495782ad1a4bc46c4",
       "challenge_id": "ch-2a4b9fd8d9e158f502ac4eaf",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Calling All Dawns includes the theme for the game \"Civilization IV,\" written by whom?",
       "passages": [
         {
@@ -2434,7 +2434,7 @@
           ]
         }
       ],
-      "task_content_hash": "ed90ae67384fe0f52ef5e4ced9caf236c2c5f25cc95a8fc7df04505b07b1fb1b",
+      "task_content_hash": "c288489d89aeec49158d2d471e8da012f212c52b3512a99219db25a5669eb861",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -2442,7 +2442,7 @@
       "annotation_task_id": "task-7c2715bbcd7d014e34e88053",
       "challenge_id": "ch-4b490515c91c58c5fbc8c300",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "What test preceded Operation Julian before negotiations began for the Coprehensive Test Ban Treaty?",
       "passages": [
         {
@@ -2618,7 +2618,7 @@
           ]
         }
       ],
-      "task_content_hash": "d8c61acde7b2065327031f17b6daef2d0936c71abbfc5b759aeee0d62f414ff1",
+      "task_content_hash": "fa5062eea0699cb0aa37cafe5ecb4e6e67a86564add3bea96c89fc819b2bc20c",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -2626,7 +2626,7 @@
       "annotation_task_id": "task-a0fb8a2fcb55d38c86dad423",
       "challenge_id": "ch-4a83d5517ca3f77605ce1283",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Pyne & Marles is co-hosted by Richard Marles and an Australian politician who has been the Liberal member for the House of Representatives seat of Sturt since what year's election?",
       "passages": [
         {
@@ -2858,7 +2858,7 @@
           ]
         }
       ],
-      "task_content_hash": "9ef9a4f66b30e13833070b02b1a2999fa2377ba16dd30df8cf4084bda4a73fea",
+      "task_content_hash": "3237878c8e14c565eda12f03a1a888d06d762096cc6ed15471f8aad209742e4f",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -2866,7 +2866,7 @@
       "annotation_task_id": "task-412da78c1c723091eda7d1df",
       "challenge_id": "ch-f3dc1cba4da5512db4b70860",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Abba Kovner  was a Jewish Hebrew and Yiddish poet, writer and cousin of the youngest and longest surviving signatory of what?",
       "passages": [
         {
@@ -3050,7 +3050,7 @@
           ]
         }
       ],
-      "task_content_hash": "4dea49a0364de35cce48392f9e9b8563f6d1f6199898bd128377bc87b8227233",
+      "task_content_hash": "9aa3ebf3c602ffe99c1536cf5c0f33b546eb65fcaa7074c1a2e7dfb61db1639d",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -3058,7 +3058,7 @@
       "annotation_task_id": "task-3b8ef23d7b5a9f06e18a7855",
       "challenge_id": "ch-290c630200519eba1c6ccd95",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "The Minister for Defence Industry is currently the member of the Australian House of Representatives from what city?",
       "passages": [
         {
@@ -3246,7 +3246,7 @@
           ]
         }
       ],
-      "task_content_hash": "97e2e4913a7f24366fa0ce2064f40719e0473744f37864a45d59d69b9642f1fe",
+      "task_content_hash": "db8ee283039109a9533ba1ddbee3aff317aaafefc9afccaaf24565699df71ef6",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -3254,7 +3254,7 @@
       "annotation_task_id": "task-cc1cdc75c4c2d53948f27d46",
       "challenge_id": "ch-c9d67ddbb52feb6be0765225",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Baadshah is an Indian action comedy film that was inspired by what Hong Kong action movie starring Jackie Chan and Richard Norton?",
       "passages": [
         {
@@ -3514,7 +3514,7 @@
           ]
         }
       ],
-      "task_content_hash": "4cea3db6542acbb1af2ab24e63ba2beb502bc3499f04217d7ae2aaf392031bfc",
+      "task_content_hash": "2a0e621c2b79e15f7237b91c16ec8fd21ed94e7221c0aa4238201408cdd71073",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -3522,7 +3522,7 @@
       "annotation_task_id": "task-b5ec7b80d1f101aead5a3edc",
       "challenge_id": "ch-9d6e53ee7d4ee5b716d15e42",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Which football team does Lewis Young's older brother, Ashley Young, play for?",
       "passages": [
         {
@@ -3762,7 +3762,7 @@
           ]
         }
       ],
-      "task_content_hash": "85a4ffd66dacd55e225bf2947435ecc9ee13d8712b20c526ae83b7569a771f7a",
+      "task_content_hash": "9640dcf6a718d4e9b28fbc8e42bd1a2657e53cefb898aa7cb9b0ffdd4c440d3b",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -3770,7 +3770,7 @@
       "annotation_task_id": "task-553f6f8e52b143c1a9b290de",
       "challenge_id": "ch-29cb6feb2156740bbfdac645",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Are Buried Country and South of the Border both films turned into stage performances?",
       "passages": [
         {
@@ -3982,7 +3982,7 @@
           ]
         }
       ],
-      "task_content_hash": "2441d1da147a4fbf2059c01c4034170d43b1df7d8021ca2c0316f665eeb51440",
+      "task_content_hash": "0d5fd1eaf439ba5b60a2c1e616c13ea55aee7c147c8f4905c68f95cb975ef580",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -3990,7 +3990,7 @@
       "annotation_task_id": "task-8b4a318e5d27c20f034eac64",
       "challenge_id": "ch-70646adad0b297ebad60f085",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "What region of Italy was Giorgio Pini born in?",
       "passages": [
         {
@@ -4178,7 +4178,7 @@
           ]
         }
       ],
-      "task_content_hash": "e0ebdafa7936e96719cc6c145082bf8fe72c48dfd84b975e7db8b55d749790ef",
+      "task_content_hash": "53fb49078819c09bc1dcb156df625c369e42180907a7d7561a3092b5cb13f152",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -4186,7 +4186,7 @@
       "annotation_task_id": "task-d8e70dd7b3e551b8906df125",
       "challenge_id": "ch-a4da0f566e040f3c7d4bc167",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "How many episodes were made for the science fiction series with Gus Birney?",
       "passages": [
         {
@@ -4382,7 +4382,7 @@
           ]
         }
       ],
-      "task_content_hash": "93b9999dd48699158e5cd52c4b14548dfb0bb546d1c17dc2451481a02a696e81",
+      "task_content_hash": "557f622cbc336b34a6993c38ca182329876f26775acc07650d5ead1fabeee02d",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -4390,7 +4390,7 @@
       "annotation_task_id": "task-470180cf729865dafd695673",
       "challenge_id": "ch-8c264c20df907f11745159f4",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Are both Jonathan Marray and Wayne Black British?",
       "passages": [
         {
@@ -4550,7 +4550,7 @@
           ]
         }
       ],
-      "task_content_hash": "84940d18b78892229729fa4880d5b2f4524b69914ac1e722e03e6be65a9f271b",
+      "task_content_hash": "edb231bb65bd9f108efe90ce0722de698fbdcaae978bca54918793661f542a98",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -4558,7 +4558,7 @@
       "annotation_task_id": "task-9442bd7ce719437a19aad471",
       "challenge_id": "ch-d5bc48576c2d1814a101f921",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "How many episodes were made for the science fiction series with Gus Birney?",
       "passages": [
         {
@@ -4746,7 +4746,7 @@
           ]
         }
       ],
-      "task_content_hash": "25634d3a66740077f0c8684ad737be94c5c2537ce000216012b57857e8a4ecbe",
+      "task_content_hash": "d86e2e144283ff37584886af63eac3af6e4ac88cd7b44060b831f0a33ad04017",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -4754,7 +4754,7 @@
       "annotation_task_id": "task-29f8a38b8fdd1071820c1188",
       "challenge_id": "ch-6ca44d8b0624bddd7e1adfa9",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "What test preceded Operation Julian before negotiations began for the Coprehensive Test Ban Treaty?",
       "passages": [
         {
@@ -4934,7 +4934,7 @@
           ]
         }
       ],
-      "task_content_hash": "cd4baccf9b47ddfe878652071cb8e6be169cce70f10464cb211fc41c44cb995f",
+      "task_content_hash": "23f028acd7fb400893d1cca760f9e95611ea4f7734973753f896a7ee48915c59",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -4942,7 +4942,7 @@
       "annotation_task_id": "task-de56493e3c05846d624bafd5",
       "challenge_id": "ch-1871011ad18b6945b7c40031",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "What East of Piccadilly star apperared in dozens of stage performances?",
       "passages": [
         {
@@ -5190,7 +5190,7 @@
           ]
         }
       ],
-      "task_content_hash": "1411dafa19d2611bebc99f9f284a5e6e839d2f652d1adfab128b0012221155ad",
+      "task_content_hash": "ca83ed12d686383f5ec8ca6b63b2d2194628271b15b219a64e2d08392db0d1a9",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -5198,7 +5198,7 @@
       "annotation_task_id": "task-77049fe7827537700d20e5af",
       "challenge_id": "ch-06e5314dd08b5bf77d116f50",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "The Minister for Defence Industry is currently the member of the Australian House of Representatives from what city?",
       "passages": [
         {
@@ -5394,7 +5394,7 @@
           ]
         }
       ],
-      "task_content_hash": "2c973009a3ffe9005ebe0f99fd531ba923f6b91350a27d9f3fbf457c3c562c08",
+      "task_content_hash": "53fbf6b37097ab6ba326b01ab278ff78920256b81ab55178b88e708af875ae6a",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -5402,7 +5402,7 @@
       "annotation_task_id": "task-5c565ecc4b16d174aa076ad6",
       "challenge_id": "ch-fa6fb826881f34c806f6d459",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Pyne & Marles is co-hosted by Richard Marles and an Australian politician who has been the Liberal member for the House of Representatives seat of Sturt since what year's election?",
       "passages": [
         {
@@ -5638,7 +5638,7 @@
           ]
         }
       ],
-      "task_content_hash": "183c854f68653706cd9ee64cf397f5008b29f227b718a1c32064dba8e6484a0c",
+      "task_content_hash": "b956c47500b691c20cc7e22157e5762d866759ec60ad32230f130f66fffde81a",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -5646,7 +5646,7 @@
       "annotation_task_id": "task-04c26f18a80819a428c92b3b",
       "challenge_id": "ch-593ae1387f08c20eb74771db",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Calling All Dawns includes the theme for the game \"Civilization IV,\" written by whom?",
       "passages": [
         {
@@ -5818,7 +5818,7 @@
           ]
         }
       ],
-      "task_content_hash": "20394a4980c1e0b462fc4d94865cef26098ef5336abbbf6490bd5a94010b8539",
+      "task_content_hash": "d8a3f393770b7b8dc7887dcc2b814164f104b5f10ea3cce937d4a807ec68cb98",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -5826,7 +5826,7 @@
       "annotation_task_id": "task-180210b62f65651d8b5843da",
       "challenge_id": "ch-73f4af46c16c2a3cd11ff6fc",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Abba Kovner  was a Jewish Hebrew and Yiddish poet, writer and cousin of the youngest and longest surviving signatory of what?",
       "passages": [
         {
@@ -6014,7 +6014,7 @@
           ]
         }
       ],
-      "task_content_hash": "38ac08f85d6006fb620a3b0cce070bc506b67ad24b6b4191b83f1e1b3df6e10d",
+      "task_content_hash": "9d2c9c3fe391691b212f6bd85853717357009088920b0e3832530a5ece5fabf8",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -6022,7 +6022,7 @@
       "annotation_task_id": "task-26004adfe05de9fc49d4b492",
       "challenge_id": "ch-51159722df469f9426be1131",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "What platinum selling track was included on the album \"The Warrior's Code\" with lyrics by Woody Guthrie?",
       "passages": [
         {
@@ -6318,7 +6318,7 @@
           ]
         }
       ],
-      "task_content_hash": "15ac1bb33afeda1010524111dc849ddbd62d8059a3cf572c79e0e4fb13b7083f",
+      "task_content_hash": "14202cf734d0611435cb1fedaa80153a5fb22158dce0cfdee432cec39f2ca94e",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -6326,7 +6326,7 @@
       "annotation_task_id": "task-76dc783dd7e70eb2a17c396e",
       "challenge_id": "ch-ba5b1086f851c101a47d9ea7",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Where did the designer of the Van de Graaff generator teach at?",
       "passages": [
         {
@@ -6578,7 +6578,7 @@
           ]
         }
       ],
-      "task_content_hash": "1e6b44c87a413a62905c7209aa9daf0e8ccb4631bece7c0f13c9e22964442665",
+      "task_content_hash": "77fd87492b33b93d183db13b041f23e35f92e536d9620608414fd89d6d3deb49",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -6586,7 +6586,7 @@
       "annotation_task_id": "task-99f0c672f6a7ccba418aa2d7",
       "challenge_id": "ch-6f3fe49b5d2c8e1ac92c0d67",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "The historical Nimavar school in the Nimavar Bazaar, or bazar, is located in which country?",
       "passages": [
         {
@@ -6878,7 +6878,7 @@
           ]
         }
       ],
-      "task_content_hash": "1af4185bdf12275100e88da814f1c04adcb197e467544b5f09d4bdbaf843b25f",
+      "task_content_hash": "a46f9bff2a1e3755cfaedffe8d5fb1877ebde60048b29951e6820151380a1b8f",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -6886,7 +6886,7 @@
       "annotation_task_id": "task-87e9a6473e623a0d7f7643c7",
       "challenge_id": "ch-6ddf222e466f2cf1b298b130",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "After Russell D. Moore served at the Southern Baptist Theological Seminary he became the President of The Ethics & Religious Liberty Commission (ERLC) in what year?",
       "passages": [
         {
@@ -7106,7 +7106,7 @@
           ]
         }
       ],
-      "task_content_hash": "c020b9defb8dde55d5b2ecb56bd694e6b30184e0fcada7d752503df77aea5391",
+      "task_content_hash": "13c346b73baf89ce1df348aba5fadc31a5aee10a2f3c27eeffa7524a3cd39c92",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -7114,7 +7114,7 @@
       "annotation_task_id": "task-a51c1a2757ac91f9b0e71264",
       "challenge_id": "ch-0f5d71dcc917591abfed27d4",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Margaret Wilson and Edna St. Vincent Millay have both been given what?",
       "passages": [
         {
@@ -7326,7 +7326,7 @@
           ]
         }
       ],
-      "task_content_hash": "f794044f0575c52e10aaf08534d605716120b501061a974de5c3346b9aed5a7a",
+      "task_content_hash": "a628497122ab81d5726a349a991e301224c8c528c44d4f33eefb7df38b09daab",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -7334,7 +7334,7 @@
       "annotation_task_id": "task-5949afb84a25deab330dc258",
       "challenge_id": "ch-0026b66376c6ce79edabfb08",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Baadshah is an Indian action comedy film that was inspired by what Hong Kong action movie starring Jackie Chan and Richard Norton?",
       "passages": [
         {
@@ -7594,7 +7594,7 @@
           ]
         }
       ],
-      "task_content_hash": "521138646e07efa52c97735fd4bef64409e280e45cfede7be98ed3f1767376ce",
+      "task_content_hash": "9d5af5d935a621383ec0cb604356cd2e7d8724483e7df39e7ed5b9c274a773f8",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -7602,7 +7602,7 @@
       "annotation_task_id": "task-53f1a674492bbd2df669fee4",
       "challenge_id": "ch-edddb8686332f86218899553",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "What region of Italy was Giorgio Pini born in?",
       "passages": [
         {
@@ -7806,7 +7806,7 @@
           ]
         }
       ],
-      "task_content_hash": "27c83933ef2e8ec5ca897173e01b56e34e0305ff88b166c333b1539a16809f5a",
+      "task_content_hash": "b9a74de2af55614d5c00c00000a2d9a5ecf9ab6b98d6033919442f89a35a99a8",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -7814,7 +7814,7 @@
       "annotation_task_id": "task-9b6f091ae47ba5797873e1dc",
       "challenge_id": "ch-82c79f7625efb90799ed108d",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Which magazine eventually had more monthly publications, Vogue or Y'all?",
       "passages": [
         {
@@ -8062,7 +8062,7 @@
           ]
         }
       ],
-      "task_content_hash": "481532762b9902f1460a446c1546c25f5776eb85239d4a9a8358698e4931f551",
+      "task_content_hash": "69faef0a62713b9b3d8ff192911294323abbc7996b8d82ad173c69b12bd5cad3",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -8070,7 +8070,7 @@
       "annotation_task_id": "task-66373dff4b1f43cd8f9326e2",
       "challenge_id": "ch-0dafc7e3bfb21404afedba15",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Which football team does Lewis Young's older brother, Ashley Young, play for?",
       "passages": [
         {
@@ -8290,7 +8290,7 @@
           ]
         }
       ],
-      "task_content_hash": "c397d1a29b7196e5756debef1579226223190dac9a4ab80cc3ce426478ad6f13",
+      "task_content_hash": "98587c32de77fe4673f457353aeef05c3d3abc8ec23e8091b8e9d0ece884e64c",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -8298,7 +8298,7 @@
       "annotation_task_id": "task-94c94a99edf76db2473cd59d",
       "challenge_id": "ch-8507b660077cb2b11d48233c",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Dean Mills Reservoir is on the slopes of the hill located in what town?",
       "passages": [
         {
@@ -8518,7 +8518,7 @@
           ]
         }
       ],
-      "task_content_hash": "a913f086ddbba1a7d8074bdaf571bbef67265c33e8f572cdcc335d9697c23613",
+      "task_content_hash": "0e14344002933124aac9f62b6d47d8e3bd1b3f06005be9fe973b9a9c90cd0da6",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -8526,7 +8526,7 @@
       "annotation_task_id": "task-d4e90e74a1d07b192fddac0d",
       "challenge_id": "ch-2a2858899b7ccd5197e5122f",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "How many people live in the County serviced by The Collier Area Transit system?",
       "passages": [
         {
@@ -8722,7 +8722,7 @@
           ]
         }
       ],
-      "task_content_hash": "15e9bf79de4a17fa5759ec1ed293f7963df38b5622cae88cdc0038f543e1326e",
+      "task_content_hash": "31102e90a013d5a97c20316e73f3efa2a8171647907919a84a046a7f1b5b8074",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -8730,7 +8730,7 @@
       "annotation_task_id": "task-10a2c76d48e5b10d9c5ab0f3",
       "challenge_id": "ch-16c7e8a05408230f4f1f6ae5",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Are Buried Country and South of the Border both films turned into stage performances?",
       "passages": [
         {
@@ -8938,7 +8938,7 @@
           ]
         }
       ],
-      "task_content_hash": "c55aa3f9d665f1f47923c29b458ceef95d4d7ea8fd69c635e63fa78431f9a959",
+      "task_content_hash": "e28dc7c755df36e3946e47f60283c7f5d1668d9787094415d25b19872756948d",
       "assignment_batch": "pilot-v0.2-smoke"
     },
     {
@@ -8946,7 +8946,7 @@
       "annotation_task_id": "task-3aaf8e20263559dfa41b59f1",
       "challenge_id": "ch-216ea180303d30109827bcca",
       "instruction_version": "pilot-v0.2.2-draft",
-      "instruction_hash": "9e694b3fcfea99f7abb24d442b021135e3c6d406c326d2c784c8b05d0faeee36",
+      "instruction_hash": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
       "question": "Are both Jonathan Marray and Wayne Black British?",
       "passages": [
         {
@@ -9106,7 +9106,7 @@
           ]
         }
       ],
-      "task_content_hash": "4b8155969ffe44ee90a08f6149bc10dd870cb766c5212f2e66334796891c815e",
+      "task_content_hash": "a4e0403e715c74bcbedfc2029f63ec53b52e0f3e07bfa2b3da10729b9ea96897",
       "assignment_batch": "pilot-v0.2-smoke"
     }
   ]

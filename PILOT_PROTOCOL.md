@@ -40,6 +40,12 @@ metadata and
 transformation identity, expected answerability, changed fields, provenance, siblings,
 gold/adjudicated labels, model/method identities, scores, and abstention expectations.
 
+The enforceable claim is limited to blinding explicit coordinator metadata, transformation
+identity, and expected-answerability labels. This pilot does not establish semantic unlinkability
+and does not establish independent sibling perception: both annotators see both non-adjacent
+variants and may recognize related visible content. The study is tooling and instruction
+feasibility evidence only, permanently ineligible for primary analysis.
+
 ## Annotator instructions
 
 1. Read only the question and the supplied passages.

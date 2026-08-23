@@ -232,7 +232,7 @@ def verify_wheel_payload(
     tracked = _tracked_package_paths(checkout, spec.package_source_root)
     source_prefix = f"{spec.package_source_root}/"
     expected_package = {
-        f"rag_evidence/{relative[len(source_prefix):]}": relative for relative in tracked
+        f"rag_evidence/{relative[len(source_prefix) :]}": relative for relative in tracked
     }
     actual_package = {name for name in names if name.startswith("rag_evidence/")}
     if actual_package != set(expected_package):

@@ -320,9 +320,7 @@ class AdjudicationStore:
     def records(self) -> tuple[AdjudicationV2, ...]:
         if not self.path.exists():
             return ()
-        return tuple(
-            AdjudicationV2.model_validate(payload) for payload in read_records(self.path)
-        )
+        return tuple(AdjudicationV2.model_validate(payload) for payload in read_records(self.path))
 
     def status(self) -> dict[str, int | bool]:
         adjudicated = len(self.records())

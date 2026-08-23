@@ -19,6 +19,7 @@ from rag_evidence.annotation.platform import (
     PlatformVerificationReceiptV2,
     verify_platform_receipt,
 )
+from rag_evidence.annotation.privacy import scan_delivery_payload
 from rag_evidence.annotation.source_verify import (
     GitCommandRecordV2,
     VerifiedCheckoutV2,
@@ -531,12 +532,8 @@ def build_handoff_v2(
     if external_root.exists():
         raise DataError("final handoff output must not already exist")
 
-    checkout_a = verify_checkout(
-        roots[0], commit, phase="post-build", logical_checkout="A"
-    )
-    checkout_b = verify_checkout(
-        roots[1], commit, phase="post-build", logical_checkout="B"
-    )
+    checkout_a = verify_checkout(roots[0], commit, phase="post-build", logical_checkout="A")
+    checkout_b = verify_checkout(roots[1], commit, phase="post-build", logical_checkout="B")
     if checkout_a.tree_sha != checkout_b.tree_sha:
         raise DataError("the two exact-commit checkouts have different Git trees")
     sources_a = _verify_sources_in_checkout(checkout_a, spec_path, spec)
@@ -562,9 +559,7 @@ def build_handoff_v2(
     if (windows.platform, linux.platform) != ("Windows", "Linux"):
         raise DataError("handoff requires exactly one Windows and one Linux platform receipt")
     expected_verifier_hash = spec.canonical_sha256["platform_script"]
-    if any(
-        receipt.verifier_sha256 != expected_verifier_hash for receipt in (windows, linux)
-    ):
+    if any(receipt.verifier_sha256 != expected_verifier_hash for receipt in (windows, linux)):
         raise DataError("platform receipt verifier bytes do not match the candidate source")
 
     clean_commands = tuple(
@@ -608,6 +603,12 @@ def build_handoff_v2(
             utc_build_time=dt.datetime.now(dt.UTC),
             kit_sha256sums=kit_hashes,
         )
+        privacy_violations = scan_delivery_payload(
+            receipt.model_dump(mode="json"),
+            artifact_kind="handoff_receipt",
+        )
+        if privacy_violations:
+            raise DataError("handoff receipt privacy scan failed: " + "; ".join(privacy_violations))
         receipt_path = staging / "handoff-receipt.json"
         write_json_atomic(receipt_path, receipt.model_dump(mode="json"))
         inventory = {

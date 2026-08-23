@@ -48,9 +48,7 @@ def test_committed_lock_is_reproducible_and_structurally_valid(repo_root: Path) 
 
 def test_lock_and_runbook_preserve_exact_binary_only_bootstrap(repo_root: Path) -> None:
     lock_text = (repo_root / LOCK_RELATIVE).read_text(encoding="utf-8").casefold()
-    runbook = (repo_root / "pilot/v0.2/HANDOFF_RUNBOOK.md").read_text(
-        encoding="utf-8"
-    )
+    runbook = (repo_root / "pilot/v0.2/HANDOFF_RUNBOOK.md").read_text(encoding="utf-8")
 
     for forbidden in (
         "rag-evidence-attribution-bench",

@@ -30,6 +30,12 @@ before independent humans receive external kits. It also does not authorize prot
 freeze, confirmatory sampling, model/API execution, merge, tag, release, GitHub Release
 assets, or Hugging Face publication.
 
+The current execution boundary is `HUMAN_PILOT_NOT_STARTED`. Metadata blinding covers explicit
+coordinator metadata, transformation identity, and expected-answerability labels. It does not
+establish semantic unlinkability and does not establish independent sibling perception because
+both annotators receive both non-adjacent variants. This pilot can produce tooling and instruction
+feasibility evidence only.
+
 ## Future owner-approved coordinator workflow
 
 1. Build Git-external, checksum-verified A and B kits from a final clean checkout. Each kit

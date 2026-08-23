@@ -289,3 +289,10 @@ formal statistics, tagging, release, and v1.0 claims all require separate approv
 The `372096b` pilot packages are obsolete; current canonical sources use
 `pilot-v0.2.2-draft`. Even an operational `READY_FOR_HUMAN_FREEZE_REVIEW` verdict does not
 authorize the human pilot or any confirmatory/model stage.
+
+Pilot blinding covers explicit coordinator metadata, transformation identity, and
+expected-answerability labels. It does not establish semantic unlinkability and does not
+establish independent sibling perception: both annotators see both non-adjacent variants. This is
+tooling and instruction feasibility evidence only.
+
+`HUMAN_PILOT_NOT_STARTED` is the only valid human-execution status at this source stage.

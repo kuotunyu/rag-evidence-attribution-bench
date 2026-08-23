@@ -176,9 +176,7 @@ def build_pilot_assignments(
                 namespace=PILOT_NAMESPACE,
             ),
             internal_group_id=_coordinator_group_id(record.parent_question_id),
-            transformation=cast(
-                Literal["missing_hop", "evidence_swap"], record.transformation
-            ),
+            transformation=cast(Literal["missing_hop", "evidence_swap"], record.transformation),
         )
         for record in ordered
     )
@@ -222,9 +220,10 @@ def build_pilot_package(
     ]
     if existing_forbidden:
         raise DataError("refusing to overwrite a package directory containing decision artifacts")
-    unexpected = {
-        path.name for path in out.iterdir() if path.is_file()
-    } - {"ann-pilot-a.json", "ann-pilot-b.json"}
+    unexpected = {path.name for path in out.iterdir() if path.is_file()} - {
+        "ann-pilot-a.json",
+        "ann-pilot-b.json",
+    }
     if unexpected:
         raise DataError("refusing package output containing unexpected files")
     for package in (package_a, package_b):

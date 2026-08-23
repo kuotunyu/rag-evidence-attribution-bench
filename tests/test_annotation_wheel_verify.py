@@ -345,9 +345,7 @@ def test_four_build_orchestrator_writes_bound_verification(
         _write_wheel(
             output / WHEEL_NAME,
             {
-                "rag_evidence/__init__.py": (
-                    current / "src/rag_evidence/__init__.py"
-                ).read_bytes(),
+                "rag_evidence/__init__.py": (current / "src/rag_evidence/__init__.py").read_bytes(),
                 f"{DIST_INFO}/METADATA": (
                     b"Metadata-Version: 2.4\nName: rag-evidence-attribution-bench\n"
                     b"Version: 0.2.0.dev0\n\n"

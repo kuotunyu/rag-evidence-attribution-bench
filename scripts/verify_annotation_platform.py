@@ -300,9 +300,7 @@ def _probe_runtime(
             )
             for kind, endpoint, relative in probes:
                 payload = (
-                    initial_progress
-                    if kind == "progress-probe"
-                    else _http_get(base_url + endpoint)
+                    initial_progress if kind == "progress-probe" else _http_get(base_url + endpoint)
                 )
                 target = output_root / relative
                 target.parent.mkdir(parents=True, exist_ok=True)

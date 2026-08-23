@@ -50,9 +50,7 @@ def _manifest(task_count: int = 1) -> AssignmentManifestV2:
         )
         for index, task in enumerate(tasks, start=1)
     )
-    _, manifest = build_dual_assignments_v2(
-        schedulable, ("ann-r7", "ann-k2"), seed=11
-    )
+    _, manifest = build_dual_assignments_v2(schedulable, ("ann-r7", "ann-k2"), seed=11)
     return manifest
 
 

@@ -114,9 +114,7 @@ def test_tracked_blob_matches_worktree_and_expected_sha256(
     git_checkout: tuple[Path, str],
 ) -> None:
     root, commit = git_checkout
-    checkout = verify_checkout(
-        root, commit, phase="pre-build", logical_checkout="fixture"
-    )
+    checkout = verify_checkout(root, commit, phase="pre-build", logical_checkout="fixture")
     expected = hashlib.sha256((root / "tracked.txt").read_bytes()).hexdigest()
 
     blob_sha = verify_tracked_blob(checkout, "tracked.txt", expected)

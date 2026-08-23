@@ -56,6 +56,39 @@ _FORBIDDEN_KEY_PARTS = frozenset(
         "score",
     }
 )
+_DELIVERY_TEXT_SOURCES = (
+    "src/rag_evidence/annotation/ui.html",
+    "pilot/v0.2/ONBOARDING.md",
+    "pilot/v0.2/HANDOFF_RUNBOOK.md",
+    "pilot/v0.2/launchers/start-a.ps1",
+    "pilot/v0.2/launchers/start-a.sh",
+    "pilot/v0.2/launchers/start-b.ps1",
+    "pilot/v0.2/launchers/start-b.sh",
+)
+_STRICT_RUNTIME_SOURCES = frozenset(
+    {
+        "src/rag_evidence/annotation/ui.html",
+        "pilot/v0.2/launchers/start-a.ps1",
+        "pilot/v0.2/launchers/start-a.sh",
+        "pilot/v0.2/launchers/start-b.ps1",
+        "pilot/v0.2/launchers/start-b.sh",
+    }
+)
+_HIDDEN_FIELD_LITERALS = (
+    "blinded_parent_group",
+    "parent_question_id",
+    "parent_fingerprint",
+    "internal_group_id",
+    "expected_answerability",
+    "gold_adjudicated_label",
+    "supporting_fact_sentence_ids",
+)
+_POSITIVE_OVERCLAIMS = (
+    "fully sibling-blind",
+    "semantic unlinkability is guaranteed",
+    "guarantees semantic unlinkability",
+    "independent sibling perception is established",
+)
 
 
 def scan_private_payload(payload: object) -> tuple[str, ...]:
@@ -158,4 +191,45 @@ def scan_delivery_tree(
             location = relative if len(payloads) == 1 else f"{relative}:{index + 1}"
             for violation in scan_delivery_payload(payload, artifact_kind="tree"):
                 violations.append(f"{location}: {violation}")
+    return tuple(sorted(set(violations)))
+
+
+def _scan_delivery_text(relative: str, text: str) -> tuple[str, ...]:
+    lowered = text.casefold()
+    violations: list[str] = []
+    if relative in _STRICT_RUNTIME_SOURCES:
+        for literal in _HIDDEN_FIELD_LITERALS:
+            if literal in lowered:
+                violations.append(f"{relative}: hidden field literal {literal}")
+        if any(value in lowered for value in _CONCRETE_TRANSFORMATIONS):
+            violations.append(f"{relative}: concrete transformation label")
+    if re.search(r"(?:bg-[0-9a-f]{24}|coord-[0-9a-f]{24})", lowered):
+        violations.append(f"{relative}: reserved internal group identifier")
+    if re.search(r"(?:blind-task|assignment-package|answerability-annotation)-v1", lowered):
+        violations.append(f"{relative}: v1 human-delivery schema literal")
+    if _EMAIL_RE.search(text):
+        violations.append(f"{relative}: PII-like email")
+    if _WINDOWS_PATH_RE.search(text) or _POSIX_PRIVATE_PATH_RE.search(text):
+        violations.append(f"{relative}: private absolute filesystem path")
+    for claim in _POSITIVE_OVERCLAIMS:
+        if claim in lowered:
+            violations.append(f"{relative}: unsupported blinding claim")
+    return tuple(violations)
+
+
+def scan_delivery_sources(repository_root: Path) -> tuple[str, ...]:
+    """Scan the exact committed sources that can enter an annotator delivery kit."""
+    root = repository_root.resolve()
+    violations = list(
+        scan_delivery_tree(
+            root / "pilot/v0.2/packages",
+            allowed_files=("ann-pilot-a.json", "ann-pilot-b.json"),
+        )
+    )
+    for relative in _DELIVERY_TEXT_SOURCES:
+        path = root / relative
+        if not path.is_file():
+            violations.append(f"{relative}: delivery source is missing")
+            continue
+        violations.extend(_scan_delivery_text(relative, path.read_text(encoding="utf-8")))
     return tuple(sorted(set(violations)))

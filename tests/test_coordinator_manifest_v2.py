@@ -90,9 +90,7 @@ def test_v2_packages_are_group_free_and_hash_bound_to_private_manifest() -> None
 
 def test_v2_schedule_is_non_adjacent_for_both_annotators() -> None:
     packages, manifest = _build()
-    groups = {
-        row.annotation_task_id: row.internal_group_id for row in manifest.coordinator_tasks
-    }
+    groups = {row.annotation_task_id: row.internal_group_id for row in manifest.coordinator_tasks}
 
     for package in packages:
         ordered = [groups[task.annotation_task_id] for task in package.tasks]
@@ -128,8 +126,6 @@ def test_coordinator_manifest_writer_refuses_repository_output(tmp_path: Path) -
 
 def test_committed_manifest_schema_matches_model(repo_root: Path) -> None:
     committed = json.loads(
-        (repo_root / "pilot/v0.2/assignment-manifest-v2.schema.json").read_text(
-            encoding="utf-8"
-        )
+        (repo_root / "pilot/v0.2/assignment-manifest-v2.schema.json").read_text(encoding="utf-8")
     )
     assert committed == assignment.AssignmentManifestV2.model_json_schema()

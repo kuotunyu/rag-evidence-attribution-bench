@@ -12,6 +12,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from rag_evidence.annotation.privacy import scan_delivery_payload
 from rag_evidence.errors import DataError
 from rag_evidence.storage.artifacts import read_json, write_json_atomic
 
@@ -138,12 +139,8 @@ class PlatformIdentityV2(_StrictModel):
 
 
 class PlatformVerificationReceiptV2(PlatformIdentityV2):
-    schema_version: Literal["platform-verification-receipt-v2"] = (
-        "platform-verification-receipt-v2"
-    )
-    verifier_version: Literal["annotation-platform-verifier-v2"] = (
-        "annotation-platform-verifier-v2"
-    )
+    schema_version: Literal["platform-verification-receipt-v2"] = "platform-verification-receipt-v2"
+    verifier_version: Literal["annotation-platform-verifier-v2"] = "annotation-platform-verifier-v2"
     verifier_sha256: str = Field(pattern=_HASH_PATTERN)
     platform: PlatformName
     python_version: str = Field(pattern=r"^3\.11(?:\.\d+)?$")
@@ -233,6 +230,12 @@ def emit_platform_receipt(
             raise DataError("platform smoke artifact is missing or unsafe")
         if hashlib.sha256(path.read_bytes()).hexdigest() != expected_hash:
             raise DataError("platform smoke artifact hash mismatch")
+    violations = scan_delivery_payload(
+        receipt.model_dump(mode="json"),
+        artifact_kind="platform_receipt",
+    )
+    if violations:
+        raise DataError("platform receipt privacy scan failed: " + "; ".join(violations))
     write_json_atomic(output_path, receipt.model_dump(mode="json"))
     return receipt
 
