@@ -20,6 +20,7 @@ def test_annotation_cli_surface_is_explicit() -> None:
         "adjudicate",
         "build-coordinator-manifest",
         "build-handoff",
+        "build-wheels",
         "collect",
         "finalize-pilot",
         "package-pilot",
@@ -29,6 +30,7 @@ def test_annotation_cli_surface_is_explicit() -> None:
     package = annotation.commands["package-pilot"]
     serve = annotation.commands["serve"]
     adjudicate = annotation.commands["adjudicate"]
+    build_wheels = annotation.commands["build-wheels"]
     assert any(
         isinstance(param, TyperOption) and param.name == "config" for param in package.params
     )
@@ -39,4 +41,10 @@ def test_annotation_cli_surface_is_explicit() -> None:
         "state",
         "host",
         "port",
+    }
+    assert {param.name for param in build_wheels.params if isinstance(param, TyperOption)} == {
+        "checkout_a",
+        "checkout_b",
+        "source_commit",
+        "output",
     }

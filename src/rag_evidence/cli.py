@@ -548,6 +548,34 @@ def annotation_build_handoff(
     )
 
 
+@annotation_app.command("build-wheels")
+def annotation_build_wheels(
+    checkout_a: Annotated[
+        Path,
+        typer.Option("--checkout-a", exists=True, file_okay=False, readable=True),
+    ],
+    checkout_b: Annotated[
+        Path,
+        typer.Option("--checkout-b", exists=True, file_okay=False, readable=True),
+    ],
+    source_commit: Annotated[str, typer.Option("--source-commit")],
+    output: Annotated[Path, typer.Option("--output", file_okay=False)],
+) -> None:
+    """Build four external wheel instances and prove exact Git-bound byte identity."""
+    from rag_evidence.annotation.wheel_verify import build_four_wheels
+    from rag_evidence.errors import RagEvidenceError
+
+    try:
+        result = build_four_wheels(checkout_a, checkout_b, source_commit, output)
+    except (RagEvidenceError, ValueError) as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(
+        f"verified four byte-identical wheels; sha256={result.canonical.sha256}; "
+        f"commit={result.source_commit_sha}"
+    )
+
+
 @annotation_app.command("rehearse-synthetic")
 def annotation_rehearse_synthetic(
     out: Annotated[Path, typer.Option("--out", file_okay=False)],

@@ -71,7 +71,7 @@ dev = [
 rag-evidence = "rag_evidence.cli:app"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling==1.32.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
