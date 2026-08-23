@@ -38,7 +38,7 @@
     "launcher_b_powershell": "45eef841ba425d6e77f6f5e3a38dc8c615bde54e62322455dfc39f6447409415",
     "launcher_b_posix": "8b0bca8606ec8a9b551ee2711dd3f43f2c3023436a049a779a810f2ee4e1eb45",
     "dependency_lock": "4cc0a6d04c92a3d9b4395901c2014470380576ddb64cbf93f688f7a3099b1d09",
-    "builder": "aba7cbca97788d39645b69cb2068a21bb360a2b5b5abaec232b6caec2c79a987",
+    "builder": "155a91c86a344540070496b49ecc9aeafadb0ee40499f7ec7cfdddf7797fb474",
     "manifest_schema": "656c37a41134b07221a719db1b6918057215a36c23f7573e1a875c044dfa3f92"
   },
   "instruction_version": "pilot-v0.2.1-draft",

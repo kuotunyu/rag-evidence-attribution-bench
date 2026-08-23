@@ -87,9 +87,7 @@ class ReproducibleBuildRecipe(_StrictModel):
     source_date_epoch: int = Field(ge=315532800)
     build_command: tuple[str, ...]
     verification_steps: tuple[str, ...]
-    wheel_policy: Literal["byte-compare-else-per-build-hash"] = (
-        "byte-compare-else-per-build-hash"
-    )
+    wheel_policy: Literal["byte-compare-else-per-build-hash"] = "byte-compare-else-per-build-hash"
 
 
 class HandoffSpec(_StrictModel):
@@ -125,9 +123,7 @@ class HandoffSpec(_StrictModel):
 
 
 class CleanInstallVerification(_StrictModel):
-    schema_version: Literal["clean-install-verification-v1"] = (
-        "clean-install-verification-v1"
-    )
+    schema_version: Literal["clean-install-verification-v1"] = "clean-install-verification-v1"
     python_version: str = Field(pattern=r"^3\.11(?:\.\d+)?$")
     kit_a_passed: bool
     kit_b_passed: bool
@@ -217,8 +213,7 @@ def _resolve_source(root: Path, relative_path: str) -> Path:
 
 def _checksum_lines(root: Path, files: Mapping[str, Path]) -> str:
     return "".join(
-        f"{_sha256_file(path)}  {relative_name}\n"
-        for relative_name, path in sorted(files.items())
+        f"{_sha256_file(path)}  {relative_name}\n" for relative_name, path in sorted(files.items())
     )
 
 

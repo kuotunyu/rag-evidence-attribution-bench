@@ -413,8 +413,7 @@ def annotation_collect(
         typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1) from exc
     typer.echo(
-        f"collected {result.completed_tasks}/{result.assigned_tasks} tasks into "
-        f"{result.output_dir}"
+        f"collected {result.completed_tasks}/{result.assigned_tasks} tasks into {result.output_dir}"
     )
     if not result.complete:
         typer.secho(

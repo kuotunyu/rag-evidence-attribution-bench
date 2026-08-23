@@ -51,9 +51,7 @@ def _annotation(
     submitted_at: str = "2026-08-23T01:05:00Z",
 ) -> AnswerabilityAnnotation:
     tasks = {
-        task.annotation_task_id: task
-        for package in manifest.packages
-        for task in package.tasks
+        task.annotation_task_id: task for package in manifest.packages for task in package.tasks
     }
     task = tasks[task_id]
     is_answerable = answerability == "answerable"

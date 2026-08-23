@@ -92,9 +92,7 @@ class PilotFinalizationResult:
 class IaaArtifact(_StrictModel):
     schema_version: Literal["pilot-iaa-v1"] = "pilot-iaa-v1"
     generated_at: dt.datetime
-    population: Literal["post-amendment-pre-adjudication"] = (
-        "post-amendment-pre-adjudication"
-    )
+    population: Literal["post-amendment-pre-adjudication"] = "post-amendment-pre-adjudication"
     required_tasks: Literal[40] = 40
     threshold: float = Field(default=IAA_THRESHOLD, ge=IAA_THRESHOLD, le=IAA_THRESHOLD)
     n_total: int = Field(ge=0)
@@ -111,9 +109,7 @@ class IaaArtifact(_StrictModel):
 
 
 class EvidenceAgreementArtifact(_StrictModel):
-    schema_version: Literal["pilot-evidence-agreement-v1"] = (
-        "pilot-evidence-agreement-v1"
-    )
+    schema_version: Literal["pilot-evidence-agreement-v1"] = "pilot-evidence-agreement-v1"
     generated_at: dt.datetime
     n_total_tasks: int = Field(ge=0)
     n_comparable: int = Field(ge=0)
@@ -372,20 +368,12 @@ def _write_bundle(
     write_records_atomic(out / "disagreements.jsonl", disagreements)
     (out / "pilot-report.md").write_text(report, encoding="utf-8", newline="\n")
 
-    output_names = [
-        name for name in FINAL_ARTIFACT_NAMES if name != "input-manifest.json"
-    ]
+    output_names = [name for name in FINAL_ARTIFACT_NAMES if name != "input-manifest.json"]
     manifest_payload = {
         "schema_version": "pilot-finalization-input-manifest-v1",
         "artifacts": [
-            *(
-                _digest(logical_name, "input", path)
-                for logical_name, path in input_paths
-            ),
-            *(
-                _digest(Path(name).stem, "output", out / name)
-                for name in output_names
-            ),
+            *(_digest(logical_name, "input", path) for logical_name, path in input_paths),
+            *(_digest(Path(name).stem, "output", out / name) for name in output_names),
         ],
     }
     write_json_atomic(out / "input-manifest.json", manifest_payload)
@@ -564,8 +552,7 @@ def finalize_pilot(
     if len(manifest.task_assignments) != EXPECTED_PILOT_TASKS:
         integrity_errors.append("pilot manifest must assign exactly 40 tasks")
     instruction_bindings = {
-        (package.instruction_version, package.instruction_hash)
-        for package in manifest.packages
+        (package.instruction_version, package.instruction_hash) for package in manifest.packages
     }
     if len(instruction_bindings) != 1:
         integrity_errors.append("pilot packages do not share one instruction binding")
@@ -573,9 +560,7 @@ def finalize_pilot(
     else:
         protocol_version, bound_hash = next(iter(instruction_bindings))
         if protocol_version != EXPECTED_INSTRUCTION_VERSION:
-            integrity_errors.append(
-                f"instruction version must be {EXPECTED_INSTRUCTION_VERSION}"
-            )
+            integrity_errors.append(f"instruction version must be {EXPECTED_INSTRUCTION_VERSION}")
         if bound_hash != protocol_hash:
             integrity_errors.append("instruction hash does not match the exact protocol bytes")
     adjudication_ids = [record.adjudication_id for record in adjudications]
@@ -590,12 +575,8 @@ def finalize_pilot(
         indexed = index_submissions(manifest, effective)
         pairs = tuple(
             (
-                indexed.get(assignment.annotation_task_id, {}).get(
-                    assignment.annotators[0]
-                ),
-                indexed.get(assignment.annotation_task_id, {}).get(
-                    assignment.annotators[1]
-                ),
+                indexed.get(assignment.annotation_task_id, {}).get(assignment.annotators[0]),
+                indexed.get(assignment.annotation_task_id, {}).get(assignment.annotators[1]),
             )
             for assignment in manifest.task_assignments
         )
@@ -701,9 +682,7 @@ def finalize_pilot(
         input_paths=input_paths,
         generated_at=generated_at,
         flow=workflow.flow,
-        disagreements=tuple(
-            case.model_dump(mode="json") for case in workflow.disagreements
-        ),
+        disagreements=tuple(case.model_dump(mode="json") for case in workflow.disagreements),
         eligibility=workflow.eligibility,
         iaa=iaa_artifact,
         evidence=evidence_artifact,

@@ -148,9 +148,7 @@ def evidence_agreement(
 
 
 def aggregate_evidence_agreement(
-    pairs: Sequence[
-        tuple[AnswerabilityAnnotation | None, AnswerabilityAnnotation | None]
-    ],
+    pairs: Sequence[tuple[AnswerabilityAnnotation | None, AnswerabilityAnnotation | None]],
 ) -> EvidenceAgreementSummary:
     """Aggregate only valid pairs where both humans independently chose answerable."""
     comparable: list[EvidenceAgreement] = []
@@ -165,10 +163,7 @@ def aggregate_evidence_agreement(
         ):
             excluded += 1
             continue
-        if (
-            not left.minimal_sufficient_evidence_sets
-            or not right.minimal_sufficient_evidence_sets
-        ):
+        if not left.minimal_sufficient_evidence_sets or not right.minimal_sufficient_evidence_sets:
             invalid_empty += 1
             continue
         comparable.append(
@@ -184,9 +179,7 @@ def aggregate_evidence_agreement(
         n_excluded_not_both_answerable=excluded,
         n_invalid_empty_family=invalid_empty,
         exact_set_family_agreement_rate=(
-            sum(item.exact_set_family_agreement for item in comparable) / count
-            if count
-            else None
+            sum(item.exact_set_family_agreement for item in comparable) / count if count else None
         ),
         mean_jaccard=(sum(item.jaccard for item in comparable) / count if count else None),
         mean_set_f1=(sum(item.set_f1 for item in comparable) / count if count else None),

@@ -50,9 +50,12 @@ def test_rehearsal_covers_full_path_twice_without_changing_formal_packages(
     for run_name in ("run-1", "run-2"):
         run_root = tmp_path / "synthetic-rehearsal" / run_name
         assert (run_root / "SYNTHETIC-NOT-HUMAN-DATA.txt").exists()
-        assert json.loads(
-            (run_root / "final" / "privacy-scan.json").read_text(encoding="utf-8")
-        )["passed"] is True
+        assert (
+            json.loads((run_root / "final" / "privacy-scan.json").read_text(encoding="utf-8"))[
+                "passed"
+            ]
+            is True
+        )
         questions = [
             task["question"]
             for package in json.loads(

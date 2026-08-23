@@ -299,9 +299,7 @@ def test_workflow_uses_effective_amendment_tip() -> None:
     assert result.flow.eligible == 1
     expected = tuple(
         artifact_hash(record)
-        for record in sorted(
-            [replacement, left], key=lambda item: item.annotator_pseudonym
-        )
+        for record in sorted([replacement, left], key=lambda item: item.annotator_pseudonym)
     )
     assert result.eligibility.records[0].source_annotation_hashes == expected
 

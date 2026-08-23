@@ -32,6 +32,10 @@ def test_annotation_cli_surface_is_explicit() -> None:
         isinstance(param, TyperOption) and param.name == "config" for param in package.params
     )
     assert any(isinstance(param, TyperOption) and param.name == "package" for param in serve.params)
-    assert {
-        param.name for param in adjudicate.params if isinstance(param, TyperOption)
-    } >= {"manifest", "effective", "state", "host", "port"}
+    assert {param.name for param in adjudicate.params if isinstance(param, TyperOption)} >= {
+        "manifest",
+        "effective",
+        "state",
+        "host",
+        "port",
+    }

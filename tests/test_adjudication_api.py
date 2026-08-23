@@ -115,12 +115,16 @@ def test_adjudication_export_is_canonical_jsonl(tmp_path: Path) -> None:
     response = client.get("/api/export/adjudications.jsonl")
 
     assert response.status_code == 200
-    assert response.text == json.dumps(
-        payload,
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    ) + "\n"
+    assert (
+        response.text
+        == json.dumps(
+            payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        + "\n"
+    )
 
 
 def test_adjudication_rejects_private_data_and_has_no_correction_endpoint(

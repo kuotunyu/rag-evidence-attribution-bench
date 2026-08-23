@@ -60,9 +60,7 @@ class ArtifactDigest(_StrictModel):
 
 
 class CollectionReceipt(_StrictModel):
-    schema_version: Literal["annotation-collection-receipt-v1"] = (
-        "annotation-collection-receipt-v1"
-    )
+    schema_version: Literal["annotation-collection-receipt-v1"] = "annotation-collection-receipt-v1"
     generated_at: dt.datetime
     assigned_tasks: int = Field(ge=1)
     completed_tasks: int = Field(ge=0)
@@ -163,9 +161,7 @@ def _resolve_amendments(
 
     effective_by_original = dict(originals_by_hash)
     ordered_amendments: list[AnnotationAmendment] = []
-    all_amendment_hashes = {
-        digest for group in hashes_by_original.values() for digest in group
-    }
+    all_amendment_hashes = {digest for group in hashes_by_original.values() for digest in group}
     for original in sorted_originals:
         original_hash = artifact_hash(original)
         group = amendments_by_original[original_hash]
@@ -365,9 +361,7 @@ def collect_annotation_streams(
         for assignment in manifest.task_assignments
     )
     complete = completed_tasks == len(manifest.task_assignments)
-    disagreements = (
-        build_disagreement_queue(manifest, resolution.effective) if complete else None
-    )
+    disagreements = build_disagreement_queue(manifest, resolution.effective) if complete else None
 
     order = _submission_order(manifest)
     sorted_originals = tuple(
@@ -415,13 +409,8 @@ def collect_annotation_streams(
     output_paths = [originals_path, amendments_path, effective_path, receipt_path]
     if disagreements is not None:
         output_paths.append(disagreement_path)
-    output_digests = [
-        _digest(path.stem, "output", path)
-        for path in output_paths
-    ]
-    input_manifest = CollectionInputManifest(
-        artifacts=tuple(input_digests + output_digests)
-    )
+    output_digests = [_digest(path.stem, "output", path) for path in output_paths]
+    input_manifest = CollectionInputManifest(artifacts=tuple(input_digests + output_digests))
     write_json_atomic(out / "input-manifest.json", input_manifest.model_dump(mode="json"))
     return CollectionResult(
         complete=complete,

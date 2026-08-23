@@ -54,9 +54,7 @@ def test_committed_handoff_manifest_matches_schema_and_has_no_wheel_hash(
 
 def test_committed_handoff_hashes_match_canonical_sources(repo_root: Path) -> None:
     spec = HandoffSpec.model_validate_json(
-        (repo_root / "pilot" / "v0.2" / "handoff-manifest.json").read_text(
-            encoding="utf-8"
-        )
+        (repo_root / "pilot" / "v0.2" / "handoff-manifest.json").read_text(encoding="utf-8")
     )
 
     for logical_name, expected_hash in spec.canonical_sha256.items():
@@ -106,8 +104,7 @@ def test_handoff_kits_are_disjoint_and_receipt_is_complete(
     assert "ann-pilot-a.json" not in _kit_files(external, "kit-b")
     assert not any(
         "manifest" in name.casefold()
-        for name in _kit_files(external, "kit-a")
-        | _kit_files(external, "kit-b")
+        for name in _kit_files(external, "kit-a") | _kit_files(external, "kit-b")
     )
     assert (external / "kit-a" / wheel.name).read_bytes() == wheel.read_bytes()
     assert (external / "kit-b" / wheel.name).read_bytes() == wheel.read_bytes()

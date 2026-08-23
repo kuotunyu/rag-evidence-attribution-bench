@@ -107,9 +107,7 @@ def test_evidence_summary_counts_only_both_answerable_nonempty_pairs() -> None:
         ),
     )
 
-    summary = aggregate_evidence_agreement(
-        [comparable, not_both_answerable, invalid_empty]
-    )
+    summary = aggregate_evidence_agreement([comparable, not_both_answerable, invalid_empty])
 
     assert summary.n_total_tasks == 3
     assert summary.n_comparable == 1

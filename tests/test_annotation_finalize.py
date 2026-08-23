@@ -163,9 +163,7 @@ def test_iaa_gate_requires_exact_40_defined_finite_coefficients_at_point_70() ->
 def test_verdict_precedence_is_frozen() -> None:
     assert choose_pilot_verdict(privacy=True, integrity=True).value == "BLOCKED_PRIVACY"
     assert choose_pilot_verdict(integrity=True, incomplete=True).value == "BLOCKED_INTEGRITY"
-    assert (
-        choose_pilot_verdict(incomplete=True, unresolved=True).value == "BLOCKED_INCOMPLETE"
-    )
+    assert choose_pilot_verdict(incomplete=True, unresolved=True).value == "BLOCKED_INCOMPLETE"
     assert (
         choose_pilot_verdict(unresolved=True, low_iaa=True).value
         == "BLOCKED_UNRESOLVED_ADJUDICATION"
@@ -184,21 +182,15 @@ def test_ready_finalization_writes_fixed_artifacts_and_is_byte_deterministic(
 
     assert first.verdict.value == "READY_FOR_HUMAN_FREEZE_REVIEW"
     assert second.verdict == first.verdict
-    assert {path.name for path in (tmp_path / "out-1").iterdir()} == set(
-        FINAL_ARTIFACT_NAMES
-    )
+    assert {path.name for path in (tmp_path / "out-1").iterdir()} == set(FINAL_ARTIFACT_NAMES)
     for name in FINAL_ARTIFACT_NAMES:
-        assert (tmp_path / "out-1" / name).read_bytes() == (
-            tmp_path / "out-2" / name
-        ).read_bytes()
+        assert (tmp_path / "out-1" / name).read_bytes() == (tmp_path / "out-2" / name).read_bytes()
     iaa = json.loads((tmp_path / "out-1" / "iaa.json").read_text(encoding="utf-8"))
     assert iaa["n_total"] == 40
     assert iaa["n_complete"] == 40
     assert iaa["cohen_kappa"] == pytest.approx(0.8)
     assert iaa["gate_passed"] is True
-    verdict = json.loads(
-        (tmp_path / "out-1" / "pilot-verdict.json").read_text(encoding="utf-8")
-    )
+    verdict = json.loads((tmp_path / "out-1" / "pilot-verdict.json").read_text(encoding="utf-8"))
     assert verdict["authorizes_human_pilot"] is False
     assert verdict["authorizes_release"] is False
     input_manifest = json.loads(
@@ -212,8 +204,7 @@ def test_finalization_iaa_uses_amendment_tip_before_adjudication(tmp_path: Path)
     manifest_path, originals_path, amendments_path, adjudications_path, _protocol = inputs
     manifest = AssignmentManifest.model_validate(read_json(manifest_path))
     originals = [
-        AnswerabilityAnnotation.model_validate(payload)
-        for payload in read_records(originals_path)
+        AnswerabilityAnnotation.model_validate(payload) for payload in read_records(originals_path)
     ]
     first_assignment = manifest.task_assignments[0]
     first_pair = [
@@ -244,8 +235,7 @@ def test_finalization_iaa_uses_amendment_tip_before_adjudication(tmp_path: Path)
     )
     write_records_atomic(amendments_path, [amendment.model_dump(mode="json")])
     adjudications = [
-        AdjudicationRecord.model_validate(payload)
-        for payload in read_records(adjudications_path)
+        AdjudicationRecord.model_validate(payload) for payload in read_records(adjudications_path)
     ]
     write_records_atomic(
         adjudications_path,
@@ -261,9 +251,7 @@ def test_finalization_iaa_uses_amendment_tip_before_adjudication(tmp_path: Path)
     assert result.verdict.value == "READY_FOR_HUMAN_FREEZE_REVIEW"
     iaa = json.loads((tmp_path / "out" / "iaa.json").read_text(encoding="utf-8"))
     assert iaa["raw_agreement"] == pytest.approx(37 / 40)
-    flow = json.loads(
-        (tmp_path / "out" / "flow-accounting.json").read_text(encoding="utf-8")
-    )
+    flow = json.loads((tmp_path / "out" / "flow-accounting.json").read_text(encoding="utf-8"))
     assert flow["disagreed"] == 3
 
 
@@ -298,11 +286,7 @@ def test_privacy_block_writes_safe_artifacts_without_echoing_pii(tmp_path: Path)
     )
 
     assert result.verdict.value == "BLOCKED_PRIVACY"
-    combined = b"".join(
-        (tmp_path / "out" / name).read_bytes() for name in FINAL_ARTIFACT_NAMES
-    )
+    combined = b"".join((tmp_path / "out" / name).read_bytes() for name in FINAL_ARTIFACT_NAMES)
     assert b"private-reviewer@example.com" not in combined
-    privacy = json.loads(
-        (tmp_path / "out" / "privacy-scan.json").read_text(encoding="utf-8")
-    )
+    privacy = json.loads((tmp_path / "out" / "privacy-scan.json").read_text(encoding="utf-8"))
     assert privacy["passed"] is False

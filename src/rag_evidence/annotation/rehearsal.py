@@ -210,9 +210,7 @@ def _write_fixture_inputs(
     tasks, base_labels = _build_tasks(instruction_hash)
     manifest = build_dual_assignments(tasks, _ANNOTATORS, seed=20260823)
     task_map = {
-        task.annotation_task_id: task
-        for package in manifest.packages
-        for task in package.tasks
+        task.annotation_task_id: task for package in manifest.packages for task in package.tasks
     }
     answerable_ids = [
         assignment.annotation_task_id
