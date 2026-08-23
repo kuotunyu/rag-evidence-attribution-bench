@@ -2,7 +2,7 @@
 
 This checklist is for a future separately approved human pilot. Completing B0.1
 engineering does not authorize the human pilot. Packages from baseline `372096b` are
-obsolete; only `pilot-v0.2.1-draft` packages with the current instruction hash are valid.
+obsolete; only `pilot-v0.2.2-draft` packages with the current instruction hash are valid.
 
 Before any human handoff, run the explicitly synthetic rehearsal in a temporary directory:
 

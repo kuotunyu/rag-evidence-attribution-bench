@@ -30,10 +30,8 @@ def test_public_docs_do_not_reference_internal_handoff_files() -> None:
 
 def test_readmes_link_to_the_versioned_baseline_release() -> None:
     metadata = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    version = metadata["project"]["version"]
-    release_url = (
-        f"https://github.com/kuotunyu/rag-evidence-attribution-bench/releases/tag/v{version}"
-    )
+    assert metadata["project"]["version"] == "0.2.0.dev0"
+    release_url = "https://github.com/kuotunyu/rag-evidence-attribution-bench/releases/tag/v0.1.0"
 
     for readme_name in ("README.md", "README_en.md"):
         readme = (REPO_ROOT / readme_name).read_text(encoding="utf-8")
@@ -48,7 +46,7 @@ def test_b01_docs_mark_old_packages_obsolete_and_do_not_authorize_execution() ->
     )
     combined = "\n".join(path.read_text(encoding="utf-8") for path in operational_files)
 
-    assert "pilot-v0.2.1-draft" in combined
+    assert "pilot-v0.2.2-draft" in combined
     assert "372096b" in combined
     assert "obsolete" in combined.casefold()
     assert "rag-evidence annotation collect" in combined

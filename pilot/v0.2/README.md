@@ -18,6 +18,11 @@ versions, Python 3.11 support, the dependency lock, canonical source hashes, ins
 identity, expected Git-external layout, and the reproducible recipe. They intentionally do
 not contain a predicted wheel hash. See `HANDOFF_RUNBOOK.md` for exact commands.
 
+The private Python distribution identity is `0.2.0.dev0`. It is distinct from protocol identity
+`pilot-v0.2.2-draft` and schema version `v2`; none of these creates a Git tag, release, or public
+package. A future final `0.2.0` requires separate owner approval and newly built exact-source
+evidence. A `dev0` wheel receipt cannot be reused for that final identity.
+
 ## B0.1 stop boundary
 
 This source state does not authorize the human pilot. Owner approval is still required

@@ -1,6 +1,6 @@
 # Annotator Onboarding
 
-This onboarding is bound to instruction version `pilot-v0.2.1-draft` and the full-file
+This onboarding is bound to instruction version `pilot-v0.2.2-draft` and the full-file
 SHA-256 recorded in your package and kit checksum. Stop before annotation if either value
 differs from the verified handoff receipt.
 
