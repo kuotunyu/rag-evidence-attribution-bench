@@ -39,7 +39,7 @@ def test_committed_pilot_package_is_clean(repo_root: Path) -> None:
     package_root = repo_root / "pilot" / "v0.2" / "packages"
     assert package_root.exists()
     assert scan_clean_package(package_root) == {
-        "files": 3,
+        "files": 2,
         "packages": 2,
         "tasks": 40,
         "decisions": 0,
