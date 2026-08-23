@@ -54,4 +54,3 @@ def scan_private_payload(payload: object) -> tuple[str, ...]:
 
     visit(payload, "$")
     return tuple(sorted(set(violations)))
-
