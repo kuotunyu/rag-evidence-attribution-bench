@@ -1,7 +1,7 @@
 # v0.2 Annotation-Ready Engineering Design
 
-**Status:** APPROVED for B0 engineering on 2026-08-23  
-**Base:** `main` at `935b39658633211a76c52b6bbfd4262353780e80`  
+**Status:** APPROVED for B0 engineering on 2026-08-23
+**Base:** `main` at `935b39658633211a76c52b6bbfd4262353780e80`
 **Delivery branch:** `codex/v0.2-annotation-readiness`
 
 ## Boundary

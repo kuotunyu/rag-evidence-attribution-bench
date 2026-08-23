@@ -47,6 +47,11 @@ challenge_app = typer.Typer(
     help="Human-gated answerability challenge execution (generate/attribute/evaluate/report).",
 )
 app.add_typer(challenge_app, name="challenge")
+annotation_app = typer.Typer(
+    no_args_is_help=True,
+    help="Build blind packages or run the offline human annotation console.",
+)
+app.add_typer(annotation_app, name="annotation")
 
 ConfigOpt = Annotated[
     Path,
@@ -375,6 +380,32 @@ def challenge_report(
         ),
         config,
     )
+
+
+@annotation_app.command("package-pilot")
+def annotation_package_pilot(
+    config: ConfigOpt,
+    out: Annotated[Path, typer.Option("--out", file_okay=False)],
+) -> None:
+    """Create the deterministic 20-parent, decision-free pilot assignment package."""
+    from rag_evidence.annotation.package import build_pilot_package
+
+    _run(lambda cfg: build_pilot_package(cfg, out), config)
+
+
+@annotation_app.command("serve")
+def annotation_serve(
+    package: Annotated[Path, typer.Option("--package", exists=True, dir_okay=False, readable=True)],
+    state: Annotated[Path, typer.Option("--state", file_okay=False)],
+    host: Annotated[str, typer.Option("--host")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port", min=1, max=65535)] = 8001,
+) -> None:
+    """Serve one annotator package locally; state remains outside the clean package."""
+    import uvicorn
+
+    from rag_evidence.annotation.app import create_annotation_app
+
+    uvicorn.run(create_annotation_app(package, state), host=host, port=port)
 
 
 @app.command()

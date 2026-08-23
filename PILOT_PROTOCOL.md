@@ -1,8 +1,8 @@
 # Human Annotation Pilot Protocol
 
-**Protocol ID:** `pilot-v0.2-draft`  
-**Status:** PILOT ONLY — mutable after pilot  
-**Scope:** 20 parent questions; missing-hop and evidence-swap tasks  
+**Protocol ID:** `pilot-v0.2-draft`
+**Status:** PILOT ONLY — mutable after pilot
+**Scope:** 20 parent questions; missing-hop and evidence-swap tasks
 **Primary-analysis eligibility:** permanently ineligible
 
 ## Purpose

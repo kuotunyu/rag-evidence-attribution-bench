@@ -2,9 +2,9 @@
 
 > **DRAFT — NOT FROZEN — NO CONFIRMATORY SAMPLE OPENED**
 
-**Protocol ID:** `v2-confirmatory-draft`  
-**Planned dataset:** pinned HotpotQA Dataset v2 eval candidate  
-**Planned parent count:** 160  
+**Protocol ID:** `v2-confirmatory-draft`
+**Planned dataset:** pinned HotpotQA Dataset v2 eval candidate
+**Planned parent count:** 160
 **Status boundary:** design only; no formal model output exists
 
 ## Freeze conditions
