@@ -4,7 +4,7 @@
 
 | Role | Model | License | Notes |
 |---|---|---|---|
-| Generator | `Qwen/Qwen3-4B-Instruct-2507` | Apache-2.0 | non-thinking instruct variant; official chat template; transformers ≥ 4.51 (repo locks 5.14.1) |
+| Generator | `Qwen/Qwen3-4B-Instruct-2507` revision `cdbee75f17c01a7cc42f958dc650907174af0554` | Apache-2.0 | non-thinking instruct variant; tokenizer pinned to the same revision; official chat template; transformers ≥ 4.51 (repo locks 5.14.1) |
 | Embedder (dense retrieval + embedding attribution) | `Qwen/Qwen3-Embedding-0.6B` | Apache-2.0 | 1024-dim, last-token pooling; instruction prompt applied to QUERIES only (asymmetric use) |
 | Reranker (extension only) | `BAAI/bge-reranker-v2-m3` revision `953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e` | Apache-2.0 | multilingual 0.6B cross-encoder; raw scalar classification logit; tokenizer pinned to the same revision |
 
@@ -33,9 +33,13 @@ the primary decision rule.
 
 - Deterministic greedy: `do_sample=False`, `num_beams=1`, fresh `GenerationConfig`
   (Qwen's shipped sampling defaults are fully replaced), `max_new_tokens: 256`.
-- The prompt (versioned `v1`, hash recorded in every run manifest) instructs: short
-  answer, inline citations `[P#]`, and the exact abstention string
-  `INSUFFICIENT EVIDENCE` when the passages do not support an answer.
+- Historical v0.1 used prompt `v1` and passage citations `[P#]`. Future v2 configs bind
+  prompt `v2` and sentence citations `[P#.S#]`; no formal v2 model output exists. Both
+  prompt hashes are recorded in run metadata, and the exact abstention string remains
+  `INSUFFICIENT EVIDENCE`.
+- A real v2 run fails before model loading until the pinned local snapshot's aggregate
+  SHA-256 is written into the config. Runtime/library, decoding, dtype/quantization, and
+  CUDA/GPU metadata are recorded with the run.
 - dtype auto: BF16 where supported, FP16 otherwise (Colab T4 has no BF16); 4-bit NF4
   only as an automatic OOM fallback. The dtype/quantization actually used is recorded
   in every run manifest and shown in every report table.

@@ -15,15 +15,32 @@ import hashlib
 import logging
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Protocol
 
-from rag_evidence.errors import GpuRequiredError, RagEvidenceError
+from rag_evidence.errors import ConfigError, GpuRequiredError, RagEvidenceError
 
 logger = logging.getLogger(__name__)
 
 # HotpotQA 10-passage prompts are ~1.2-1.8k tokens; anything near this cap is anomalous
 # and gets logged loudly (we deliberately do not silently truncate).
 PROMPT_TOKEN_WARN_THRESHOLD = 6000
+
+
+def directory_artifact_sha256(path: Path) -> str:
+    """Aggregate digest binding every sorted relative path and its bytes."""
+    digest = hashlib.sha256()
+    files = sorted(item for item in path.rglob("*") if item.is_file())
+    if not files:
+        raise ConfigError(f"local model snapshot {path} contains no files")
+    for item in files:
+        relative = item.relative_to(path).as_posix().encode("utf-8")
+        digest.update(len(relative).to_bytes(8, "big"))
+        digest.update(relative)
+        with item.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+    return digest.hexdigest()
 
 
 @dataclass(frozen=True)
@@ -81,6 +98,10 @@ class QwenBackend:
         self,
         model_id: str,
         *,
+        model_revision: str | None,
+        tokenizer_id: str | None,
+        tokenizer_revision: str | None,
+        local_artifact_sha256: str | None,
         device: str,
         dtype: str,
         quantization: str,
@@ -96,9 +117,14 @@ class QwenBackend:
                 "for a tiny debugging run; a 4B model on CPU is impractically slow)"
             )
         self.model_id = model_id
+        self.model_revision = model_revision
+        self.tokenizer_id = tokenizer_id or model_id
+        self.tokenizer_revision = tokenizer_revision
+        self.local_artifact_sha256 = local_artifact_sha256
         self.device = device
         self.requested_dtype = dtype
         self.requested_quantization = quantization
+        self._model_source, self._tokenizer_source = self._resolve_sources()
         torch.manual_seed(seed)
 
         self._torch = torch
@@ -109,17 +135,41 @@ class QwenBackend:
         self.effective_dtype = str(next(self._model.parameters()).dtype).removeprefix("torch.")
         logger.info(
             "loaded %s dtype=%s quant=%s device=%s",
-            model_id,
+            self.model_id,
             self.effective_dtype,
             self.effective_quantization,
             self.device,
         )
 
+    def _resolve_sources(self) -> tuple[str, str]:
+        if self.model_revision is None:
+            return self.model_id, self.tokenizer_id
+        from huggingface_hub import snapshot_download
+
+        model_path = Path(snapshot_download(repo_id=self.model_id, revision=self.model_revision))
+        if self.local_artifact_sha256 is not None:
+            actual = directory_artifact_sha256(model_path)
+            if actual != self.local_artifact_sha256:
+                raise ConfigError(
+                    "local model artifact SHA-256 mismatch: "
+                    f"expected {self.local_artifact_sha256}, got {actual}"
+                )
+        if self.tokenizer_id == self.model_id and self.tokenizer_revision == self.model_revision:
+            tokenizer_path = model_path
+        else:
+            tokenizer_path = Path(
+                snapshot_download(
+                    repo_id=self.tokenizer_id,
+                    revision=self.tokenizer_revision,
+                )
+            )
+        return str(model_path), str(tokenizer_path)
+
     def _load(self, quantization: str, fallback_4bit: bool) -> tuple[Any, Any, str]:
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
-        tokenizer = AutoTokenizer.from_pretrained(self.model_id)
+        tokenizer = AutoTokenizer.from_pretrained(self._tokenizer_source, local_files_only=True)
         torch_dtype = getattr(torch, self.requested_dtype)
 
         def load(quant: str) -> Any:
@@ -134,8 +184,12 @@ class QwenBackend:
                     bnb_4bit_compute_dtype=torch_dtype,
                 )
                 kwargs["device_map"] = {"": 0}
-                return AutoModelForCausalLM.from_pretrained(self.model_id, **kwargs)
-            model = AutoModelForCausalLM.from_pretrained(self.model_id, **kwargs)
+                return AutoModelForCausalLM.from_pretrained(
+                    self._model_source, local_files_only=True, **kwargs
+                )
+            model = AutoModelForCausalLM.from_pretrained(
+                self._model_source, local_files_only=True, **kwargs
+            )
             return model.to(self.device)  # type: ignore[arg-type]  # transformers stub quirk
 
         try:
@@ -154,6 +208,10 @@ class QwenBackend:
     def info(self) -> dict[str, Any]:
         return {
             "model_id": self.model_id,
+            "model_revision": self.model_revision,
+            "tokenizer_id": self.tokenizer_id,
+            "tokenizer_revision": self.tokenizer_revision,
+            "local_artifact_sha256": self.local_artifact_sha256,
             "device": self.device,
             "dtype_requested": self.requested_dtype,
             "dtype_effective": self.effective_dtype,
@@ -376,6 +434,10 @@ def build_backend(
         )
     return QwenBackend(
         cfg_generation.model_id,
+        model_revision=cfg_generation.model_revision,
+        tokenizer_id=cfg_generation.tokenizer_id,
+        tokenizer_revision=cfg_generation.tokenizer_revision,
+        local_artifact_sha256=cfg_generation.local_artifact_sha256,
         device=device,
         dtype=dtype,
         quantization=cfg_generation.quantization,

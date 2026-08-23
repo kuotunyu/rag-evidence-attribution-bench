@@ -181,6 +181,12 @@ class RetrievalConfig(_StrictModel):
 
 class GenerationConfig(_StrictModel):
     model_id: str = "Qwen/Qwen3-4B-Instruct-2507"
+    model_revision: str | None = None
+    tokenizer_id: str | None = None
+    tokenizer_revision: str | None = None
+    local_artifact_sha256: str | None = None
+    runtime: Literal["transformers"] = "transformers"
+    runtime_version: str | None = None
     name: str = "qwen3-4b"
     backend: Literal["qwen", "fake"] = "qwen"
     dtype: Literal["auto", "bfloat16", "float16", "float32"] = "auto"
@@ -192,6 +198,37 @@ class GenerationConfig(_StrictModel):
     retrieval_results_raw: str | None = None
     top_k_context: int = 10
     prompt_version: str = "v1"
+    do_sample: Literal[False] = False
+    num_beams: Literal[1] = 1
+
+    @field_validator("model_revision", "tokenizer_revision")
+    @classmethod
+    def _exact_generation_revision(cls, value: str | None) -> str | None:
+        if value is not None and re.fullmatch(r"[0-9a-f]{40}", value) is None:
+            raise ValueError("model/tokenizer revision must be an exact 40-character commit hash")
+        return value
+
+    @field_validator("local_artifact_sha256")
+    @classmethod
+    def _full_local_artifact_hash(cls, value: str | None) -> str | None:
+        if value is not None and re.fullmatch(r"[0-9a-f]{64}", value) is None:
+            raise ValueError("local artifact SHA-256 must be a full 64-character lowercase hash")
+        return value
+
+    @model_validator(mode="after")
+    def _v2_contract_is_version_bound(self) -> GenerationConfig:
+        if self.prompt_version != "v2":
+            return self
+        required = {
+            "model_revision": self.model_revision,
+            "tokenizer_id": self.tokenizer_id,
+            "tokenizer_revision": self.tokenizer_revision,
+            "runtime_version": self.runtime_version,
+        }
+        missing = [name for name, value in required.items() if value is None]
+        if missing:
+            raise ValueError(f"prompt v2 requires version-bound generation fields: {missing}")
+        return self
 
 
 class FaithfulnessConfig(_StrictModel):
@@ -349,6 +386,17 @@ def _apply_env_overrides(raw: dict[str, Any]) -> dict[str, Any]:
         if value:
             raw.setdefault(section, {})[key] = value
     return raw
+
+
+def validate_v2_runtime_binding(generation: GenerationConfig) -> None:
+    """Fail before a real v2 model load unless the local snapshot digest is frozen."""
+    if generation.prompt_version != "v2" or generation.backend == "fake":
+        return
+    if generation.local_artifact_sha256 is None:
+        raise ConfigError(
+            "real prompt-v2 execution requires local_artifact_sha256; compute and freeze "
+            "the aggregate digest of the pinned local model snapshot before model loading"
+        )
 
 
 _YAML_PATH_FIELDS: tuple[tuple[str, str], ...] = (

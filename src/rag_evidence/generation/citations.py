@@ -14,6 +14,7 @@ from rag_evidence.generation.prompts import ABSTAIN_TEXT
 _BRACKET_RE = re.compile(r"\[([^\[\]]+)\]")
 _PREF_RE = re.compile(r"^[Pp]([1-9]\d*)$")
 _SPLIT_RE = re.compile(r"[,\s;/]+")
+_ANY_ALIAS_RE = re.compile(r"^[Pp]([1-9]\d*)(?:\.[Ss]([1-9]\d*))?$")
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,16 @@ class ParsedCitations:
     raw_aliases: tuple[str, ...]  # ordered, deduplicated, normalized to "P<n>"
     cited_passage_ids: tuple[str, ...]  # resolved through the alias_map
     invalid_aliases: tuple[str, ...]  # cited but not in the alias_map (e.g. [P11])
+
+
+@dataclass(frozen=True)
+class ParsedSentenceCitationResponse:
+    answer_text: str
+    raw_aliases: tuple[str, ...]
+    cited_sentence_ids: tuple[str, ...]
+    cited_passage_ids: tuple[str, ...]
+    invalid_aliases: tuple[str, ...]
+    missing_citations: bool
 
 
 def _is_pure_citation_group(content: str) -> list[str] | None:
@@ -66,3 +77,60 @@ def strip_citations(text: str) -> str:
 
 def is_abstention(text: str) -> bool:
     return ABSTAIN_TEXT.lower() in text.lower()
+
+
+def _all_citation_aliases(text: str) -> tuple[str, ...]:
+    aliases: list[str] = []
+    for match in _BRACKET_RE.finditer(text):
+        tokens = [token for token in _SPLIT_RE.split(match.group(1).strip()) if token]
+        if not tokens:
+            continue
+        normalized: list[str] = []
+        for token in tokens:
+            alias_match = _ANY_ALIAS_RE.fullmatch(token)
+            if alias_match is None:
+                normalized = []
+                break
+            passage = f"P{alias_match.group(1)}"
+            sentence = alias_match.group(2)
+            normalized.append(f"{passage}.S{sentence}" if sentence else passage)
+        for alias in normalized:
+            if alias not in aliases:
+                aliases.append(alias)
+    return tuple(aliases)
+
+
+def _strip_all_citation_aliases(text: str) -> str:
+    def remove(match: re.Match[str]) -> str:
+        tokens = [token for token in _SPLIT_RE.split(match.group(1).strip()) if token]
+        return (
+            ""
+            if tokens and all(_ANY_ALIAS_RE.fullmatch(token) for token in tokens)
+            else match.group(0)
+        )
+
+    stripped = _BRACKET_RE.sub(remove, text)
+    return re.sub(r"\s+", " ", stripped).strip(" \t\n.,;:")
+
+
+def parse_sentence_citation_response(
+    text: str,
+    passage_alias_map: dict[str, str],
+    sentence_alias_map: dict[str, str],
+) -> ParsedSentenceCitationResponse:
+    """Parse prompt-v2 output while reporting sentence and legacy passage citations separately."""
+    raw = _all_citation_aliases(text)
+    valid_sentences = [alias for alias in raw if alias in sentence_alias_map]
+    valid_passages = [alias for alias in raw if alias in passage_alias_map]
+    invalid = [
+        alias for alias in raw if alias not in sentence_alias_map and alias not in passage_alias_map
+    ]
+    abstained = is_abstention(text)
+    return ParsedSentenceCitationResponse(
+        answer_text="" if abstained else _strip_all_citation_aliases(text),
+        raw_aliases=raw,
+        cited_sentence_ids=tuple(sentence_alias_map[alias] for alias in valid_sentences),
+        cited_passage_ids=tuple(passage_alias_map[alias] for alias in valid_passages),
+        invalid_aliases=tuple(invalid),
+        missing_citations=not abstained and not raw,
+    )

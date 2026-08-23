@@ -89,9 +89,17 @@ def scientific_config(cfg: AppConfig, stage: str, **extra: Any) -> dict[str, Any
                 }
             )
     elif stage == "generate":
+        from rag_evidence.generation.prompts import prompt_hash
+
         g = cfg.generation
         sci["generation"] = {
             "model_id": g.model_id,
+            "model_revision": g.model_revision,
+            "tokenizer_id": g.tokenizer_id,
+            "tokenizer_revision": g.tokenizer_revision,
+            "local_artifact_sha256": g.local_artifact_sha256,
+            "runtime": g.runtime,
+            "runtime_version": g.runtime_version,
             "backend": g.backend,
             "dtype": g.dtype,
             "quantization": g.quantization,
@@ -101,15 +109,26 @@ def scientific_config(cfg: AppConfig, stage: str, **extra: Any) -> dict[str, Any
             "retrieval_results_raw": g.retrieval_results_raw,
             "top_k_context": g.top_k_context,
             "prompt_version": g.prompt_version,
+            "prompt_hash": prompt_hash(g.prompt_version),
+            "do_sample": g.do_sample,
+            "num_beams": g.num_beams,
         }
     elif stage == "attribute":
         g = cfg.generation
         sci["generation_model"] = {
             "model_id": g.model_id,
+            "model_revision": g.model_revision,
+            "tokenizer_id": g.tokenizer_id,
+            "tokenizer_revision": g.tokenizer_revision,
+            "local_artifact_sha256": g.local_artifact_sha256,
+            "runtime": g.runtime,
+            "runtime_version": g.runtime_version,
             "backend": g.backend,
             "dtype": g.dtype,
             "quantization": g.quantization,
             "prompt_version": g.prompt_version,
+            "do_sample": g.do_sample,
+            "num_beams": g.num_beams,
         }
         sci["attribution"] = {
             "faithfulness_enabled": cfg.attribution.faithfulness.enabled,

@@ -7,14 +7,28 @@ import time
 from pathlib import Path
 from typing import Literal
 
-from rag_evidence.config import AppConfig, resolve_device, resolve_dtype
+from rag_evidence.config import (
+    AppConfig,
+    resolve_device,
+    resolve_dtype,
+    validate_v2_runtime_binding,
+)
 from rag_evidence.data import ids
 from rag_evidence.data.hotpot import load_prepared_verified
 from rag_evidence.data.schema import Example, Passage
 from rag_evidence.errors import RagEvidenceError, UpstreamMissingError
 from rag_evidence.generation.backends import build_backend
-from rag_evidence.generation.citations import is_abstention, parse_citations, strip_citations
-from rag_evidence.generation.prompts import build_messages, prompt_hash
+from rag_evidence.generation.citations import (
+    is_abstention,
+    parse_citations,
+    parse_sentence_citation_response,
+    strip_citations,
+)
+from rag_evidence.generation.prompts import (
+    build_messages,
+    build_sentence_alias_map,
+    prompt_hash,
+)
 from rag_evidence.metrics.text import exact_match, f1_score
 from rag_evidence.storage.artifacts import (
     RECORDS_FILE,
@@ -78,6 +92,7 @@ def _is_oom(exc: BaseException) -> bool:
 
 
 def run_generation_stage(cfg: AppConfig, *, resume: bool, limit: int | None) -> None:
+    validate_v2_runtime_binding(cfg.generation)
     examples = load_prepared_verified(cfg)
     if limit is not None:
         examples = examples[:limit]
@@ -121,6 +136,11 @@ def run_generation_stage(cfg: AppConfig, *, resume: bool, limit: int | None) -> 
             continue
         context = select_context(cfg, example)
         alias_map = ids.make_alias_map([p.passage_id for p in context])
+        sentence_alias_map = (
+            build_sentence_alias_map(context, alias_map)
+            if cfg.generation.prompt_version == "v2"
+            else {}
+        )
         messages = build_messages(
             example.question, context, alias_map, version=cfg.generation.prompt_version
         )
@@ -128,6 +148,7 @@ def run_generation_stage(cfg: AppConfig, *, resume: bool, limit: int | None) -> 
             "question_id": example.question_id,
             "context_passage_ids": [p.passage_id for p in context],
             "alias_map": alias_map,
+            "sentence_alias_map": sentence_alias_map,
             "messages": messages,
             "prompt_version": cfg.generation.prompt_version,
         }
@@ -136,15 +157,40 @@ def run_generation_stage(cfg: AppConfig, *, resume: bool, limit: int | None) -> 
                 out = backend.generate(messages, max_new_tokens=cfg.generation.max_new_tokens)
             citations = parse_citations(out.text, alias_map)
             abstained = is_abstention(out.text)
-            answer_text = "" if abstained else strip_citations(out.text)
+            sentence_citations = None
+            if cfg.generation.prompt_version == "v2":
+                parsed_sentence = parse_sentence_citation_response(
+                    out.text, alias_map, sentence_alias_map
+                )
+                sentence_citations = {
+                    "raw_aliases": list(parsed_sentence.raw_aliases),
+                    "cited_sentence_ids": list(parsed_sentence.cited_sentence_ids),
+                    "invalid_aliases": list(parsed_sentence.invalid_aliases),
+                    "missing_citations": parsed_sentence.missing_citations,
+                }
+                answer_text = parsed_sentence.answer_text
+                sentence_parent_pids = [
+                    sentence_id.rsplit("-s", maxsplit=1)[0]
+                    for sentence_id in parsed_sentence.cited_sentence_ids
+                ]
+                passage_ids = list(parsed_sentence.cited_passage_ids)
+                for passage_id in sentence_parent_pids:
+                    if passage_id not in passage_ids:
+                        passage_ids.append(passage_id)
+                invalid_citations = list(parsed_sentence.invalid_aliases)
+            else:
+                answer_text = "" if abstained else strip_citations(out.text)
+                passage_ids = list(citations.cited_passage_ids)
+                invalid_citations = list(citations.invalid_aliases)
             f1, _prec, _rec = f1_score(answer_text, example.answer)
             record.update(
                 response_text=out.text,
                 answer_text=answer_text,
                 abstained=abstained,
                 citations_raw=list(citations.raw_aliases),
-                cited_passage_ids=list(citations.cited_passage_ids),
-                invalid_citations=list(citations.invalid_aliases),
+                cited_passage_ids=passage_ids,
+                invalid_citations=invalid_citations,
+                sentence_citations=sentence_citations,
                 em=exact_match(answer_text, example.answer) if not abstained else 0,
                 f1=round(f1, 6) if not abstained else 0.0,
                 prompt_tokens=out.prompt_tokens,
@@ -166,6 +212,7 @@ def run_generation_stage(cfg: AppConfig, *, resume: bool, limit: int | None) -> 
                 citations_raw=None,
                 cited_passage_ids=None,
                 invalid_citations=None,
+                sentence_citations=None,
                 em=None,
                 f1=None,
                 prompt_tokens=None,
