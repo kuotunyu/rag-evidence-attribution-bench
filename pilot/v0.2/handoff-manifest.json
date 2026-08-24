@@ -1,0 +1,127 @@
+{
+  "schema_version": "handoff-manifest-v2",
+  "spec_version": "handoff-spec-v2",
+  "builder_version": "handoff-builder-v2",
+  "protocol_version": "pilot-v0.2.2-draft",
+  "python_distribution": "0.2.0",
+  "required_verification_platforms": [
+    "Windows",
+    "Linux"
+  ],
+  "supported_environment": {
+    "python": "3.11",
+    "required_verification_platforms": [
+      "Windows",
+      "Linux"
+    ],
+    "dependency_lock": "annotation-requirements-py311.lock",
+    "dependency_bootstrap_argv": [
+      "python",
+      "-m",
+      "pip",
+      "install",
+      "--require-hashes",
+      "--only-binary=:all:",
+      "-r",
+      "annotation-requirements-py311.lock"
+    ],
+    "wheel_install_argv": [
+      "python",
+      "-m",
+      "pip",
+      "install",
+      "--no-deps",
+      "<verified-wheel>"
+    ]
+  },
+  "source_paths": {
+    "package_a": "pilot/v0.2/packages/ann-pilot-a.json",
+    "package_b": "pilot/v0.2/packages/ann-pilot-b.json",
+    "instruction": "PILOT_PROTOCOL.md",
+    "onboarding": "pilot/v0.2/ONBOARDING.md",
+    "runbook": "pilot/v0.2/HANDOFF_RUNBOOK.md",
+    "launcher_a_powershell": "pilot/v0.2/launchers/start-a.ps1",
+    "launcher_a_posix": "pilot/v0.2/launchers/start-a.sh",
+    "launcher_b_powershell": "pilot/v0.2/launchers/start-b.ps1",
+    "launcher_b_posix": "pilot/v0.2/launchers/start-b.sh",
+    "dependency_lock": "pilot/v0.2/annotation-requirements-py311.lock",
+    "builder": "src/rag_evidence/annotation/handoff.py",
+    "source_verifier": "src/rag_evidence/annotation/source_verify.py",
+    "wheel_verifier": "src/rag_evidence/annotation/wheel_verify.py",
+    "platform_verifier": "src/rag_evidence/annotation/platform.py",
+    "platform_script": "scripts/verify_annotation_platform.py",
+    "manifest_schema": "pilot/v0.2/handoff-manifest.schema.json"
+  },
+  "canonical_sha256": {
+    "package_a": "579d4e27bb723a6858497367cf22abea0663e6ec98a5e5502db913aca4df6ba1",
+    "package_b": "0f3d9e65a88e27c145c25866ab13945b4b34389fb63d966156ce7ff1cc482219",
+    "instruction": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
+    "onboarding": "2d467d589ab41aeffe4bc7c1eea6b5e53ece19c9ec272dacba99725cd132ab04",
+    "runbook": "0d7119f6580c2c13e84cc809a2ad324fbaf002ec7f91af129893ec1c11c4ce4b",
+    "launcher_a_powershell": "909779c2676bc86a15813afe93b9de7c1e617faaa960d785ff061ad93d26ccb1",
+    "launcher_a_posix": "6a2d8741a4dbb5660727c8358328a3ef335f004bcd42dec62d8dd61714702199",
+    "launcher_b_powershell": "fc7eea3e8d99b3765366d4ed373e48a0f0b37dfc35aed1725d1ee7fe5c2e50cb",
+    "launcher_b_posix": "6c27ce35d5f4fb754f473a14ce03918aa92467b04fd1e3f9d04d5d0a1aad4cf8",
+    "dependency_lock": "bbdabdc13ab652a3ae899635aad23804b34d02f535d14ac1d3264d74db9d31af",
+    "builder": "d6d58280baa745b447db92efad00a8b84c53d4fd5c5d4dd9448080610751e4e3",
+    "source_verifier": "4782d1fa8113366859dc6a56e736dcb9fde44a1592efef4e1d2ef589b7d9a14d",
+    "wheel_verifier": "91f46816f582d671cd07d95f761ac613c7885ca1681dc4307b0fdf8f36547583",
+    "platform_verifier": "2404617af7ee65b4db94f7e37981f251275df4dad6b9ec44f564f9d74ad6c610",
+    "platform_script": "2c387a47c3571deb2aabf606f101cc0775dfe63db026692f890ac1f94a4b9c5d",
+    "manifest_schema": "84f6f110a4c4cdb37d6fbd1274fbc6917bfc5a2331e8bef8a4be250701854393"
+  },
+  "canonical_package_sha256": {
+    "ann-pilot-a.json": "579d4e27bb723a6858497367cf22abea0663e6ec98a5e5502db913aca4df6ba1",
+    "ann-pilot-b.json": "0f3d9e65a88e27c145c25866ab13945b4b34389fb63d966156ce7ff1cc482219"
+  },
+  "instruction_version": "pilot-v0.2.2-draft",
+  "instruction_sha256": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
+  "dependency_lock_sha256": "bbdabdc13ab652a3ae899635aad23804b34d02f535d14ac1d3264d74db9d31af",
+  "expected_layout": {
+    "external_root_files": [
+      "handoff-receipt.json",
+      "SHA256SUMS"
+    ],
+    "kit_a_directory": "kit-a",
+    "kit_b_directory": "kit-b",
+    "kit_a_files": [
+      "<verified-wheel>",
+      "annotation-requirements-py311.lock",
+      "ONBOARDING.md",
+      "HANDOFF_RUNBOOK.md",
+      "start.ps1",
+      "start.sh",
+      "SHA256SUMS",
+      "ann-pilot-a.json"
+    ],
+    "kit_b_files": [
+      "<verified-wheel>",
+      "annotation-requirements-py311.lock",
+      "ONBOARDING.md",
+      "HANDOFF_RUNBOOK.md",
+      "start.ps1",
+      "start.sh",
+      "SHA256SUMS",
+      "ann-pilot-b.json"
+    ]
+  },
+  "reproducible_build": {
+    "source_date_epoch": 1787443200,
+    "build_command": [
+      "uv",
+      "build",
+      "--wheel",
+      "--out-dir",
+      "<external-dist>"
+    ],
+    "wheel_policy": "byte-identical-required",
+    "required_instances": 4,
+    "environment_policy": [
+      "external-cache",
+      "external-build-root",
+      "external-output",
+      "external-pycache",
+      "PYTHONDONTWRITEBYTECODE=1"
+    ]
+  }
+}

@@ -39,6 +39,13 @@ retrieval:
 
 generation:
   model_id: Qwen/Qwen3-4B-Instruct-2507
+  model_revision: cdbee75f17c01a7cc42f958dc650907174af0554
+  tokenizer_id: Qwen/Qwen3-4B-Instruct-2507
+  tokenizer_revision: cdbee75f17c01a7cc42f958dc650907174af0554
+  # Must be filled with the aggregate digest of the pinned local snapshot before a real run.
+  local_artifact_sha256: null
+  runtime: transformers
+  runtime_version: 5.14.1
   name: qwen3-4b
   backend: qwen
   dtype: auto
@@ -48,7 +55,9 @@ generation:
   context_source: dataset
   retrieval_run: null
   top_k_context: 10
-  prompt_version: v1
+  prompt_version: v2
+  do_sample: false
+  num_beams: 1
 
 attribution:
   modes: [gold, generated]

@@ -35,6 +35,22 @@ class CausalDependenceSummary(_StrictModel):
     sufficiency_mean: float | None
     comprehensiveness_mean: float | None
     validation_status: ValidationStatus
+    interpretation: Literal["diagnostic_not_causal_effect"] = "diagnostic_not_causal_effect"
+
+
+class ConstructValidationSummary(_StrictModel):
+    status: ValidationStatus
+    missing_methods: tuple[str, ...]
+    invalid_methods: dict[str, str]
+    comparisons: dict[str, Any]
+
+    @model_validator(mode="after")
+    def _status_is_fail_closed(self) -> ConstructValidationSummary:
+        if self.status == "passed" and (self.missing_methods or self.invalid_methods):
+            raise ValueError("construct validation cannot pass with missing/invalid methods")
+        if self.status == "not_run" and self.comparisons:
+            raise ValueError("not-run construct validation cannot contain comparisons")
+        return self
 
 
 class ExecutionSummary(_StrictModel):

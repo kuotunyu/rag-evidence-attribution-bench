@@ -42,6 +42,16 @@ reranking_app = typer.Typer(
     help="Controlled cross-encoder reranking extension commands.",
 )
 app.add_typer(reranking_app, name="reranking")
+challenge_app = typer.Typer(
+    no_args_is_help=True,
+    help="Human-gated answerability challenge execution (generate/attribute/evaluate/report).",
+)
+app.add_typer(challenge_app, name="challenge")
+annotation_app = typer.Typer(
+    no_args_is_help=True,
+    help="Build blind packages or run the offline human annotation console.",
+)
+app.add_typer(annotation_app, name="annotation")
 
 ConfigOpt = Annotated[
     Path,
@@ -68,6 +78,39 @@ class RerankingArm(StrEnum):
     dense = "dense"
     hybrid_rrf = "hybrid_rrf"
     hybrid_rrf_rerank = "hybrid_rrf_rerank"
+
+
+class ChallengePhase(StrEnum):
+    pilot = "pilot"
+    confirmatory = "confirmatory"
+
+
+class ChallengeVariant(StrEnum):
+    missing_hop = "missing_hop"
+    evidence_swap = "evidence_swap"
+
+
+def _challenge_config(
+    cfg: Any,
+    *,
+    phase: ChallengePhase,
+    variant: ChallengeVariant,
+    assignments: Path,
+    eligibility: Path,
+) -> Any:
+    from rag_evidence.data.challenge_execution import build_challenge_execution_config
+
+    return build_challenge_execution_config(
+        cfg,
+        phase=phase.value,
+        variant=variant.value,
+        challenge_records_path=(
+            cfg.results_raw_dir / cfg.split / "challenge" / "samples" / "records.jsonl"
+        ),
+        assignment_manifest_path=assignments,
+        eligibility_path=eligibility,
+        natural_samples_path=cfg.results_raw_dir / cfg.split / "samples" / "records.jsonl",
+    )
 
 
 def _version_callback(value: bool) -> None:
@@ -202,6 +245,446 @@ def report(config: ConfigOpt) -> None:
     from rag_evidence.pipeline import run_report
 
     _run(run_report, config)
+
+
+@challenge_app.command("generate")
+def challenge_generate(
+    config: ConfigOpt,
+    phase: Annotated[ChallengePhase, typer.Option("--phase")],
+    variant: Annotated[ChallengeVariant, typer.Option("--variant")],
+    assignments: Annotated[
+        Path, typer.Option("--assignments", exists=True, dir_okay=False, readable=True)
+    ],
+    eligibility: Annotated[
+        Path, typer.Option("--eligibility", exists=True, dir_okay=False, readable=True)
+    ],
+    resume: ResumeOpt = False,
+    limit: LimitOpt = None,
+) -> None:
+    """Generate on one eligible challenge arm; transformation labels are not truth."""
+    from rag_evidence.generation.run import run_generation_stage
+
+    _run(
+        lambda cfg, **kwargs: run_generation_stage(
+            _challenge_config(
+                cfg,
+                phase=phase,
+                variant=variant,
+                assignments=assignments,
+                eligibility=eligibility,
+            ),
+            **kwargs,
+        ),
+        config,
+        resume=resume,
+        limit=limit,
+    )
+
+
+@challenge_app.command("attribute")
+def challenge_attribute(
+    config: ConfigOpt,
+    phase: Annotated[ChallengePhase, typer.Option("--phase")],
+    variant: Annotated[ChallengeVariant, typer.Option("--variant")],
+    assignments: Annotated[
+        Path, typer.Option("--assignments", exists=True, dir_okay=False, readable=True)
+    ],
+    eligibility: Annotated[
+        Path, typer.Option("--eligibility", exists=True, dir_okay=False, readable=True)
+    ],
+    method: Annotated[str, typer.Option("--method")],
+    mode: Annotated[str, typer.Option("--mode")] = "generated",
+    resume: ResumeOpt = False,
+    retry_failures: Annotated[bool, typer.Option("--retry-failures")] = False,
+    limit: LimitOpt = None,
+) -> None:
+    """Attribute one eligible challenge arm (generated-answer mode by default)."""
+    from rag_evidence.attribution.run import run_attribution_stage
+
+    _run(
+        lambda cfg, **kwargs: run_attribution_stage(
+            _challenge_config(
+                cfg,
+                phase=phase,
+                variant=variant,
+                assignments=assignments,
+                eligibility=eligibility,
+            ),
+            **kwargs,
+        ),
+        config,
+        method=method,
+        mode=mode,
+        resume=resume,
+        retry_failures=retry_failures,
+        limit=limit,
+    )
+
+
+@challenge_app.command("evaluate")
+def challenge_evaluate(
+    config: ConfigOpt,
+    phase: Annotated[ChallengePhase, typer.Option("--phase")],
+    variant: Annotated[ChallengeVariant, typer.Option("--variant")],
+    assignments: Annotated[
+        Path, typer.Option("--assignments", exists=True, dir_okay=False, readable=True)
+    ],
+    eligibility: Annotated[
+        Path, typer.Option("--eligibility", exists=True, dir_okay=False, readable=True)
+    ],
+    allow_partial: Annotated[bool, typer.Option("--allow-partial")] = False,
+) -> None:
+    """Evaluate one eligible challenge arm in its isolated derived root."""
+    from rag_evidence.evaluation.evaluate import evaluate_all
+
+    _run(
+        lambda cfg, **kwargs: evaluate_all(
+            _challenge_config(
+                cfg,
+                phase=phase,
+                variant=variant,
+                assignments=assignments,
+                eligibility=eligibility,
+            ),
+            **kwargs,
+        ),
+        config,
+        allow_partial=allow_partial,
+    )
+
+
+@challenge_app.command("report")
+def challenge_report(
+    config: ConfigOpt,
+    phase: Annotated[ChallengePhase, typer.Option("--phase")],
+    variant: Annotated[ChallengeVariant, typer.Option("--variant")],
+    assignments: Annotated[
+        Path, typer.Option("--assignments", exists=True, dir_okay=False, readable=True)
+    ],
+    eligibility: Annotated[
+        Path, typer.Option("--eligibility", exists=True, dir_okay=False, readable=True)
+    ],
+) -> None:
+    """Report one challenge arm without changing public README result blocks."""
+    from rag_evidence.reporting.report import build_report
+
+    _run(
+        lambda cfg: build_report(
+            _challenge_config(
+                cfg,
+                phase=phase,
+                variant=variant,
+                assignments=assignments,
+                eligibility=eligibility,
+            )
+        ),
+        config,
+    )
+
+
+@annotation_app.command("collect")
+def annotation_collect(
+    manifest: Annotated[
+        Path,
+        typer.Option("--manifest", exists=True, dir_okay=False, readable=True),
+    ],
+    submission: Annotated[
+        list[Path],
+        typer.Option("--submission", exists=True, dir_okay=False, readable=True),
+    ],
+    amendment: Annotated[
+        list[Path],
+        typer.Option("--amendment", exists=True, dir_okay=False, readable=True),
+    ],
+    out: Annotated[Path, typer.Option("--out", file_okay=False)],
+) -> None:
+    """Collect two paired human streams and resolve append-only amendments."""
+    from rag_evidence.annotation.coordinator import collect_annotation_streams
+    from rag_evidence.errors import RagEvidenceError
+
+    try:
+        result = collect_annotation_streams(manifest, submission, amendment, out)
+    except RagEvidenceError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(
+        f"collected {result.completed_tasks}/{result.assigned_tasks} tasks into {result.output_dir}"
+    )
+    if not result.complete:
+        typer.secho(
+            "blocked: collection is incomplete; no disagreement queue was created",
+            fg=typer.colors.YELLOW,
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
+
+@annotation_app.command("adjudicate")
+def annotation_adjudicate(
+    manifest: Annotated[
+        Path,
+        typer.Option("--manifest", exists=True, dir_okay=False, readable=True),
+    ],
+    effective: Annotated[
+        Path,
+        typer.Option("--effective", exists=True, dir_okay=False, readable=True),
+    ],
+    state: Annotated[Path, typer.Option("--state", file_okay=False)],
+    host: Annotated[str, typer.Option("--host")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port", min=1, max=65535)] = 8002,
+) -> None:
+    """Serve the coordinator-only third-human disagreement console."""
+    from rag_evidence.annotation.runtime import serve_adjudication
+    from rag_evidence.errors import RagEvidenceError
+
+    try:
+        serve_adjudication(manifest, effective, state, host=host, port=port)
+    except RagEvidenceError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+
+
+@annotation_app.command("finalize-pilot")
+def annotation_finalize_pilot(
+    manifest: Annotated[
+        Path,
+        typer.Option("--manifest", exists=True, dir_okay=False, readable=True),
+    ],
+    originals: Annotated[
+        Path,
+        typer.Option("--originals", exists=True, dir_okay=False, readable=True),
+    ],
+    amendments: Annotated[
+        Path,
+        typer.Option("--amendments", exists=True, dir_okay=False, readable=True),
+    ],
+    adjudications: Annotated[
+        Path,
+        typer.Option("--adjudications", exists=True, dir_okay=False, readable=True),
+    ],
+    protocol: Annotated[
+        Path,
+        typer.Option("--protocol", exists=True, dir_okay=False, readable=True),
+    ],
+    out: Annotated[Path, typer.Option("--out", file_okay=False)],
+) -> None:
+    """Write the fixed pilot accounting, IAA, privacy, and verdict artifact set."""
+    from rag_evidence.annotation.finalize import (
+        PilotVerdictName,
+        finalize_pilot,
+    )
+    from rag_evidence.errors import RagEvidenceError
+
+    try:
+        result = finalize_pilot(
+            manifest,
+            originals,
+            amendments,
+            adjudications,
+            protocol,
+            out,
+        )
+    except RagEvidenceError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(result.verdict.value)
+    if result.verdict is not PilotVerdictName.READY_FOR_HUMAN_FREEZE_REVIEW:
+        raise typer.Exit(code=2)
+
+
+@annotation_app.command("build-handoff")
+def annotation_build_handoff(
+    spec: Annotated[
+        Path,
+        typer.Option("--spec", exists=True, dir_okay=False, readable=True),
+    ],
+    checkout_a: Annotated[
+        Path,
+        typer.Option("--checkout-a", exists=True, file_okay=False, readable=True),
+    ],
+    checkout_b: Annotated[
+        Path,
+        typer.Option("--checkout-b", exists=True, file_okay=False, readable=True),
+    ],
+    wheel_evidence: Annotated[
+        Path,
+        typer.Option("--wheel-evidence", exists=True, dir_okay=False, readable=True),
+    ],
+    coordinator_manifest: Annotated[
+        Path,
+        typer.Option("--coordinator-manifest", exists=True, dir_okay=False, readable=True),
+    ],
+    windows_receipt: Annotated[
+        Path,
+        typer.Option("--windows-receipt", exists=True, dir_okay=False, readable=True),
+    ],
+    linux_receipt: Annotated[
+        Path,
+        typer.Option("--linux-receipt", exists=True, dir_okay=False, readable=True),
+    ],
+    output: Annotated[Path, typer.Option("--output", file_okay=False)],
+) -> None:
+    """Build final disjoint kits from exact source, wheel, and platform evidence."""
+    from rag_evidence.annotation.handoff import build_handoff_v2
+    from rag_evidence.errors import RagEvidenceError
+
+    try:
+        receipt = build_handoff_v2(
+            spec_path=spec,
+            checkout_a_root=checkout_a,
+            checkout_b_root=checkout_b,
+            wheel_evidence_path=wheel_evidence,
+            coordinator_manifest_path=coordinator_manifest,
+            windows_receipt_path=windows_receipt,
+            linux_receipt_path=linux_receipt,
+            external_root=output,
+        )
+    except (RagEvidenceError, ValueError) as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(
+        f"built source-bound isolated kits at {output}; wheel={receipt.wheel.sha256}; "
+        f"commit={receipt.source_commit_sha}"
+    )
+
+
+@annotation_app.command("build-wheels")
+def annotation_build_wheels(
+    checkout_a: Annotated[
+        Path,
+        typer.Option("--checkout-a", exists=True, file_okay=False, readable=True),
+    ],
+    checkout_b: Annotated[
+        Path,
+        typer.Option("--checkout-b", exists=True, file_okay=False, readable=True),
+    ],
+    source_commit: Annotated[str, typer.Option("--source-commit")],
+    output: Annotated[Path, typer.Option("--output", file_okay=False)],
+) -> None:
+    """Build four external wheel instances and prove exact Git-bound byte identity."""
+    from rag_evidence.annotation.wheel_verify import build_four_wheels
+    from rag_evidence.errors import RagEvidenceError
+
+    try:
+        result = build_four_wheels(checkout_a, checkout_b, source_commit, output)
+    except (RagEvidenceError, ValueError) as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(
+        f"verified four byte-identical wheels; sha256={result.canonical.sha256}; "
+        f"commit={result.source_commit_sha}"
+    )
+
+
+@annotation_app.command("write-handoff-spec")
+def annotation_write_handoff_spec(
+    repository_root: Annotated[
+        Path,
+        typer.Option("--repository-root", exists=True, file_okay=False, readable=True),
+    ],
+    output: Annotated[Path, typer.Option("--output", dir_okay=False)],
+) -> None:
+    """Refresh the committed source-only v2 handoff manifest and generated schema."""
+    from rag_evidence.annotation.handoff import write_handoff_spec
+    from rag_evidence.errors import RagEvidenceError
+
+    try:
+        spec = write_handoff_spec(repository_root, output)
+    except (RagEvidenceError, ValueError) as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(
+        f"wrote {spec.schema_version}; protocol={spec.protocol_version}; "
+        f"distribution={spec.python_distribution}"
+    )
+
+
+@annotation_app.command("rehearse-synthetic")
+def annotation_rehearse_synthetic(
+    out: Annotated[Path, typer.Option("--out", file_okay=False)],
+    repository_root: Annotated[
+        Path,
+        typer.Option("--repository-root", exists=True, file_okay=False, readable=True),
+    ] = Path("."),
+) -> None:
+    """Run an invented 40-task operational rehearsal twice outside the repository."""
+    from rag_evidence.annotation.rehearsal import run_synthetic_rehearsal
+    from rag_evidence.errors import RagEvidenceError
+
+    try:
+        result = run_synthetic_rehearsal(out, repository_root)
+    except RagEvidenceError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(
+        f"synthetic tasks={result.tasks}; amendments={result.amendments}; "
+        f"disagreements={result.disagreements}; adjudications={result.adjudications}; "
+        f"defect_exclusions={result.dataset_defect_exclusions}; "
+        f"verdict={result.verdict}; byte_identical={result.repeat_byte_identical}"
+    )
+
+
+@annotation_app.command("package-pilot")
+def annotation_package_pilot(
+    config: ConfigOpt,
+    out: Annotated[Path, typer.Option("--out", file_okay=False)],
+) -> None:
+    """Create the deterministic 20-parent, decision-free pilot assignment package."""
+    from rag_evidence.annotation.package import build_pilot_package
+
+    _run(lambda cfg: build_pilot_package(cfg, out), config)
+
+
+@annotation_app.command("build-coordinator-manifest")
+def annotation_build_coordinator_manifest(
+    challenge_records: Annotated[
+        Path,
+        typer.Option("--challenge-records", exists=True, dir_okay=False, readable=True),
+    ],
+    package_a: Annotated[
+        Path, typer.Option("--package-a", exists=True, dir_okay=False, readable=True)
+    ],
+    package_b: Annotated[
+        Path, typer.Option("--package-b", exists=True, dir_okay=False, readable=True)
+    ],
+    output: Annotated[Path, typer.Option("--output", dir_okay=False)],
+) -> None:
+    """Rebuild the coordinator-only v2 manifest outside the source repository."""
+    from rag_evidence.annotation.package import rebuild_coordinator_manifest
+    from rag_evidence.errors import RagEvidenceError
+
+    try:
+        manifest = rebuild_coordinator_manifest(
+            challenge_records,
+            package_a,
+            package_b,
+            output,
+            repository_root=Path.cwd(),
+        )
+    except RagEvidenceError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(
+        f"wrote coordinator manifest with {len(manifest.coordinator_tasks)} tasks to {output}"
+    )
+
+
+@annotation_app.command("serve")
+def annotation_serve(
+    package: Annotated[Path, typer.Option("--package", exists=True, dir_okay=False, readable=True)],
+    state: Annotated[Path, typer.Option("--state", file_okay=False)],
+    host: Annotated[str, typer.Option("--host")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port", min=1, max=65535)] = 8001,
+) -> None:
+    """Serve one annotator package locally; state remains outside the clean package."""
+    from rag_evidence.annotation.runtime import serve_annotation
+    from rag_evidence.errors import RagEvidenceError
+
+    try:
+        serve_annotation(package, state, host=host, port=port)
+    except RagEvidenceError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
 
 
 @app.command()

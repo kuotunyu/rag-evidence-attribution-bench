@@ -262,16 +262,28 @@ def _attribution_tables_v2(splits: dict[str, Any], primary_k: int) -> str:
                     f"{causal['n']} | {_fmt(execution['seconds_per_sample'])} | "
                     f"{_fmt(100 * execution['failure_rate'], 1)} |"
                 )
-            validation = methods.get("causal_validation") or {
-                "status": "not_run",
-                "missing_methods": [],
-            }
+            validation = (
+                methods.get("construct_validation")
+                or methods.get("causal_validation")
+                or {
+                    "status": "not_run",
+                    "missing_methods": [],
+                }
+            )
             status = str(validation.get("status", "not_run")).replace("_", " ").upper()
             missing = validation.get("missing_methods") or []
             missing_text = f" Missing methods: {', '.join(missing)}." if missing else ""
+            invalid = validation.get("invalid_methods") or {}
+            invalid_text = (
+                " Invalid methods: "
+                + ", ".join(f"{name}={reason}" for name, reason in sorted(invalid.items()))
+                + "."
+                if invalid
+                else ""
+            )
             validation_line = (
-                f"Causal-dependence validation: **{status}**.{missing_text} "
-                "Sufficiency and comprehensiveness remain diagnostics unless this status passes."
+                f"Construct validation: **{status}**.{missing_text}{invalid_text} "
+                "Sufficiency and comprehensiveness are diagnostics, not causal-effect estimates."
             )
             blocks.append(
                 title
@@ -497,7 +509,19 @@ def build_report(cfg: AppConfig) -> None:
 
     report_path = cfg.results_derived_dir / "report.md"
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    lines = ["# Benchmark report", "", block, ""]
+    if cfg.execution.track == "challenge":
+        lines = [
+            "# Human-gated challenge report",
+            "",
+            f"Phase: `{cfg.execution.phase}`; variant: `{cfg.execution.variant}`.",
+            "",
+            "Sibling variants and natural-benchmark rows are intentionally not pooled.",
+            "",
+            block,
+            "",
+        ]
+    else:
+        lines = ["# Benchmark report", "", block, ""]
     if excluded:
         lines += [
             "## Excluded from this report",
@@ -516,6 +540,8 @@ def build_report(cfg: AppConfig) -> None:
         for f in figures:
             logger.info("wrote %s", f)
 
+    if cfg.execution.track == "challenge":
+        return
     readme_blocks = {
         Path("README.md"): render_results_block(real_summary, locale="zh-TW"),
         Path("README_en.md"): block,

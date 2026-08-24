@@ -26,7 +26,7 @@ from rag_evidence.attribution.registry import get_method
 from rag_evidence.attribution.scoring import LogprobScorer
 from rag_evidence.config import AppConfig, resolve_device, resolve_dtype
 from rag_evidence.data import ids as ids_mod
-from rag_evidence.data.hotpot import load_prepared_verified
+from rag_evidence.data.hotpot import load_execution_examples, load_execution_metadata
 from rag_evidence.data.schema import Example, Passage
 from rag_evidence.errors import ConfigError, GpuRequiredError, UpstreamMissingError
 from rag_evidence.generation.prompts import prompt_hash
@@ -303,7 +303,8 @@ def _run_one_mode(
     faith_unavailable: dict[str, Any] | None,
     execution_kind: Literal["real", "mock"],
 ) -> None:
-    examples = load_prepared_verified(cfg)
+    examples = load_execution_examples(cfg)
+    execution_metadata = load_execution_metadata(cfg)
     if limit is not None:
         examples = examples[:limit]
 
@@ -364,6 +365,16 @@ def _run_one_mode(
             "run_namespace": cfg.attribution.run_namespace,
             "generation_run": generation_run_name(cfg),
         }
+        challenge = execution_metadata.get(example.question_id)
+        if challenge is not None:
+            base_record["challenge"] = challenge
+        if (
+            mode == "gold"
+            and challenge is not None
+            and challenge["human_answerability"] != "answerable"
+        ):
+            sample = None
+            skip_reason = "human_unanswerable"
         if sample is None:
             base_record.update(
                 skipped=True,

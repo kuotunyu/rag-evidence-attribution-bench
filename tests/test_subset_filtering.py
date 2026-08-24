@@ -97,8 +97,8 @@ def test_primary_comparison_uses_estimand_specific_pairs(scripted_env: AppConfig
     assert comparison["metrics"]["f1_at_2"]["n_pairs"] == 1
     assert comparison["metrics"]["sufficiency"]["n_pairs"] == 2
     assert comparison["metrics"]["sufficiency"]["resamples"] == 10_000
-    assert mode["causal_validation"]["status"] == "not_run"
-    assert mode["causal_validation"]["missing_methods"] == [
+    assert mode["construct_validation"]["status"] == "not_run"
+    assert mode["construct_validation"]["missing_methods"] == [
         "control_answer_string",
         "oracle_gold",
     ]
