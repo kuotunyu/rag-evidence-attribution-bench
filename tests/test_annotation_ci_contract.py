@@ -66,3 +66,11 @@ def test_platform_jobs_upload_only_coordinator_verification_evidence(repo_root: 
 def test_existing_quality_and_docker_jobs_remain(repo_root: Path) -> None:
     jobs = _workflow(repo_root)["jobs"]
     assert {"checks", "docker", "annotation-windows", "annotation-linux"} <= set(jobs)
+
+
+def test_ci_runs_for_main_and_version_tags(repo_root: Path) -> None:
+    workflow = _workflow(repo_root)
+    triggers = workflow.get("on", workflow.get(True))
+
+    assert triggers["push"]["branches"] == ["main"]
+    assert triggers["push"]["tags"] == ["v*"]
