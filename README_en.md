@@ -1,11 +1,16 @@
 # RAG Evidence Attribution Bench
 
 [![CI](https://github.com/kuotunyu/rag-evidence-attribution-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/kuotunyu/rag-evidence-attribution-bench/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.1.0-blue.svg)](https://github.com/kuotunyu/rag-evidence-attribution-bench/releases/tag/v0.1.0)
+[![Release](https://img.shields.io/badge/release-v0.2.0-blue.svg)](https://github.com/kuotunyu/rag-evidence-attribution-bench/releases/tag/v0.2.0)
 [![Python](https://img.shields.io/badge/python-3.11-blue.svg)](pyproject.toml)
 [![License](https://img.shields.io/badge/code-MIT-green.svg)](LICENSE)
 
 A reproducible, auditable RAG benchmark for comparing retrieval, generation, and diagnostics of which candidate evidence an answer depends on.
+
+> **v0.2.0 is an annotation infrastructure release, not a human-study release.**
+> Independent-human pilot was not conducted; status is `NOT_CONDUCTED`.
+> Synthetic rehearsal is not human evidence, and this release makes no human-IAA or
+> confirmatory claim.
 
 [中文](README.md) · [full historical v0.1 evidence](docs/HISTORICAL_V01_EVIDENCE_EN.md) · [Dataset v2](docs/DATASET_V2.md) · [Challenge v1](docs/CHALLENGE_V1.md)
 
@@ -13,7 +18,9 @@ A reproducible, auditable RAG benchmark for comparing retrieval, generation, and
 
 This repository contains two layers that must not be conflated:
 
-- `v0.1.0` is the published, reproducible historical closed-candidate descriptive baseline.
+- [`v0.1.0`](https://github.com/kuotunyu/rag-evidence-attribution-bench/releases/tag/v0.1.0)
+  is the preserved, reproducible historical closed-candidate descriptive baseline.
+- `v0.2.0` is an annotation infrastructure engineering release, not a human-study result.
 - Dataset v2 and the 960-item Answerability Challenge are follow-on engineering candidates on `main`.
 - The v2 confirmatory benchmark has not been executed.
 - The 640 missing-hop/evidence-swap candidates still require two independent annotators and a third adjudicator for disagreements.
@@ -283,9 +290,10 @@ see [DATA_CARD.md](DATA_CARD.md) and [MODEL_CARD.md](MODEL_CARD.md) for boundari
 
 ## Current status
 
-`v0.1.0` remains the historical release. The v0.2 branch is annotation-readiness
-engineering only. Human pilot, protocol freeze, confirmatory sampling, real model execution,
-formal statistics, tagging, release, and v1.0 claims all require separate approval.
+`v0.1.0` remains the historical baseline. `v0.2.0` freezes the tested annotation
+infrastructure, source-bound handoff builder, and synthetic engineering rehearsal. It does
+not report a completed human pilot, human agreement, confirmatory sampling, real v2 model
+execution, or a v1.0 flagship claim.
 The `372096b` pilot packages are obsolete; current canonical sources use
 `pilot-v0.2.2-draft`. Even an operational `READY_FOR_HUMAN_FREEZE_REVIEW` verdict does not
 authorize the human pilot or any confirmatory/model stage.
@@ -295,4 +303,5 @@ expected-answerability labels. It does not establish semantic unlinkability and 
 establish independent sibling perception: both annotators see both non-adjacent variants. This is
 tooling and instruction feasibility evidence only.
 
-`HUMAN_PILOT_NOT_STARTED` is the only valid human-execution status at this source stage.
+`HUMAN_PILOT_NOT_CONDUCTED` is the only valid human-execution status for v0.2.0; the
+confirmatory protocol remains `DRAFT / NOT_AUTHORIZED`.

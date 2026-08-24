@@ -28,11 +28,19 @@ def test_public_pilot_claim_boundary_is_explicit(repo_root: Path) -> None:
     assert "tooling and instruction feasibility" in text
 
 
-def test_public_status_does_not_claim_human_pilot_started(repo_root: Path) -> None:
+def test_public_status_records_human_pilot_not_conducted(repo_root: Path) -> None:
     text = "\n".join(
         (repo_root / name).read_text(encoding="utf-8")
         for name in ("README.md", "README_en.md", "pilot/v0.2/README.md")
     ).casefold()
 
-    assert "human_pilot_not_started" in text
+    assert "human_pilot_not_conducted" in text
+    assert "independent-human pilot was not conducted" in text
     assert "pilot_ready_for_separate_authorization" not in text
+    for forbidden_claim in (
+        "human pilot completed",
+        "human agreement measured",
+        "independent human review completed",
+        "confirmatory evaluation completed",
+    ):
+        assert forbidden_claim not in text

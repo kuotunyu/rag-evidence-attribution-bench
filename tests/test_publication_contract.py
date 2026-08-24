@@ -4,6 +4,7 @@ import tomllib
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+PRERELEASE_VERSION = "0.2.0" + ".dev0"
 
 
 def test_public_docs_do_not_reference_internal_handoff_files() -> None:
@@ -28,17 +29,45 @@ def test_public_docs_do_not_reference_internal_handoff_files() -> None:
     assert not (REPO_ROOT / "TRANSFER.md").exists()
 
 
-def test_readmes_link_to_the_versioned_baseline_release() -> None:
+def test_readmes_publish_stable_infrastructure_identity_and_historical_baseline() -> None:
     metadata = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    assert metadata["project"]["version"] == "0.2.0.dev0"
-    release_url = "https://github.com/kuotunyu/rag-evidence-attribution-bench/releases/tag/v0.1.0"
+    assert metadata["project"]["version"] == "0.2.0"
+    historical_url = (
+        "https://github.com/kuotunyu/rag-evidence-attribution-bench/releases/tag/v0.1.0"
+    )
 
     for readme_name in ("README.md", "README_en.md"):
         readme = (REPO_ROOT / readme_name).read_text(encoding="utf-8")
-        assert release_url in readme
+        first_screen = "\n".join(readme.splitlines()[:45]).casefold()
+        assert "v0.2.0" in first_screen
+        assert "annotation infrastructure" in first_screen
+        assert "not_conducted" in first_screen
+        assert "independent-human pilot was not conducted" in first_screen
+        assert "synthetic" in first_screen
+        assert "not human evidence" in first_screen
+        assert historical_url in readme
 
 
-def test_b01_docs_mark_old_packages_obsolete_and_do_not_authorize_execution() -> None:
+def test_v020_release_notes_enforce_claim_boundaries() -> None:
+    release_notes = (REPO_ROOT / "docs/RELEASE_NOTES_V0.2.0.md").read_text(encoding="utf-8")
+    changelog = (REPO_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    combined = f"{release_notes}\n{changelog}".casefold()
+
+    for required in (
+        "annotation infrastructure",
+        "human pilot: not_conducted",
+        "no human iaa",
+        "confirmatory protocol: draft / not_authorized",
+        "synthetic rehearsal is not human evidence",
+        "windows and linux",
+        "no sandbox or prompt-injection certification",
+    ):
+        assert required in combined
+
+    assert PRERELEASE_VERSION not in release_notes
+
+
+def test_v020_operational_docs_preserve_protocol_and_mark_pilot_not_conducted() -> None:
     operational_files = (
         REPO_ROOT / "PILOT_PROTOCOL.md",
         REPO_ROOT / "pilot" / "v0.2" / "README.md",
@@ -53,4 +82,5 @@ def test_b01_docs_mark_old_packages_obsolete_and_do_not_authorize_execution() ->
     assert "rag-evidence annotation adjudicate" in combined
     assert "rag-evidence annotation finalize-pilot" in combined
     assert "both Cohen's kappa and nominal Krippendorff's alpha" in combined
-    assert "does not authorize the human pilot" in combined
+    assert "HUMAN_PILOT_NOT_CONDUCTED" in combined
+    assert PRERELEASE_VERSION not in combined

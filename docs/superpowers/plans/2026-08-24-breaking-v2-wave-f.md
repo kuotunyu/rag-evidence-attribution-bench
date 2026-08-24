@@ -92,7 +92,7 @@ docker build -t rag-evidence:v02-candidate .
 docker run --rm rag-evidence:v02-candidate rag-evidence --version
 ```
 
-Expected: image builds and reports `0.2.0.dev0`; no annotation state or decision is created.
+Expected: image builds and reports `0.2.0`; no annotation state or decision is created.
 
 - [ ] **Step 6: Commit boundary**
 
@@ -267,4 +267,5 @@ ignored-path presence honestly; it does not invalidate the external clean checko
 Do not remove worktrees or retained/superseded evidence without separate approval. Do not merge,
 tag, release, publish, or start a human pilot. Stop only at:
 
-`PR OPEN / CI GREEN / HUMAN_PILOT_NOT_STARTED / PILOT_READY_FOR_SEPARATE_AUTHORIZATION`
+The owner-approved stable closure supersedes this pre-release terminal. The v0.2.0 status is
+`HUMAN_PILOT_NOT_CONDUCTED`; future human execution requires separate authorization.

@@ -18,19 +18,21 @@ versions, Python 3.11 support, the dependency lock, canonical source hashes, ins
 identity, expected Git-external layout, and the reproducible recipe. They intentionally do
 not contain a predicted wheel hash. See `HANDOFF_RUNBOOK.md` for exact commands.
 
-The private Python distribution identity is `0.2.0.dev0`. It is distinct from protocol identity
-`pilot-v0.2.2-draft` and schema version `v2`; none of these creates a Git tag, release, or public
-package. A future final `0.2.0` requires separate owner approval and newly built exact-source
-evidence. A `dev0` wheel receipt cannot be reused for that final identity.
+The Python distribution identity is `0.2.0`. It is distinct from protocol identity
+`pilot-v0.2.2-draft` and schema version `v2`. The Git tag and source-only GitHub Release use
+`v0.2.0`; wheels, kits, receipts, the coordinator manifest, and private evidence are not
+public release assets. Stable evidence must be rebuilt from the exact final-main source and
+must not reuse any prerelease receipt.
 
-## B0.1 stop boundary
+## v0.2.0 human-study boundary
 
-This source state does not authorize the human pilot. Owner approval is still required
-before independent humans receive external kits. It also does not authorize protocol
-freeze, confirmatory sampling, model/API execution, merge, tag, release, GitHub Release
-assets, or Hugging Face publication.
+This infrastructure release records `HUMAN_PILOT_NOT_CONDUCTED`: no independent humans
+received kits and no human decisions were collected. A future human pilot requires a new
+owner decision and the exact authoritative stable kits. This release does not authorize
+confirmatory sampling, model/API execution, Hugging Face publication, or publication of
+private handoff artifacts.
 
-The current execution boundary is `HUMAN_PILOT_NOT_STARTED`. Metadata blinding covers explicit
+The frozen execution boundary is `HUMAN_PILOT_NOT_CONDUCTED`. Metadata blinding covers explicit
 coordinator metadata, transformation identity, and expected-answerability labels. It does not
 establish semantic unlinkability and does not establish independent sibling perception because
 both annotators receive both non-adjacent variants. This pilot can produce tooling and instruction

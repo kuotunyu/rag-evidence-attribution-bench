@@ -54,7 +54,7 @@ def test_receipt_rejects_missing_command(platform_payload: dict[str, object], mi
         PlatformVerificationReceiptV2.model_validate(platform_payload)
 
 def test_receipt_binds_exact_distribution_and_wheel(platform_receipt: PlatformVerificationReceiptV2) -> None:
-    assert platform_receipt.python_distribution == "0.2.0.dev0"
+    assert platform_receipt.python_distribution == "0.2.0"
     assert platform_receipt.wheel_sha256 == EXPECTED_WHEEL_SHA256
     assert platform_receipt.overall_result == "passed"
 ```

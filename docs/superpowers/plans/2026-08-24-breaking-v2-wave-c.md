@@ -3,7 +3,7 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans and
 > superpowers:test-driven-development task-by-task.
 
-**Goal:** Establish the private `0.2.0.dev0` distribution identity, a binary-only hash-locked
+**Goal:** Establish the private `0.2.0` distribution identity, a binary-only hash-locked
 annotation runtime, and fail-closed loopback hosting before source-bound builds begin.
 
 **Architecture:** Version identity is asserted at package, CLI, wheel, receipt, and test boundaries.
@@ -33,8 +33,8 @@ All constraints in `2026-08-24-breaking-v2-plan-index.md` apply.
 - Create: `tests/test_distribution_identity.py`
 
 **Interfaces:**
-- `rag_evidence.__version__ == "0.2.0.dev0"`.
-- `rag-evidence --version` prints `rag-evidence-attribution-bench 0.2.0.dev0`.
+- `rag_evidence.__version__ == "0.2.0"`.
+- `rag-evidence --version` prints `rag-evidence-attribution-bench 0.2.0`.
 - Protocol and packages bind `pilot-v0.2.2-draft`; v2 schemas retain independent identities.
 - Docs state that final `0.2.0` needs separate approval and new exact-source evidence.
 
@@ -42,14 +42,14 @@ All constraints in `2026-08-24-breaking-v2-plan-index.md` apply.
 
 ```python
 def test_distribution_identity_is_synchronized() -> None:
-    assert project_version() == "0.2.0.dev0"
-    assert rag_evidence.__version__ == "0.2.0.dev0"
-    assert runner.invoke(app, ["--version"]).stdout.strip().endswith("0.2.0.dev0")
+    assert project_version() == "0.2.0"
+    assert rag_evidence.__version__ == "0.2.0"
+    assert runner.invoke(app, ["--version"]).stdout.strip().endswith("0.2.0")
 
 def test_protocol_schema_and_distribution_are_distinct() -> None:
     assert protocol_version() == "pilot-v0.2.2-draft"
     assert package_schema() == "assignment-package-v2"
-    assert rag_evidence.__version__ == "0.2.0.dev0"
+    assert rag_evidence.__version__ == "0.2.0"
 ```
 
 - [ ] **Step 2: Run RED**
@@ -62,11 +62,11 @@ Expected: FAIL because project/package distribution identity is still `0.1.0`.
 
 ```toml
 [project]
-version = "0.2.0.dev0"
+version = "0.2.0"
 ```
 
 ```python
-__version__ = "0.2.0.dev0"
+__version__ = "0.2.0"
 ```
 
 Do not create a tag, release, publication configuration, or final `0.2.0` alias.
@@ -108,7 +108,7 @@ Commit: `chore: set breaking v2 development identity`
 ```python
 @pytest.mark.parametrize("bad_line", [
     "-e .", ".", "git+https://example.invalid/repo.git", "fastapi>=0.111",
-    "rag-evidence-attribution-bench==0.2.0.dev0", "--extra-index-url https://user:secret@example.invalid",
+    "rag-evidence-attribution-bench==0.2.0", "--extra-index-url https://user:secret@example.invalid",
 ])
 def test_lock_validator_rejects_non_third_party_or_unpinned_entries(bad_line: str) -> None:
     with pytest.raises(DataError):

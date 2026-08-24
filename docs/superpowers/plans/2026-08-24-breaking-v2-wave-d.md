@@ -108,7 +108,7 @@ Commit: `feat: verify exact clean source checkouts`
 - `verify_wheel_set(checkouts, supplied_wheels, replay_roots, spec) -> VerifiedWheelSetV2` requires
   supplied A, supplied B, replay A, and replay B bytes, names, sizes, and hashes to match.
 - `verify_wheel_payload(wheel, checkout, spec) -> WheelIdentityV2` validates ZIP paths/duplicates,
-  every RECORD hash/size, normalized name, `0.2.0.dev0` METADATA, and every packaged
+  every RECORD hash/size, normalized name, `0.2.0` METADATA, and every packaged
   `rag_evidence` byte against a tracked `src/rag_evidence` blob.
 - `annotation build-wheels --checkout-a PATH --checkout-b PATH --source-commit SHA --output PATH`
   writes two supplied and two replay wheels plus `wheel-verification.json` outside Git.
@@ -180,7 +180,7 @@ Commit: `feat: bind reproducible wheels to Git blobs`
 
 **Interfaces:**
 - `HandoffSpecV2` uses `handoff-manifest-v2`, `handoff-spec-v2`, `handoff-builder-v2`,
-  `pilot-v0.2.2-draft`, `0.2.0.dev0`, `required_verification_platforms=("Windows", "Linux")`,
+  `pilot-v0.2.2-draft`, `0.2.0`, `required_verification_platforms=("Windows", "Linux")`,
   canonical package/source hashes, expected layout, and exact build recipe. It contains no wheel
   hash or private coordinator-manifest instance/hash.
 - `PlatformVerificationReceiptV2` model binds source/tree/distribution/wheel/lock/protocol/schema/
@@ -199,7 +199,7 @@ Commit: `feat: bind reproducible wheels to Git blobs`
 def test_committed_handoff_manifest_is_source_only() -> None:
     payload = read_json(HANDOFF_MANIFEST)
     assert payload["schema_version"] == "handoff-manifest-v2"
-    assert payload["python_distribution"] == "0.2.0.dev0"
+    assert payload["python_distribution"] == "0.2.0"
     assert "wheel_sha256" not in json.dumps(payload)
     assert "assignment-manifest" not in json.dumps(payload)
 

@@ -1,11 +1,15 @@
 # RAG Evidence Attribution Bench
 
 [![CI](https://github.com/kuotunyu/rag-evidence-attribution-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/kuotunyu/rag-evidence-attribution-bench/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/release-v0.1.0-blue.svg)](https://github.com/kuotunyu/rag-evidence-attribution-bench/releases/tag/v0.1.0)
+[![Release](https://img.shields.io/badge/release-v0.2.0-blue.svg)](https://github.com/kuotunyu/rag-evidence-attribution-bench/releases/tag/v0.2.0)
 [![Python](https://img.shields.io/badge/python-3.11-blue.svg)](pyproject.toml)
 [![License](https://img.shields.io/badge/code-MIT-green.svg)](LICENSE)
 
 一個可重現、可稽核的 RAG benchmark，用來比較檢索、生成與「回答依賴哪些候選證據」的 attribution diagnostics。
+
+> **v0.2.0 annotation infrastructure release。** 這不是 human-study release；
+> Independent-human pilot was not conducted；status 是 `NOT_CONDUCTED`。
+> Synthetic rehearsal is not human evidence，且本版沒有 human IAA 或 confirmatory claim。
 
 [English](README_en.md) · [歷史 v0.1 完整證據](docs/HISTORICAL_V01_EVIDENCE_ZH.md) · [Dataset v2](docs/DATASET_V2.md) · [Challenge v1](docs/CHALLENGE_V1.md)
 
@@ -13,7 +17,9 @@
 
 本 repository 同時包含兩個必須分開理解的層次：
 
-- `v0.1.0` 是已發布、可重現的歷史 closed-candidate 描述性基線。
+- [`v0.1.0`](https://github.com/kuotunyu/rag-evidence-attribution-bench/releases/tag/v0.1.0)
+  是完整保留、可重現的歷史 closed-candidate 描述性基線。
+- `v0.2.0` 是 annotation infrastructure engineering release，不是人類研究結果。
 - Dataset v2 與 960 題 Answerability Challenge 是 `main` 上的後續工程候選。
 - v2 confirmatory benchmark 尚未執行。
 - 640 筆 missing-hop／evidence-swap 候選仍需兩位獨立標註者與第三位 adjudicator。
@@ -281,9 +287,10 @@ see [DATA_CARD.md](DATA_CARD.md) and [MODEL_CARD.md](MODEL_CARD.md) for boundari
 
 ## Current status
 
-`v0.1.0` remains the historical release. The v0.2 branch is annotation-readiness
-engineering only. Human pilot, protocol freeze, confirmatory sampling, real model execution,
-formal statistics, tag, release, and v1.0 claims all require separate approval.
+`v0.1.0` remains the historical baseline. `v0.2.0` freezes the tested annotation
+infrastructure, source-bound handoff builder, and synthetic engineering rehearsal. It does
+not report a completed human pilot, human agreement, confirmatory sampling, real v2 model
+execution, or v1.0 flagship claim.
 The `372096b` pilot packages are obsolete; current canonical sources use
 `pilot-v0.2.2-draft`. Even an operational `READY_FOR_HUMAN_FREEZE_REVIEW` verdict does not
 authorize the human pilot or any confirmatory/model stage.
@@ -293,4 +300,5 @@ expected-answerability labels；它 does not establish semantic unlinkability，
 establish independent sibling perception。兩位 annotator 都會看到兩個不相鄰 variants，
 因此這只構成 tooling and instruction feasibility evidence。
 
-`HUMAN_PILOT_NOT_STARTED` 是目前唯一有效的人工作業狀態。
+`HUMAN_PILOT_NOT_CONDUCTED` 是 v0.2.0 唯一有效的人工作業狀態；confirmatory protocol
+仍為 `DRAFT / NOT_AUTHORIZED`。

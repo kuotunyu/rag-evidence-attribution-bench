@@ -26,7 +26,7 @@ and Docker.
 
 ## Global constraints
 
-- Python distribution is exactly `0.2.0.dev0`; protocol is `pilot-v0.2.2-draft`; schema names
+- Python distribution is exactly `0.2.0`; protocol is `pilot-v0.2.2-draft`; schema names
   are the distinct `*-v2` values from the approved design.
 - Every v1 annotation, assignment, amendment, adjudication, eligibility, aggregate, handoff, or
   platform artifact fails closed. There is no migration path.
@@ -86,7 +86,8 @@ candidate sequence from clean checkout creation.
 
 The only successful terminal state is:
 
-`PR OPEN / CI GREEN / HUMAN_PILOT_NOT_STARTED / PILOT_READY_FOR_SEPARATE_AUTHORIZATION`
+The owner-approved stable closure supersedes this pre-release terminal. The v0.2.0 status is
+`HUMAN_PILOT_NOT_CONDUCTED`; future human execution requires separate authorization.
 
 ## Plan self-review record
 
@@ -97,8 +98,8 @@ The only successful terminal state is:
   remains.
 - **Type/schema consistency:** PASS after aligning `scan_delivery_tree`, `BlindTaskV2`,
   `AssignmentManifestV2`, `PlatformVerificationReceiptV2`, and all CLI producer/consumer names.
-- **Version identity:** PASS. Historical v0.1, `pilot-v0.2.2-draft`, `*-v2`, `0.2.0.dev0`, and
-  future final `0.2.0` remain distinct.
+- **Version identity:** PASS. Historical v0.1, `pilot-v0.2.2-draft`, `*-v2`, Python `0.2.0`,
+  and the source-only `v0.2.0` tag/release remain distinct.
 - **Build-order cycle:** PASS. Source-only manifest hashes are refreshed before the final commit;
   wheels and platform receipts are downstream; final handoff evidence is never a commit input.
 - **Windows/Linux parity:** PASS. Both CI jobs execute the same bootstrap, install, runtime,

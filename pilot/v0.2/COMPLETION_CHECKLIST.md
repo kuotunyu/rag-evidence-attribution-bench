@@ -3,6 +3,8 @@
 This checklist is for a future separately approved human pilot. Completing B0.1
 engineering does not authorize the human pilot. Packages from baseline `372096b` are
 obsolete; only `pilot-v0.2.2-draft` packages with the current instruction hash are valid.
+The v0.2.0 release status is `HUMAN_PILOT_NOT_CONDUCTED`; all entries below therefore remain
+future operational gates rather than completed human-study evidence.
 
 ## Source and platform handoff gate
 
@@ -11,7 +13,7 @@ obsolete; only `pilot-v0.2.2-draft` packages with the current instruction hash a
 - [ ] Two new external disposable detached checkouts have the same candidate commit/tree and zero
       tracked, untracked, and ignored paths before and after every build.
 - [ ] Supplied A/B and replay A/B wheels are byte-identical, report Python distribution
-      `0.2.0.dev0`, and every packaged `rag_evidence` byte matches its candidate Git blob.
+      `0.2.0`, and every packaged `rag_evidence` byte matches its candidate Git blob.
 - [ ] The annotation requirements lock installed on Python 3.11 Windows and Linux using exact
       `--require-hashes --only-binary=:all:` bootstrap; neither platform used an sdist fallback.
 - [ ] One verifier-generated Windows receipt and one verifier-generated Linux receipt bind the

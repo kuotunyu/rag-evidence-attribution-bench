@@ -1,13 +1,15 @@
 # RAG Evidence v2 Source-Bound Handoff Design
 
-**Status:** Owner-review draft. Approved only for specification work on 2026-08-24.
+**Status:** Historical pre-release design baseline; the stable v0.2.0 closure was authorized
+separately on 2026-08-24.
 **Repository:** `kuotunyu/rag-evidence-attribution-bench`
 **Branch:** `codex/v0.2-annotation-readiness`
 **Design baseline:** `58c8caa09295b33bfb9e6a27afade4b6160d0ccc`
 
-This document specifies the breaking v2 privacy, build-attestation, dependency-bootstrap,
-and runtime boundaries required before B0.1 may return to owner review. It does not authorize
-implementation, an independent-human pilot, a merge, a tag, a release, or publication.
+This document records the breaking v2 privacy, build-attestation, dependency-bootstrap,
+and runtime boundaries originally required before B0.1 owner review. The later stable-release
+authorization supersedes its old implementation/tag stop, but not its human-study, private-artifact,
+privacy, or evidence boundaries.
 
 ## Goals and non-goals
 
@@ -30,7 +32,8 @@ authenticated CI attestation, or a new public benchmark claim.
 
 ## Version and identity matrix
 
-These identities are deliberately independent. No value below implies a Git tag or public release.
+These identities are deliberately independent. The stable release maps only the Python/source
+release identities to v0.2.0; it does not change the pilot protocol or v2 schemas.
 
 | Identity | v0.2.2 design value | Meaning |
 |---|---|---|
@@ -51,25 +54,25 @@ These identities are deliberately independent. No value below implies a Git tag 
 | Handoff manifest/spec/builder | `handoff-manifest-v2`, `handoff-spec-v2`, `handoff-builder-v2` | Source-controlled handoff contract |
 | Platform verification receipt | `platform-verification-receipt-v2` | Verifier-generated Windows or Linux execution evidence |
 | External handoff receipt | `handoff-receipt-v2` | Final source/wheel/platform-bound coordinator evidence |
-| Python distribution | `0.2.0.dev0` | Private breaking-v2 engineering wheel identity; not the pilot protocol or schema version |
-| Git tag/release | none | A future owner decision, outside B0.1 |
+| Python distribution | `0.2.0` | Stable annotation-infrastructure identity; not the pilot protocol or schema version |
+| Git tag/release | `v0.2.0` | Source-only stable release; no wheel, kit, receipt, private evidence, or human artifact |
 
 All v1 annotation, package, manifest, amendment, adjudication, eligibility, collection, pilot-output,
 and handoff schemas are invalid inputs to the v0.2.2 pipeline. Loaders fail closed on a v1 literal;
 there is no migration or compatibility branch because no real human v1 data exists. The generic
 Dataset v2 and historical v0.1 result formats are separate systems and are not renamed by this work.
 
-The public historical baseline already owns Python distribution identity `0.1.0`. The breaking-v2
-pilot wheel therefore uses `0.2.0.dev0`, and future implementation must keep that exact value
+The public historical baseline already owns Python distribution identity `0.1.0`. The stable
+annotation-infrastructure wheel therefore uses `0.2.0`, and implementation must keep that exact value
 synchronized across `pyproject.toml`, `src/rag_evidence/__init__.py`, wheel `METADATA`, CLI version
 output, tests, the handoff spec and external handoff receipt, and both platform receipts. The pilot
-protocol `pilot-v0.2.2-draft`, all `*-v2` schema identities, Python distribution `0.2.0.dev0`, and
-any future Git tag or release are distinct namespaces and must never be inferred from one another.
+protocol `pilot-v0.2.2-draft`, all `*-v2` schema identities, Python distribution `0.2.0`, and
+the Git tag/release `v0.2.0` are distinct namespaces and must never be inferred from one another.
 
-`0.2.0.dev0` authorizes neither a Git tag, GitHub Release, nor public package publication. A future
-change to final distribution version `0.2.0` requires separate owner approval and a new exact-source
-evidence build; no wheel, receipt, platform receipt, or checksum generated for `0.2.0.dev0` may be
-relabelled or reused as final `0.2.0` evidence.
+The source-only `v0.2.0` Git tag and GitHub Release do not authorize PyPI/Hugging Face publication
+or publication of wheels, kits, receipts, coordinator state, synthetic output, or human artifacts.
+All stable handoff evidence must be newly built from exact final main; no prerelease wheel, receipt,
+platform receipt, or checksum may be relabelled or reused as stable `0.2.0` evidence.
 
 ## Audience and artifact boundary
 
@@ -322,14 +325,14 @@ For each wheel, the builder also:
 
 - parses it as a wheel ZIP rather than accepting arbitrary bytes;
 - verifies every `RECORD` hash and size;
-- verifies normalized project name and exact Python package version `0.2.0.dev0` from `METADATA`;
+- verifies normalized project name and exact Python package version `0.2.0` from `METADATA`;
 - compares the packaged `rag_evidence` source and package-data bytes with the corresponding tracked
   blobs at the source commit;
 - rejects missing source payload, unexpected package payload, stale protocol/package/schema bytes,
   duplicate ZIP entries, unsafe paths, and malformed metadata.
 
 The final wheel identity is bound in `handoff-receipt-v2` to source commit SHA, Git tree SHA, exact
-package version `0.2.0.dev0`, wheel filename/size/SHA-256, `SOURCE_DATE_EPOCH`, exact build command,
+package version `0.2.0`, wheel filename/size/SHA-256, `SOURCE_DATE_EPOCH`, exact build command,
 annotation requirements-lock SHA-256, protocol hash, handoff spec/schema hashes, builder hash, and
 canonical A/B package hashes. The committed handoff manifest still contains no predicted wheel
 hash.
@@ -369,7 +372,7 @@ they do not embed a user name, home directory, absolute private path, credential
 secret. Index configuration records only normalized non-secret index locations and trusted-host
 policy; credentials, access tokens, embedded user information, and secret environment values are
 forbidden. The verifier separately records only allowlisted environment values needed to reproduce
-the build/runtime policy. Each receipt also binds Python distribution version `0.2.0.dev0`.
+the build/runtime policy. Each receipt also binds Python distribution version `0.2.0`.
 
 The builder requires exactly one receipt whose OS is Windows and one whose OS is Linux. It verifies
 that both bind the same source/tree/wheel/lock/protocol/spec identities, that every mandatory command
@@ -573,7 +576,9 @@ There is no warning-only mode.
 
 The terminal state of the future implementation remains:
 
-`PR OPEN / CI GREEN / HUMAN_PILOT_NOT_STARTED / OWNER_REVIEW_REQUIRED`
+The pre-release engineering terminal was superseded by the owner-approved v0.2.0 closure.
+The stable release status is `HUMAN_PILOT_NOT_CONDUCTED`; this specification still does not
+provide human-study evidence.
 
 ## Design self-review
 
@@ -584,8 +589,8 @@ The terminal state of the future implementation remains:
 - **Ambiguity check:** The visible/private artifact split, v1 rejection, exact accepted hosts, two
   required platforms, and fail-closed wheel policy are explicit.
 - **Identity check:** Historical public `v0.1.0`, protocol `pilot-v0.2.2-draft`, all v2 schemas,
-  Python distribution `0.2.0.dev0`, and any future final `0.2.0` or Git tag are separately named;
-  dev0 evidence cannot be reused after an identity change.
+  Python distribution `0.2.0`, and Git tag/release `v0.2.0` are separately named; prerelease
+  evidence cannot be reused after an identity change.
 - **Build-cleanliness check:** Both final checkouts are new, external, disposable, and detached;
   tracked/untracked status and ignored paths are checked before and after every build, while every
   environment, cache, build tree, and wheel output stays outside the checkout. The builder rejects
