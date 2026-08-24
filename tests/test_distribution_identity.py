@@ -15,11 +15,11 @@ from rag_evidence.cli import app
 def test_distribution_identity_is_synchronized(repo_root: Path) -> None:
     metadata = tomllib.loads((repo_root / "pyproject.toml").read_text(encoding="utf-8"))
 
-    assert metadata["project"]["version"] == "0.2.0.dev0"
-    assert rag_evidence.__version__ == "0.2.0.dev0"
+    assert metadata["project"]["version"] == "0.2.0"
+    assert rag_evidence.__version__ == "0.2.0"
     result = CliRunner().invoke(app, ["--version"])
     assert result.exit_code == 0
-    assert result.stdout.strip() == "rag-evidence-attribution-bench 0.2.0.dev0"
+    assert result.stdout.strip() == "rag-evidence-attribution-bench 0.2.0"
 
 
 def test_protocol_schema_and_distribution_are_distinct(repo_root: Path) -> None:
@@ -31,4 +31,4 @@ def test_protocol_schema_and_distribution_are_distinct(repo_root: Path) -> None:
     assert "pilot-v0.2.2-draft" in protocol
     assert package["instruction_version"] == "pilot-v0.2.2-draft"
     assert package["schema_version"] == "assignment-package-v2"
-    assert rag_evidence.__version__ == "0.2.0.dev0"
+    assert rag_evidence.__version__ == "0.2.0"

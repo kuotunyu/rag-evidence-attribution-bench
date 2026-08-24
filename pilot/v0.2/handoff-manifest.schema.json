@@ -211,8 +211,8 @@
       "type": "string"
     },
     "python_distribution": {
-      "const": "0.2.0.dev0",
-      "default": "0.2.0.dev0",
+      "const": "0.2.0",
+      "default": "0.2.0",
       "title": "Python Distribution",
       "type": "string"
     },

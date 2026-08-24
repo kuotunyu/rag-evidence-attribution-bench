@@ -26,8 +26,8 @@ from rag_evidence.annotation.wheel_verify import (
 )
 from rag_evidence.errors import DataError
 
-DIST_INFO = "rag_evidence_attribution_bench-0.2.0.dev0.dist-info"
-WHEEL_NAME = "rag_evidence_attribution_bench-0.2.0.dev0-py3-none-any.whl"
+DIST_INFO = "rag_evidence_attribution_bench-0.2.0.dist-info"
+WHEEL_NAME = "rag_evidence_attribution_bench-0.2.0-py3-none-any.whl"
 
 
 def _git(root: Path, *args: str) -> str:
@@ -66,9 +66,9 @@ def source_bound_wheel(tmp_path: Path) -> tuple[Path, object, WheelSourceSpecV2]
     checkout_root = tmp_path / "checkout"
     package_root = checkout_root / "src/rag_evidence"
     package_root.mkdir(parents=True)
-    (package_root / "__init__.py").write_text('__version__ = "0.2.0.dev0"\n', encoding="utf-8")
+    (package_root / "__init__.py").write_text('__version__ = "0.2.0"\n', encoding="utf-8")
     (checkout_root / "pyproject.toml").write_text(
-        '[project]\nname = "rag-evidence-attribution-bench"\nversion = "0.2.0.dev0"\n',
+        '[project]\nname = "rag-evidence-attribution-bench"\nversion = "0.2.0"\n',
         encoding="utf-8",
     )
     _git(checkout_root, "init")
@@ -91,8 +91,7 @@ def source_bound_wheel(tmp_path: Path) -> tuple[Path, object, WheelSourceSpecV2]
         {
             "rag_evidence/__init__.py": (package_root / "__init__.py").read_bytes(),
             f"{DIST_INFO}/METADATA": (
-                b"Metadata-Version: 2.4\nName: rag-evidence-attribution-bench\n"
-                b"Version: 0.2.0.dev0\n\n"
+                b"Metadata-Version: 2.4\nName: rag-evidence-attribution-bench\nVersion: 0.2.0\n\n"
             ),
             f"{DIST_INFO}/WHEEL": (
                 b"Wheel-Version: 1.0\nGenerator: fixture\nRoot-Is-Purelib: true\n"
@@ -105,7 +104,7 @@ def source_bound_wheel(tmp_path: Path) -> tuple[Path, object, WheelSourceSpecV2]
         checkout,
         WheelSourceSpecV2(
             distribution_name="rag-evidence-attribution-bench",
-            distribution_version="0.2.0.dev0",
+            distribution_version="0.2.0",
             package_source_root="src/rag_evidence",
         ),
     )
@@ -118,7 +117,7 @@ def _mutate(source: Path, destination: Path, mutation: str) -> None:
     entries.pop(record_name)
     if mutation == "metadata-version":
         entries[f"{DIST_INFO}/METADATA"] = entries[f"{DIST_INFO}/METADATA"].replace(
-            b"0.2.0.dev0", b"0.1.0"
+            b"0.2.0", b"0.1.0"
         )
     elif mutation == "unsafe-path":
         entries["../escape.py"] = b"escape\n"
@@ -158,7 +157,7 @@ def test_valid_wheel_is_bound_to_exact_source_and_metadata(
     identity = verify_wheel_payload(wheel, checkout, spec)
 
     assert identity.filename == WHEEL_NAME
-    assert identity.distribution_version == "0.2.0.dev0"
+    assert identity.distribution_version == "0.2.0"
     assert identity.package_files == ("rag_evidence/__init__.py",)
 
 
@@ -232,7 +231,7 @@ def _fake_uv_builder(
                 ).read_bytes(),
                 f"{DIST_INFO}/METADATA": (
                     b"Metadata-Version: 2.4\nName: rag-evidence-attribution-bench\n"
-                    b"Version: 0.2.0.dev0\n\n"
+                    b"Version: 0.2.0\n\n"
                 ),
                 f"{DIST_INFO}/WHEEL": (
                     b"Wheel-Version: 1.0\nGenerator: fixture\nRoot-Is-Purelib: true\n"
@@ -276,7 +275,7 @@ def test_replay_build_records_external_reproducible_environment(
 
     assert record.pre_build.phase == "pre-build"
     assert record.post_build.phase == "post-build"
-    assert record.wheel.distribution_version == "0.2.0.dev0"
+    assert record.wheel.distribution_version == "0.2.0"
     assert observed["argv"][:4] == ("uv", "build", "--wheel", "--out-dir")
     assert observed["env"]["SOURCE_DATE_EPOCH"] == "1787443200"
     assert observed["env"]["PYTHONDONTWRITEBYTECODE"] == "1"
@@ -348,7 +347,7 @@ def test_four_build_orchestrator_writes_bound_verification(
                 "rag_evidence/__init__.py": (current / "src/rag_evidence/__init__.py").read_bytes(),
                 f"{DIST_INFO}/METADATA": (
                     b"Metadata-Version: 2.4\nName: rag-evidence-attribution-bench\n"
-                    b"Version: 0.2.0.dev0\n\n"
+                    b"Version: 0.2.0\n\n"
                 ),
                 f"{DIST_INFO}/WHEEL": (
                     b"Wheel-Version: 1.0\nGenerator: fixture\nRoot-Is-Purelib: true\n"

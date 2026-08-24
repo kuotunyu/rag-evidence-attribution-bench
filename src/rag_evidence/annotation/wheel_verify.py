@@ -36,7 +36,7 @@ class _StrictModel(BaseModel):
 class WheelSourceSpecV2(_StrictModel):
     schema_version: Literal["wheel-source-spec-v2"] = "wheel-source-spec-v2"
     distribution_name: str = Field(min_length=1)
-    distribution_version: Literal["0.2.0.dev0"] = "0.2.0.dev0"
+    distribution_version: Literal["0.2.0"] = "0.2.0"
     package_source_root: Literal["src/rag_evidence"] = "src/rag_evidence"
 
 
@@ -53,7 +53,7 @@ class WheelIdentityV2(_StrictModel):
     byte_size: int = Field(gt=0)
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     distribution_name: str
-    distribution_version: Literal["0.2.0.dev0"] = "0.2.0.dev0"
+    distribution_version: Literal["0.2.0"] = "0.2.0"
     package_files: tuple[str, ...]
 
 
@@ -223,7 +223,7 @@ def verify_wheel_payload(
     if _normalized_name(name) != _normalized_name(spec.distribution_name):
         raise DataError("wheel METADATA distribution name does not match the source contract")
     if version != spec.distribution_version:
-        raise DataError("wheel METADATA distribution version does not match 0.2.0.dev0")
+        raise DataError("wheel METADATA distribution version does not match 0.2.0")
     filename_prefix = spec.distribution_name.replace("-", "_").replace(".", "_")
     expected_filename = f"{filename_prefix}-{spec.distribution_version}-py3-none-any.whl"
     if wheel_path.name != expected_filename:

@@ -6,7 +6,7 @@ annotation. Do not obtain the other annotator's kit, the coordinator manifest, r
 access, another person's state, or any prior decision.
 
 The coordinator may stage a kit only after the exact source candidate has produced four
-byte-identical, Git-blob-bound `0.2.0.dev0` wheels and one passed
+byte-identical, Git-blob-bound `0.2.0` wheels and one passed
 `platform-verification-receipt-v2` on both Windows and Linux. These platform receipts, the root
 handoff receipt, smoke evidence, and the coordinator manifest remain coordinator-only and must not
 be delivered to either annotator. A GitHub Actions result is a review gate, not signed provenance.

@@ -24,7 +24,7 @@ LOCK_RELATIVE = Path("pilot/v0.2/annotation-requirements-py311.lock")
         "git+https://example.invalid/repo.git",
         "fastapi>=0.111",
         "fastapi==0.116.1",
-        "rag-evidence-attribution-bench==0.2.0.dev0 \\",
+        "rag-evidence-attribution-bench==0.2.0 \\",
         "--extra-index-url https://user:secret@example.invalid/simple",
         "unsafe @ file:///tmp/unsafe.whl",
     ],

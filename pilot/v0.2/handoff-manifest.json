@@ -3,7 +3,7 @@
   "spec_version": "handoff-spec-v2",
   "builder_version": "handoff-builder-v2",
   "protocol_version": "pilot-v0.2.2-draft",
-  "python_distribution": "0.2.0.dev0",
+  "python_distribution": "0.2.0",
   "required_verification_platforms": [
     "Windows",
     "Linux"
@@ -57,18 +57,18 @@
     "package_b": "0f3d9e65a88e27c145c25866ab13945b4b34389fb63d966156ce7ff1cc482219",
     "instruction": "f5ab25fd4f5d3b28dee582343bc27ebffcdab8942c364bdca721f2b1da9023e4",
     "onboarding": "2d467d589ab41aeffe4bc7c1eea6b5e53ece19c9ec272dacba99725cd132ab04",
-    "runbook": "3ca1533a02dd9032b0a6eeafdd4b0c1860363c9b4a06d32a81d21d71b604497b",
+    "runbook": "0d7119f6580c2c13e84cc809a2ad324fbaf002ec7f91af129893ec1c11c4ce4b",
     "launcher_a_powershell": "909779c2676bc86a15813afe93b9de7c1e617faaa960d785ff061ad93d26ccb1",
     "launcher_a_posix": "6a2d8741a4dbb5660727c8358328a3ef335f004bcd42dec62d8dd61714702199",
     "launcher_b_powershell": "fc7eea3e8d99b3765366d4ed373e48a0f0b37dfc35aed1725d1ee7fe5c2e50cb",
     "launcher_b_posix": "6c27ce35d5f4fb754f473a14ce03918aa92467b04fd1e3f9d04d5d0a1aad4cf8",
     "dependency_lock": "bbdabdc13ab652a3ae899635aad23804b34d02f535d14ac1d3264d74db9d31af",
-    "builder": "b878e92c982fabb905e0bf686edf00091bf1bc0fd471416c752783f9246b8b69",
+    "builder": "d6d58280baa745b447db92efad00a8b84c53d4fd5c5d4dd9448080610751e4e3",
     "source_verifier": "4782d1fa8113366859dc6a56e736dcb9fde44a1592efef4e1d2ef589b7d9a14d",
-    "wheel_verifier": "4a8e1badc69183c04bf878583e51cca2d8c35ed9fc7d12ecffa6fc240d86afab",
-    "platform_verifier": "dfe3a0390c24e5085557ea5a736ca8fab66f071a5aab99c15e988ed2bd00e098",
-    "platform_script": "40b4ed038383b595b2e879eca28d8b551a4e1dab349b257d879e388991116455",
-    "manifest_schema": "6cb048bd54728ae9e012e7981549687d753e953ae7392468911b905a9900d94d"
+    "wheel_verifier": "91f46816f582d671cd07d95f761ac613c7885ca1681dc4307b0fdf8f36547583",
+    "platform_verifier": "2404617af7ee65b4db94f7e37981f251275df4dad6b9ec44f564f9d74ad6c610",
+    "platform_script": "2c387a47c3571deb2aabf606f101cc0775dfe63db026692f890ac1f94a4b9c5d",
+    "manifest_schema": "84f6f110a4c4cdb37d6fbd1274fbc6917bfc5a2331e8bef8a4be250701854393"
   },
   "canonical_package_sha256": {
     "ann-pilot-a.json": "579d4e27bb723a6858497367cf22abea0663e6ec98a5e5502db913aca4df6ba1",

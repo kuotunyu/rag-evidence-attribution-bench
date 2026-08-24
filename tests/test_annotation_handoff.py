@@ -48,7 +48,7 @@ def test_committed_handoff_manifest_is_strict_source_only_v2(repo_root: Path) ->
     assert spec.spec_version == "handoff-spec-v2"
     assert spec.builder_version == "handoff-builder-v2"
     assert spec.protocol_version == "pilot-v0.2.2-draft"
-    assert spec.python_distribution == "0.2.0.dev0"
+    assert spec.python_distribution == "0.2.0"
     assert spec.required_verification_platforms == ("Windows", "Linux")
     serialized = json.dumps(payload).casefold()
     assert "wheel_sha256" not in serialized
@@ -88,7 +88,7 @@ def test_stage_disjoint_kits_uses_closed_layout_and_own_package_only(
 ) -> None:
     spec = _committed_spec(repo_root)
     sources = resolve_handoff_sources(repo_root, spec)
-    wheel = tmp_path / "wheel/rag_evidence_attribution_bench-0.2.0.dev0-py3-none-any.whl"
+    wheel = tmp_path / "wheel/rag_evidence_attribution_bench-0.2.0-py3-none-any.whl"
     wheel.parent.mkdir()
     wheel.write_bytes(b"verified wheel fixture")
     external = tmp_path / "delivery"
@@ -117,7 +117,7 @@ def test_stage_disjoint_kits_uses_closed_layout_and_own_package_only(
 def test_stage_disjoint_kits_refuses_repository_output(repo_root: Path, tmp_path: Path) -> None:
     spec = _committed_spec(repo_root)
     sources = resolve_handoff_sources(repo_root, spec)
-    wheel = tmp_path / "rag_evidence_attribution_bench-0.2.0.dev0-py3-none-any.whl"
+    wheel = tmp_path / "rag_evidence_attribution_bench-0.2.0-py3-none-any.whl"
     wheel.write_bytes(b"verified wheel fixture")
 
     with pytest.raises(DataError, match="outside"):

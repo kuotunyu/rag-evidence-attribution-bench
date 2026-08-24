@@ -163,7 +163,7 @@ class HandoffSpecV2(_StrictModel):
     spec_version: Literal["handoff-spec-v2"] = "handoff-spec-v2"
     builder_version: Literal["handoff-builder-v2"] = "handoff-builder-v2"
     protocol_version: Literal["pilot-v0.2.2-draft"] = "pilot-v0.2.2-draft"
-    python_distribution: Literal["0.2.0.dev0"] = "0.2.0.dev0"
+    python_distribution: Literal["0.2.0"] = "0.2.0"
     required_verification_platforms: tuple[Literal["Windows", "Linux"], ...] = (
         "Windows",
         "Linux",
@@ -224,7 +224,7 @@ class HandoffReceiptV2(_StrictModel):
     builder_version: Literal["handoff-builder-v2"] = "handoff-builder-v2"
     source_commit_sha: CommitSha
     git_tree_sha: CommitSha
-    python_distribution: Literal["0.2.0.dev0"] = "0.2.0.dev0"
+    python_distribution: Literal["0.2.0"] = "0.2.0"
     protocol_version: Literal["pilot-v0.2.2-draft"] = "pilot-v0.2.2-draft"
     spec_sha256: Hash64
     manifest_schema_sha256: Hash64
@@ -389,9 +389,9 @@ def stage_disjoint_kits(
         raise DataError("handoff output must remain outside the repository")
     if external_root.exists() and any(external_root.iterdir()):
         raise DataError("handoff output directory must be absent or empty")
-    expected_wheel = "rag_evidence_attribution_bench-0.2.0.dev0-py3-none-any.whl"
+    expected_wheel = "rag_evidence_attribution_bench-0.2.0-py3-none-any.whl"
     if not wheel.is_file() or wheel.name != expected_wheel:
-        raise DataError("handoff requires the exact verified 0.2.0.dev0 wheel filename")
+        raise DataError("handoff requires the exact verified 0.2.0 wheel filename")
     external_root.mkdir(parents=True, exist_ok=True)
     hashes = {
         "kit-a": _copy_kit(

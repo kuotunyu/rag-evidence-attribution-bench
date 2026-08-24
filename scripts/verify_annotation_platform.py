@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any
 
 SOURCE_DATE_EPOCH = "1787443200"
-WHEEL_NAME = "rag_evidence_attribution_bench-0.2.0.dev0-py3-none-any.whl"
+WHEEL_NAME = "rag_evidence_attribution_bench-0.2.0-py3-none-any.whl"
 PROTOCOL_VERSION = "pilot-v0.2.2-draft"
 EMPTY_SHA256 = hashlib.sha256(b"").hexdigest()
 
@@ -451,7 +451,7 @@ def main() -> int:
     if any(not path.resolve().is_file() for path in inputs):
         raise RuntimeError("platform verifier input is missing")
     if args.wheel.name != WHEEL_NAME:
-        raise RuntimeError("platform verifier requires the exact 0.2.0.dev0 wheel filename")
+        raise RuntimeError("platform verifier requires the exact 0.2.0 wheel filename")
     protocol_text = args.protocol.read_text(encoding="utf-8")
     if f"`{PROTOCOL_VERSION}`" not in protocol_text:
         raise RuntimeError("protocol source does not declare pilot-v0.2.2-draft")
@@ -588,7 +588,7 @@ def main() -> int:
         "platform": args.platform,
         "source_commit_sha": args.source_commit,
         "git_tree_sha": args.source_tree,
-        "python_distribution": "0.2.0.dev0",
+        "python_distribution": "0.2.0",
         "wheel_filename": args.wheel.name,
         "wheel_byte_size": args.wheel.stat().st_size,
         "wheel_sha256": _sha256_file(args.wheel),

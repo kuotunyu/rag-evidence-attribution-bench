@@ -1,6 +1,6 @@
 [project]
 name = "rag-evidence-attribution-bench"
-version = "0.2.0.dev0"
+version = "0.2.0"
 description = "評測 RAG LLM 回答實際依賴哪些 context passages 的 Evidence Attribution benchmark（HotpotQA distractor、Qwen3）。"
 readme = "README.md"
 requires-python = ">=3.11"

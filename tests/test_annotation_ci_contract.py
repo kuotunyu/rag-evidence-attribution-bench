@@ -8,6 +8,8 @@ from typing import Any
 
 import yaml
 
+PRERELEASE_VERSION = "0.2.0" + ".dev0"
+
 
 def _workflow(repo_root: Path) -> dict[str, Any]:
     payload: dict[str, Any] = yaml.safe_load(
@@ -32,7 +34,8 @@ def test_ci_has_symmetric_annotation_platform_jobs(repo_root: Path) -> None:
     assert "verify_annotation_platform.py" in serialized
     assert "--only-binary=:all:" in serialized
     assert "annotation-requirements-py311.lock" in serialized
-    assert "0.2.0.dev0" in serialized
+    assert "rag_evidence_attribution_bench-0.2.0-py3-none-any.whl" in serialized
+    assert PRERELEASE_VERSION not in serialized
     assert "checkout@v4" in serialized
     assert "pull_request.head.sha" in serialized
     for job in (windows, linux):

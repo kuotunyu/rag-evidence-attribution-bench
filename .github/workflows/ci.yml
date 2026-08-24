@@ -71,7 +71,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: false
-      - name: Build exact 0.2.0.dev0 wheel outside checkout
+      - name: Build exact 0.2.0 wheel outside checkout
         shell: pwsh
         env:
           UV_CACHE_DIR: ${{ runner.temp }}/annotation-windows-uv-cache
@@ -81,7 +81,7 @@ jobs:
           uv build --wheel --out-dir $Dist
           $Wheels = @(Get-ChildItem -LiteralPath $Dist -Filter *.whl -File)
           if ($Wheels.Count -ne 1) { throw "Expected exactly one wheel." }
-          if ($Wheels[0].Name -ne "rag_evidence_attribution_bench-0.2.0.dev0-py3-none-any.whl") {
+          if ($Wheels[0].Name -ne "rag_evidence_attribution_bench-0.2.0-py3-none-any.whl") {
             throw "Unexpected wheel identity."
           }
       - name: Verify annotation platform
@@ -129,7 +129,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: false
-      - name: Build exact 0.2.0.dev0 wheel outside checkout
+      - name: Build exact 0.2.0 wheel outside checkout
         shell: bash
         env:
           UV_CACHE_DIR: ${{ runner.temp }}/annotation-linux-uv-cache
@@ -140,7 +140,7 @@ jobs:
           mapfile -t WHEELS < <(find "$DIST" -maxdepth 1 -type f -name '*.whl')
           test "${#WHEELS[@]}" -eq 1
           test "$(basename "${WHEELS[0]}")" = \
-            "rag_evidence_attribution_bench-0.2.0.dev0-py3-none-any.whl"
+            "rag_evidence_attribution_bench-0.2.0-py3-none-any.whl"
       - name: Verify annotation platform
         shell: bash
         run: |

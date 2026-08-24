@@ -31,7 +31,7 @@ def _identity() -> PlatformIdentityV2:
     return PlatformIdentityV2(
         source_commit_sha="1" * 40,
         git_tree_sha="2" * 40,
-        wheel_filename="rag_evidence_attribution_bench-0.2.0.dev0-py3-none-any.whl",
+        wheel_filename="rag_evidence_attribution_bench-0.2.0-py3-none-any.whl",
         wheel_byte_size=5,
         wheel_sha256=WHEEL_HASH,
         dependency_lock_sha256=LOCK_HASH,
@@ -88,7 +88,7 @@ def _payload(platform: str = "Windows") -> dict[str, Any]:
         ],
         "installed_distributions": [
             {"name": "fastapi", "version": "1.0"},
-            {"name": "rag-evidence-attribution-bench", "version": "0.2.0.dev0"},
+            {"name": "rag-evidence-attribution-bench", "version": "0.2.0"},
         ],
         "commands": commands,
         "smoke_artifact_sha256": {"smoke/tasks.json": ZERO_HASH},
@@ -110,7 +110,7 @@ def test_receipt_rejects_each_missing_command(missing: str) -> None:
 def test_receipt_binds_exact_dev_distribution_and_binary_only_bootstrap() -> None:
     receipt = PlatformVerificationReceiptV2.model_validate(_payload())
 
-    assert receipt.python_distribution == "0.2.0.dev0"
+    assert receipt.python_distribution == "0.2.0"
     assert receipt.wheel_sha256 == WHEEL_HASH
     assert "--require-hashes" in receipt.bootstrap_argv
     assert "--only-binary=:all:" in receipt.bootstrap_argv

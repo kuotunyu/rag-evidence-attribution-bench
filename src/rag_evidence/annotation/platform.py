@@ -127,7 +127,7 @@ class InstalledDistributionV2(_StrictModel):
 class PlatformIdentityV2(_StrictModel):
     source_commit_sha: str = Field(pattern=_COMMIT_PATTERN)
     git_tree_sha: str = Field(pattern=_COMMIT_PATTERN)
-    python_distribution: Literal["0.2.0.dev0"] = "0.2.0.dev0"
+    python_distribution: Literal["0.2.0"] = "0.2.0"
     wheel_filename: str = Field(pattern=r"^[A-Za-z0-9_.-]+\.whl$")
     wheel_byte_size: int = Field(gt=0)
     wheel_sha256: str = Field(pattern=_HASH_PATTERN)
