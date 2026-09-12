@@ -2,12 +2,12 @@
 
 [![CI](https://github.com/kuotunyu/rag-evidence-attribution-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/kuotunyu/rag-evidence-attribution-bench/actions/workflows/ci.yml)
 ![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
-[![Code license: MIT](https://img.shields.io/badge/Code%20license-MIT-yellow.svg)](LICENSE)
+[![Code license: MIT](https://img.shields.io/badge/Code%20license-MIT-yellow.svg)](../LICENSE)
 [![Release](https://img.shields.io/badge/release-v0.1.0-blue.svg)](https://github.com/kuotunyu/rag-evidence-attribution-bench/releases/tag/v0.1.0)
 
 本專案是 **HotpotQA (distractor) 封閉候選脈絡歸因**的可重現 benchmark，比較 **Qwen3-4B-Instruct** 回答的 supporting-passage agreement、teacher-forced 依賴性診斷、Latency 與 Peak VRAM。目前證據不足以聲稱已測得 open-corpus evidence faithfulness 或因果歸因；SHA-256 用於變更偵測與可追溯重建，不會阻止具寫入權限者修改 repository。
 
-> English version: [README_en.md](README_en.md)
+> English version: [README_en.md](../README_en.md)
 
 `v0.1.0` 是已封存的歷史基線；`main` 上的 Dataset v2 與 Answerability Challenge
 仍屬尚未發布的 validity extension。只有通過既定研究與 release gates 後，才會升級為
@@ -17,15 +17,15 @@
 
 ## 評測基準說明
 
-- **資料集分割 (Dataset Splits)**：320 題的 question ID 互斥，分為 `smoke` (20) / `dev` (60) / 公開 `eval` (240)，並以 SHA-256 fingerprint 固定 ([DATA_CARD.md](DATA_CARD.md))。v0.1 未強制 passage/title group isolation，因此不宣稱 leakage-free。
+- **資料集分割 (Dataset Splits)**：320 題的 question ID 互斥，分為 `smoke` (20) / `dev` (60) / 公開 `eval` (240)，並以 SHA-256 fingerprint 固定 ([DATA_CARD.md](../DATA_CARD.md))。v0.1 未強制 passage/title group isolation，因此不宣稱 leakage-free。
 - **多階檢索 (Retrieval Pipeline)**：包含 BM25 關鍵字檢索、Dense 向量檢索 (Qwen3-Embedding-0.6B) 與 Hybrid RRF 重排序。
 - **生成與歸因 (Generation & Attribution)**：v0.1 以 dataset order 輸入全部 10 段候選 passage，生成器不使用 retrieval ranking；`leave_one_out` 是 teacher-forced 脈絡依賴性診斷，不是已驗證的因果 ground truth。
 - **雙重評測模式 (Dual Evaluation Modes)**：Mode A (Teacher-forced Gold Answers 全樣本) 與 Mode B (Generated Answers 僅針對答對子集計算)。
 - **可追溯重建 (Traceable Regeneration)**：真實 run 與 SHA-256 驗證匯入均保留 provenance；mock run 不進入 README，partial run 預設不進入 evaluate。
 
 目前的 validity extension 已加入 passage/title group 互斥且版本固定的
-[Dataset v2](docs/DATASET_V2.md)，以及 960 筆、可逐 byte 重建的
-[Answerability Challenge v1](docs/CHALLENGE_V1.md)。Challenge v1 目前仍是 candidate
+[Dataset v2](../docs/DATASET_V2.md)，以及 960 筆、可逐 byte 重建的
+[Answerability Challenge v1](../docs/CHALLENGE_V1.md)。Challenge v1 目前仍是 candidate
 set，不是已完成的 confirmatory benchmark：其中 640 筆 missing-hop／evidence-swap
 樣本，在兩位獨立標註者審查與第三人 adjudication 完成前，禁止用於確認性結論。
 
@@ -762,7 +762,7 @@ docker compose up
 若需於硬體上重現 GPU 生成與歸因步驟：
 
 1. 執行 `uv run python scripts/make_colab_bundle.py` 產出 `reab_bundle.zip`。
-2. 上傳至 [notebooks/01_colab_run.ipynb](notebooks/01_colab_run.ipynb) 進行 A100 推理。
+2. 上傳至 [notebooks/01_colab_run.ipynb](../notebooks/01_colab_run.ipynb) 進行 A100 推理。
 3. 匯入結果至本機：`python -m rag_evidence.cli import-results <zip> --config <cfg>` 並執行 `evaluate` 與 `report`。
 
 Windows lock 預設使用 CPU 版 PyTorch。若要改在本機 CUDA 執行，必須自行安裝與目前
@@ -789,6 +789,6 @@ python -m rag_evidence.cli import-results <zip> --config <cfg>
 
 ## 專案文件導覽
 
-- [DATA_CARD.md](DATA_CARD.md) — 資料集說明、Splits 拆分、SHA-256 簽章與授權
-- [MODEL_CARD.md](MODEL_CARD.md) — 模型規格、Decoding 政策與歸因演算法定義
-- [FAILURES.md](FAILURES.md) — 實測異常現象與 Fallback 分析
+- [DATA_CARD.md](../DATA_CARD.md) — 資料集說明、Splits 拆分、SHA-256 簽章與授權
+- [MODEL_CARD.md](../MODEL_CARD.md) — 模型規格、Decoding 政策與歸因演算法定義
+- [FAILURES.md](../FAILURES.md) — 實測異常現象與 Fallback 分析

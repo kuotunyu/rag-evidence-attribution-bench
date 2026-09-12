@@ -1,5 +1,9 @@
 # GitHub Metadata Handoff (Not Applied)
 
+> Historical B0 handoff. The current release is v0.2.0 (annotation infrastructure only);
+> current badges and evidence boundaries are maintained in [README.md](../README.md).
+> The v0.1.0 badge instruction below records the pre-release state and is superseded.
+
 The B0 branch does not mutate GitHub remote metadata. After local review, the repository
 owner may consider:
 
